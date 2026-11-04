@@ -66,3 +66,4 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ error: "toolName or message is required" }, { status: 400 });
 }
+

@@ -175,3 +175,4 @@ export default async function RsvpsPage() {
     </div>
   );
 }
+

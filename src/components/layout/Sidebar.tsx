@@ -100,6 +100,22 @@ export function Sidebar() {
           </div>
           <ExternalLink className="w-3.5 h-3.5 text-[#C6A65B]" />
         </Link>
+
+        <div className="pt-4 px-3 py-2 text-[10px] uppercase tracking-wider font-semibold text-[#DFCA95]/60">
+          Platform Governance
+        </div>
+        <Link
+          href="/super-admin"
+          className="flex items-center justify-between px-3 py-2.5 rounded-md text-xs font-medium text-amber-300 bg-[#070D18] border border-amber-500/40 hover:bg-amber-500/10 transition-all"
+        >
+          <div className="flex items-center gap-3">
+            <ShieldAlert className="w-4 h-4 text-amber-400" />
+            <span>DakyXTech Console</span>
+          </div>
+          <span className="text-[9px] bg-amber-500/20 text-amber-300 font-bold px-1.5 py-0.5 rounded border border-amber-500/30">
+            Super Admin
+          </span>
+        </Link>
       </nav>
 
       {/* Footer / System Status */}
@@ -113,3 +129,4 @@ export function Sidebar() {
     </aside>
   );
 }
+

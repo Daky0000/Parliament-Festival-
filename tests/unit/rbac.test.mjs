@@ -42,3 +42,4 @@ test("RBAC & Security Policy Gate: enforces event-scoped permissions and blocks 
     "Error must cite security policy gate enforcement"
   );
 });
+

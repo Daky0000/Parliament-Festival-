@@ -296,3 +296,4 @@ The platform is operating with 100% capacity and seating integrity.`;
       return { status: "unsupported", message: `Tool ${toolName} has no handler.` };
   }
 }
+

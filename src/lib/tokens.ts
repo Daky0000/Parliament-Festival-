@@ -48,3 +48,4 @@ export async function generateQrCodeDataUrl(data: string): Promise<string> {
     width: 320,
   });
 }
+

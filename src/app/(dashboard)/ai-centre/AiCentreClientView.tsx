@@ -279,3 +279,4 @@ export function AiCentreClientView({ eventId }: { eventId: string }) {
     </div>
   );
 }
+

@@ -24,3 +24,4 @@ test("QR Credential: creates opaque QR code data URL without leaking personal da
   assert.doesNotMatch(dataUrl, /email/, "Must never encode personal email in QR");
   assert.doesNotMatch(dataUrl, /Bagbin/, "Must never encode personal name in QR");
 });
+

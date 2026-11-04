@@ -156,6 +156,7 @@ model Event {
   aiSessions       AiSession[]
   tasks            Task[]
   notifications    Notification[]
+  communicationMessages CommunicationMessage[]
 
   @@unique([organizationId, eventCode])
   @@map("events")
@@ -829,4 +830,154 @@ model OutboxEvent {
   publishedAt   DateTime?
 
   @@map("outbox_events")
+}
+
+
+
+// 8.8 Platform Integrations & Super Admin Configuration (v3.0)
+model PlatformIntegration {
+  id              String   @id @default(uuid())
+  providerKey     String   @unique // openai, anthropic, resend, vynfy, cloudflare
+  displayName     String
+  integrationType String   // ai, email, sms, infrastructure
+  status          String   @default("healthy") // not_configured, testing, healthy, degraded, disabled, authentication_failed
+  environment     String   @default("production") // development, staging, production
+  isEnabled       Boolean  @default(true)
+  metadata        String   @default("{}") // JSON
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  credentials     IntegrationCredential[]
+  settings        IntegrationSetting[]
+  testLogs        IntegrationTestLog[]
+
+  @@map("platform_integrations")
+}
+
+model IntegrationCredential {
+  id                String    @id @default(uuid())
+  integrationId     String
+  secretReference   String    // KMS reference or vault key identifier
+  maskedHint        String    // e.g. "re_...4829", "sk-proj-...8831"
+  credentialVersion Int       @default(1)
+  status            String    @default("active") // active, rotated, revoked
+  createdBy         String?
+  createdAt         DateTime  @default(now())
+  rotatedAt         DateTime?
+  expiresAt         DateTime?
+
+  integration       PlatformIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@map("integration_credentials")
+}
+
+model IntegrationSetting {
+  id            String   @id @default(uuid())
+  integrationId String
+  settingKey    String
+  settingValue  String   // JSON or string
+  isSecret      Boolean  @default(false)
+  updatedBy     String?
+  updatedAt     DateTime @updatedAt
+
+  integration   PlatformIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@unique([integrationId, settingKey])
+  @@map("integration_settings")
+}
+
+model IntegrationTestLog {
+  id             String   @id @default(uuid())
+  integrationId  String
+  testType       String   // ping, api_call, test_send, auth_validation
+  result         String   // success, failed, timeout
+  latencyMs      Int?
+  sanitisedError String?
+  requestId      String?
+  testedBy       String?
+  testedAt       DateTime @default(now())
+
+  integration    PlatformIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@map("integration_test_logs")
+}
+
+model AiProviderConfig {
+  id              String   @id @default(uuid())
+  provider        String   // openai, anthropic
+  model           String   // e.g. gpt-4o, gpt-4o-mini, claude-3-5-sonnet-20241022
+  taskKey         String   // invitation_drafting, seating_explanation, general_summary
+  priority        Int      @default(1) // 1 = primary, 2 = fallback
+  isPrimary       Boolean  @default(false)
+  isEnabled       Boolean  @default(true)
+  timeoutMs       Int      @default(30000)
+  maxInputTokens  Int      @default(4000)
+  maxOutputTokens Int      @default(2000)
+  monthlyBudget   Float?   // in USD
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([provider, taskKey])
+  @@map("ai_provider_configs")
+}
+
+model AiUsageLog {
+  id               String   @id @default(uuid())
+  eventId          String?
+  provider         String   // openai, anthropic
+  model            String
+  taskKey          String
+  inputTokens      Int      @default(0)
+  outputTokens     Int      @default(0)
+  estimatedCost    Float    @default(0.0)
+  actualCost       Float?
+  latencyMs        Int?
+  status           String   @default("success") // success, failed, fallback_triggered
+  fallbackUsed     Boolean  @default(false)
+  requestReference String?
+  createdAt        DateTime @default(now())
+
+  @@map("ai_usage_logs")
+}
+
+model CommunicationMessage {
+  id                      String    @id @default(uuid())
+  eventId                 String
+  eventGuestId            String?
+  invitationId            String?
+  channel                 String    // email, sms
+  provider                String    // resend, vynfy
+  messageType             String    // invitation, reminder, confirmation, alert
+  recipientSnapshot       String    // email or E.164 phone number (+233...)
+  subject                 String?
+  bodySnippet             String?
+  providerMessageId       String?
+  idempotencyKey          String    @unique
+  status                  String    @default("queued") // queued, submitted, delivered, failed
+  scheduledAt             DateTime?
+  submittedAt             DateTime?
+  deliveredAt             DateTime?
+  failedAt                DateTime?
+  failureCode             String?
+  failureMessageSanitised String?
+  createdBy               String?
+  createdAt               DateTime  @default(now())
+
+  event                   Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("communication_messages")
+}
+
+model SystemAlert {
+  id                   String    @id @default(uuid())
+  severity             String    // info, warning, critical
+  component            String    // openai, resend, vynfy, cloudflare, database
+  title                String
+  descriptionSanitised String
+  status               String    @default("open") // open, acknowledged, resolved
+  acknowledgedBy       String?
+  acknowledgedAt       DateTime?
+  createdAt            DateTime  @default(now())
+
+  @@map("system_alerts")
 }

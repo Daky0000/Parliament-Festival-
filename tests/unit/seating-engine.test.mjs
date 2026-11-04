@@ -64,3 +64,4 @@ test("Deterministic Seating Allocation Engine: enforces protocol precedence and 
     );
   }
 });
+

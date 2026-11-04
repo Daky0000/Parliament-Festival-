@@ -157,3 +157,4 @@ export async function hasPermission(
 
   return false;
 }
+

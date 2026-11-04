@@ -165,3 +165,4 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ data: eventGuest }, { status: 201 });
 }
+
