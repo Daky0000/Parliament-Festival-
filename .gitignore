@@ -11,3 +11,4 @@ cloudflared.exe
 *.mjs.tmp
 configure_tunnel.mjs
 create_tunnel.mjs
+*.tsbuildinfo
