@@ -1,5 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import {
+  INVITATION_HTML,
+  INVITATION_SUBJECT,
+  INVITATION_TEXT,
+} from "../src/lib/email/invitation-template";
 
 const prisma = new PrismaClient();
 
@@ -471,26 +476,9 @@ async function main() {
     data: {
       templateId: template.id,
       versionNumber: 1,
-      subjectTemplate: "Invitation to the 2026 Festival of Nine Lessons and Carols - Parliament of Ghana",
-      htmlContent: `<div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; background: #0A1830; color: #F7F5F0; padding: 40px; border: 2px solid #C6A65B;">
-        <div style="text-align: center; border-bottom: 1px solid #C6A65B; padding-bottom: 20px;">
-          <h2 style="color: #C6A65B; margin: 0; letter-spacing: 2px;">PARLIAMENT OF GHANA</h2>
-          <p style="font-size: 13px; color: #DFCA95; text-transform: uppercase;">Office of the Rt. Hon. Speaker</p>
-        </div>
-        <div style="padding: 30px 0; text-align: center;">
-          <p style="font-style: italic; color: #DFCA95;">The Rt. Hon. Speaker and Leadership of Parliament request the honour of the presence of</p>
-          <h3 style="font-size: 22px; color: #FFFFFF; margin: 15px 0;">{{guest.title}} {{guest.full_name}}</h3>
-          <p style="font-size: 14px; color: #C6A65B; margin-bottom: 25px;">{{guest.designation}} - {{guest.institution_name}}</p>
-          <p>at the</p>
-          <h2 style="color: #C6A65B; font-size: 24px; margin: 10px 0;">2026 FESTIVAL OF NINE LESSONS AND CAROLS</h2>
-          <p style="font-size: 15px; margin: 20px 0;"><strong>Date:</strong> Friday, 18th December 2026 &bull; <strong>Time:</strong> 4:00 PM GMT<br><strong>Venue:</strong> Forecourt of Parliament House, Accra</p>
-          <div style="margin: 35px 0;">
-            <a href="{{invitation.rsvp_url}}" style="background: #C6A65B; color: #0A1830; padding: 14px 32px; font-weight: bold; text-decoration: none; border-radius: 4px; display: inline-block;">CONFIRM ATTENDANCE / RSVP</a>
-          </div>
-          <p style="font-size: 12px; color: #DFCA95;">Please respond on or before 10th December 2026. Ref: {{invitation.reference}}</p>
-        </div>
-      </div>`,
-      textContent: "The Rt. Hon. Speaker and Leadership of Parliament invite {{guest.full_name}} to the 2026 Festival of Nine Lessons and Carols on 18th December 2026 at the Forecourt of Parliament. RSVP: {{invitation.rsvp_url}}",
+      subjectTemplate: INVITATION_SUBJECT,
+      htmlContent: INVITATION_HTML,
+      textContent: INVITATION_TEXT,
       status: "approved",
       createdBy: adminUser.id,
       approvedBy: approverUser.id,

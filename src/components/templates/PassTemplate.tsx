@@ -1,6 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useMemo, useRef, useState } from "react";
+import { INVITATION_HTML, INVITATION_SUBJECT } from "@/lib/email/invitation-template";
+import { buildInvitationVars, fillTemplate } from "@/lib/email/render-invitation";
 import { ShieldCheck, Calendar, Clock, MapPin, Armchair, Award, Building2, UserCheck, QrCode } from "lucide-react";
 
 export interface TemplateData {
@@ -243,81 +245,62 @@ export function PassTemplate({
     );
   }
 
-  // 3. RESPONSIVE EMAIL DISPATCH PREVIEW
+  // 3. EMAIL DISPATCH PREVIEW — the real invitation template, exactly as sent
+  return <EmailPreview data={data} />;
+}
+
+function EmailPreview({ data }: { data: TemplateData }) {
+  const frameRef = useRef<HTMLIFrameElement>(null);
+  const [height, setHeight] = useState(900);
+
+  const html = useMemo(
+    () =>
+      fillTemplate(
+        INVITATION_HTML,
+        buildInvitationVars(
+          {
+            title: data.guestTitle,
+            fullName: data.fullName || "Honorable Dignitary",
+            designation: data.designation,
+            institution: data.company,
+            rankColourHex: data.rankColourHex,
+            rankName: data.rankName,
+            rankOrder: data.rankName ? data.rankOrder : null,
+          },
+          {
+            eventName: data.eventName || "2026 Festival of Nine Lessons and Carols",
+            venueName: data.eventVenue,
+            rsvpUrl: "#",
+            reference: data.invitationReference || "GH-INV-PREVIEW",
+          }
+        ),
+        { html: true }
+      ),
+    [data]
+  );
+
   return (
-    <div className="mx-auto w-full max-w-[580px] bg-white rounded-xl shadow-lg border border-[#E3E6EB] overflow-hidden font-sans text-xs">
-      {/* Email Client Top Bar */}
-      <div className="bg-[#F6F7F9] px-4 py-2.5 border-b border-[#E3E6EB] flex items-center justify-between text-[#5B6374] text-[11px]">
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-          <span className="ml-2 font-mono text-[10px]">Subject: Official State Invitation: {eventName}</span>
-        </div>
-        <span className="text-[10px] bg-[#E3E6EB] px-2 py-0.5 rounded font-mono">HTML Preview</span>
+    <div className="mx-auto w-full max-w-[680px] bg-white rounded-[14px] border border-[#E3E6EB] overflow-hidden">
+      <div className="bg-[#F6F7F9] px-4 py-2.5 border-b border-[#E3E6EB] flex items-center justify-between gap-3 text-[#5B6374] text-[12px]">
+        <span className="truncate">
+          <b className="font-medium text-[#0D1526]">Subject:</b> {INVITATION_SUBJECT}
+        </span>
+        <span className="flex-none text-[11px] font-medium uppercase tracking-[0.12em] bg-[#EAF1FF] text-[#2563EB] px-2 py-0.5 rounded-[10px]">
+          As sent
+        </span>
       </div>
-
-      {/* Rendered Email Content */}
-      <div className="p-6 sm:p-8 space-y-6 bg-[#FAF8F5]">
-        <div className="bg-[#0A1830] text-white p-6 rounded-t-xl text-center border-b-2 border-[#C6A65B]">
-          <div className="text-xs uppercase tracking-[0.2em] font-bold text-[#C6A65B]">
-            PARLIAMENT OF GHANA
-          </div>
-          <div className="text-[10px] text-white/60 tracking-wider uppercase mt-1">
-            Office of the Rt. Hon. Speaker &bull; Protocol Directorate
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-b-xl border border-[#E3E6EB] shadow-sm space-y-4">
-          <p className="text-xs text-[#5B6374]">
-            Dear <strong className="text-[#091833]">{displayName}</strong>,
-          </p>
-
-          <p className="text-xs leading-relaxed text-[#091833]">
-            The Rt. Hon. Speaker and the Leadership of Parliament request the honour of your presence at the official commemoration of the <strong>{eventName}</strong>.
-          </p>
-
-          {/* Dignitary & Seating Snapshot Table */}
-          <div className="bg-[#F6F7F9] rounded-lg p-4 border border-[#E3E6EB] space-y-2">
-            <div className="flex justify-between items-center pb-2 border-b border-[#E3E6EB]">
-              <span className="text-[#5B6374]">Invited Dignitary:</span>
-              <span className="font-semibold text-[#091833]">{displayName}</span>
-            </div>
-            <div className="flex justify-between items-center pb-2 border-b border-[#E3E6EB]">
-              <span className="text-[#5B6374]">Institution / Company:</span>
-              <span className="font-semibold text-[#091833]">{company}</span>
-            </div>
-            <div className="flex justify-between items-center pb-2 border-b border-[#E3E6EB]">
-              <span className="text-[#5B6374]">Protocol Rank:</span>
-              <span className="inline-flex items-center gap-1 font-semibold text-white px-2 py-0.5 rounded text-[10px]" style={{ backgroundColor: rankColourHex }}>
-                Rank {rankOrder}: {rankName}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-[#5B6374]">Reserved Seat Reference:</span>
-              <span className="font-mono font-bold text-[#2563EB] bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                {seatReference} ({sectionName})
-              </span>
-            </div>
-          </div>
-
-          <div className="p-3 bg-blue-50/70 border border-blue-100 rounded text-xs text-[#1E3A8A] space-y-1">
-            <div><strong>Date & Time:</strong> {eventDate}</div>
-            <div><strong>Venue:</strong> {eventVenue}</div>
-          </div>
-
-          <div className="pt-2 text-center">
-            <button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold py-2.5 px-6 rounded-md shadow transition-colors inline-flex items-center gap-2">
-              <UserCheck className="w-4 h-4" />
-              Confirm Attendance / Formal RSVP
-            </button>
-            <div className="text-[10px] text-[#5B6374] mt-2">
-              Unique Pass Ref: <span className="font-mono">{invitationReference}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <iframe
+        ref={frameRef}
+        title="Invitation email preview"
+        srcDoc={html}
+        sandbox="allow-same-origin"
+        className="block w-full border-0"
+        style={{ height }}
+        onLoad={() => {
+          const doc = frameRef.current?.contentDocument;
+          if (doc) setHeight(doc.documentElement.scrollHeight);
+        }}
+      />
     </div>
   );
 }
-

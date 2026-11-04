@@ -193,7 +193,7 @@ export function CampaignsClientView({
                 <div className="bg-[#F6F7F9] p-2.5 rounded">
                   <span className="text-[10px] text-[#5B6374] uppercase block">Template Snapshot</span>
                   <span className="font-semibold text-[#091833]">
-                    {camp.templateVersion?.template?.name || "State Template"} (v1)
+                    {camp.templateVersion?.template?.name || "State Template"} (v{camp.templateVersion?.versionNumber ?? 1})
                   </span>
                 </div>
               </div>

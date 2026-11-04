@@ -36,6 +36,7 @@ export type RankTheme = {
   "guest.rank_mark_url": string;
   "guest.rank_name": string;
   "guest.rank_order": string;
+  "guest.rank_label": string;
 };
 
 export function rankTheme(
@@ -43,6 +44,7 @@ export function rankTheme(
   name?: string | null,
   rankOrder?: number | null
 ): RankTheme {
+  // No rank (or an unreadable colour) -> the default dark navy header
   const rgb = parseHex(colourHex || "") || parseHex(FALLBACK)!;
   const bg = `#${rgb.map((c) => c.toString(16).padStart(2, "0")).join("").toUpperCase()}`;
   const L = luminance(rgb);
@@ -56,5 +58,10 @@ export function rankTheme(
     "guest.rank_mark_url": `${ASSET_BASE}/${darkText ? "mark-navy.png" : "mark-on-navy.png"}`,
     "guest.rank_name": name || "Invited guest",
     "guest.rank_order": rankOrder != null ? String(rankOrder) : "",
+    "guest.rank_label": name
+      ? rankOrder != null
+        ? `Rank ${rankOrder} · ${name}`
+        : name
+      : "Invited guest",
   };
 }

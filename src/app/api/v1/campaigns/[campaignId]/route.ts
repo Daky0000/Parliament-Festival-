@@ -3,8 +3,8 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit";
 import { generateSecureToken, generateReferenceCode } from "@/lib/tokens";
-import { sendInvitationEmail, interpolateInvitationTemplate } from "@/lib/email/provider";
-import { rankTheme } from "@/lib/email/rank-theme";
+import { sendInvitationEmail } from "@/lib/email/provider";
+import { buildInvitationVars, fillTemplate } from "@/lib/email/render-invitation";
 
 export async function GET(
   request: NextRequest,
@@ -152,31 +152,27 @@ export async function PATCH(
       });
 
       // Interpolate template placeholders
-      const templateVars = {
-        "event.name": campaign.event.name,
-        "event.venue_name": campaign.event.venueName || "Parliament House",
-        "guest.title": guest.person.title || "",
-        "guest.full_name": guest.person.fullName,
-        "guest.designation": guest.person.designation || "",
-        "guest.institution_name": guest.institution?.name || "",
-        "invitation.rsvp_url": rsvpUrl,
-        "invitation.reference": invitationReference,
-        // Header band colours follow the guest's protocol rank
-        ...rankTheme(
-          guest.protocolCategory?.colourHex,
-          guest.protocolCategory?.name,
-          guest.protocolCategory?.rankOrder
-        ),
-      };
+      // Header colour follows the guest's protocol rank (navy when unranked)
+      const templateVars = buildInvitationVars(
+        {
+          title: guest.person.title,
+          fullName: guest.person.fullName,
+          designation: guest.person.designation,
+          institution: guest.institution?.name,
+          rankColourHex: guest.protocolCategory?.colourHex,
+          rankName: guest.protocolCategory?.name,
+          rankOrder: guest.protocolCategory?.rankOrder,
+        },
+        {
+          eventName: campaign.event.name,
+          venueName: campaign.event.venueName,
+          rsvpUrl,
+          reference: invitationReference,
+        }
+      );
 
-      const renderedHtml = interpolateInvitationTemplate(
-        campaign.templateVersion.htmlContent || "",
-        templateVars
-      );
-      const renderedText = interpolateInvitationTemplate(
-        campaign.templateVersion.textContent || "",
-        templateVars
-      );
+      const renderedHtml = fillTemplate(campaign.templateVersion.htmlContent || "", templateVars, { html: true });
+      const renderedText = fillTemplate(campaign.templateVersion.textContent || "", templateVars, { html: false });
 
       // Send through provider
       await sendInvitationEmail({

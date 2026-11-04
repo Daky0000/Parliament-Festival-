@@ -1,0 +1,230 @@
+// The official invitation email (version 2, brand redesign).
+//
+// Design: Parliament of Ghana Event & Protocol Platform design system — white
+// panels on #ECEEF1, one blue accent. The header band takes the guest's
+// protocol rank colour (see rank-theme.ts); guests without a rank get navy.
+//
+// Email-safe: tables and inline styles only, 600px wide, no SVG, web font
+// optional. Images are served from the Cloudflare Pages site
+// (cloudflare-pages-portal/assets/email/).
+//
+// Placeholders, filled by interpolateInvitationTemplate (provider.ts) in the
+// campaign dispatch route:
+//   guest.title guest.full_name guest.affiliation
+//   event.name invitation.rsvp_url invitation.reference
+//   guest.rank_color guest.rank_text guest.rank_text_muted guest.rank_dots
+//   guest.rank_mark_url guest.rank_label
+//
+// To change the live template: edit here, then run
+//   npx tsx prisma/upgrade_invitation_template.ts
+// which stores it as a new approved version (the database is what campaigns send).
+
+export const INVITATION_TEMPLATE_VERSION_NOTE =
+  "Brand redesign: rank-coloured header, landing-page design system.";
+
+export const INVITATION_SUBJECT =
+  "Invitation to the 2026 Festival of Nine Lessons and Carols - Parliament of Ghana";
+
+export const INVITATION_TEXT = `The Rt. Hon. Speaker and the Leadership of Parliament request the honour of the presence of {{guest.title}} {{guest.full_name}} at the 2026 Festival of Nine Lessons and Carols.
+
+Date: Friday, 18 December 2026
+Time: 4:00 PM GMT
+Venue: Forecourt of Parliament House, Accra
+Please reply by: Thursday, 10 December 2026
+Invitation reference: {{invitation.reference}}
+
+Confirm your attendance: {{invitation.rsvp_url}}
+
+Protocol Directorate · Parliament of Ghana`;
+
+export const INVITATION_HTML = `<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="x-apple-disable-message-reformatting">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
+  <title>Invitation · {{event.name}}</title>
+  <style>
+    @font-face{font-family:'Outfit';font-style:normal;font-weight:300 700;src:url(https://parliament-protocol-platform.pages.dev/assets/fonts/outfit-latin.woff2) format('woff2')}
+    body{margin:0;padding:0;-webkit-text-size-adjust:100%}
+    a{color:#2563EB}
+    @media (max-width:620px){
+      .shell{width:100%!important}
+      .pad{padding-left:24px!important;padding-right:24px!important}
+      .name{font-size:28px!important}
+      .title{font-size:30px!important}
+      .row td{display:block!important;width:100%!important}
+      .row .k{padding-bottom:2px!important;border-bottom:0!important}
+      .row .v{padding-top:0!important}
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background:#ECEEF1;">
+  <!-- Preheader: the grey preview line in the inbox -->
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#ECEEF1;">
+    The Rt. Hon. Speaker requests the honour of your presence on Friday, 18 December 2026 at 4:00 PM. Please reply by 10 December.
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ECEEF1;">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+        <table role="presentation" class="shell" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;font-family:'Outfit','Segoe UI',Helvetica,Arial,sans-serif;color:#0D1526;">
+
+          <!-- Band: who it's from. Its colour is the guest's protocol rank colour;
+               text and logo switch between white and ink to stay readable. -->
+          <tr>
+            <td style="background:{{guest.rank_color}};background-image:radial-gradient(circle,{{guest.rank_dots}} 1.15px,transparent 1.6px);background-size:11px 11px;border-radius:22px;" class="pad" bgcolor="{{guest.rank_color}}">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td class="pad" style="padding:36px 40px 34px 40px;">
+                    <img src="{{guest.rank_mark_url}}" width="48" height="48" alt="" style="display:block;border:0;width:48px;height:48px;">
+                    <p style="margin:22px 0 0 0;font-size:12px;line-height:1.4;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:{{guest.rank_text_muted}};">
+                      Parliament of Ghana · Office of the Rt. Hon. Speaker
+                    </p>
+                    <h1 class="title" style="margin:10px 0 0 0;font-size:36px;line-height:1.08;font-weight:400;letter-spacing:-.035em;color:{{guest.rank_text}};">
+                      Festival of Nine Lessons and Carols 2026
+                    </h1>
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;">
+                      <tr>
+                        <td style="border:1px solid {{guest.rank_dots}};border-radius:10px;padding:7px 12px;font-size:12px;line-height:1.4;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:{{guest.rank_text}};">
+                          {{guest.rank_label}}
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr><td height="12" style="height:12px;line-height:12px;font-size:12px;">&nbsp;</td></tr>
+
+          <!-- Panel: the invitation -->
+          <tr>
+            <td style="background:#FFFFFF;border-radius:22px;" bgcolor="#FFFFFF">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td class="pad" style="padding:40px 40px 8px 40px;">
+                    <p style="margin:0;font-size:16.5px;line-height:1.6;color:#5B6374;">
+                      The Rt. Hon. Speaker and the Leadership of Parliament request the honour of the presence of
+                    </p>
+                    <p class="name" style="margin:18px 0 0 0;font-size:34px;line-height:1.1;font-weight:400;letter-spacing:-.035em;color:#0D1526;">
+                      {{guest.title}} {{guest.full_name}}
+                    </p>
+                    <p style="margin:8px 0 0 0;font-size:15px;line-height:1.5;color:#5B6374;">
+                      {{guest.affiliation}}
+                    </p>
+                    <p style="margin:24px 0 0 0;font-size:16.5px;line-height:1.6;color:#5B6374;">
+                      at the <span style="color:#0D1526;font-weight:500;">2026 Festival of Nine Lessons and Carols</span>, an evening of scripture readings and carols on the Forecourt of Parliament House.
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- Details: ruled list -->
+                <tr>
+                  <td class="pad" style="padding:20px 40px 0 40px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E3E6EB;font-size:15px;line-height:1.5;">
+                      <tr class="row">
+                        <td class="k" width="38%" style="padding:15px 0;border-bottom:1px solid #E3E6EB;color:#5B6374;vertical-align:top;">Date</td>
+                        <td class="v" style="padding:15px 0;border-bottom:1px solid #E3E6EB;font-weight:500;vertical-align:top;">Friday, 18 December 2026</td>
+                      </tr>
+                      <tr class="row">
+                        <td class="k" style="padding:15px 0;border-bottom:1px solid #E3E6EB;color:#5B6374;vertical-align:top;">Time</td>
+                        <td class="v" style="padding:15px 0;border-bottom:1px solid #E3E6EB;font-weight:500;vertical-align:top;">4:00 PM GMT</td>
+                      </tr>
+                      <tr class="row">
+                        <td class="k" style="padding:15px 0;border-bottom:1px solid #E3E6EB;color:#5B6374;vertical-align:top;">Venue</td>
+                        <td class="v" style="padding:15px 0;border-bottom:1px solid #E3E6EB;font-weight:500;vertical-align:top;">Forecourt of Parliament House, Accra</td>
+                      </tr>
+                      <tr class="row">
+                        <td class="k" style="padding:15px 0;border-bottom:1px solid #E3E6EB;color:#5B6374;vertical-align:top;">Please reply by</td>
+                        <td class="v" style="padding:15px 0;border-bottom:1px solid #E3E6EB;font-weight:500;vertical-align:top;">Thursday, 10 December 2026</td>
+                      </tr>
+                      <tr class="row">
+                        <td class="k" style="padding:15px 0;border-bottom:1px solid #E3E6EB;color:#5B6374;vertical-align:top;">Invitation reference</td>
+                        <td class="v" style="padding:15px 0;border-bottom:1px solid #E3E6EB;font-weight:500;vertical-align:top;font-family:Consolas,'Courier New',monospace;color:#2563EB;">{{invitation.reference}}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Button (bulletproof: works in Outlook too) -->
+                <tr>
+                  <td class="pad" style="padding:32px 40px 12px 40px;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td bgcolor="#2563EB" style="border-radius:10px;background:#2563EB;">
+                          <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="{{invitation.rsvp_url}}" style="height:50px;v-text-anchor:middle;width:260px;" arcsize="20%" stroke="f" fillcolor="#2563EB"><center style="color:#ffffff;font-family:Segoe UI,Arial,sans-serif;font-size:16px;font-weight:600;">Confirm your attendance</center></v:roundrect><![endif]-->
+                          <!--[if !mso]><!-->
+                          <a href="{{invitation.rsvp_url}}" style="display:inline-block;padding:15px 26px;font-size:16px;line-height:20px;font-weight:500;color:#FFFFFF;text-decoration:none;border-radius:10px;">
+                            Confirm your attendance &nbsp;&rarr;
+                          </a>
+                          <!--<![endif]-->
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="pad" style="padding:0 40px 36px 40px;">
+                    <p style="margin:0;font-size:14px;line-height:1.55;color:#5B6374;">
+                      You can accept or decline, and tell us if anyone will accompany you.
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- Soft note: link fallback -->
+                <tr>
+                  <td class="pad" style="padding:0 40px 40px 40px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="background:#F6F7F9;border-radius:14px;padding:16px 18px;font-size:13.5px;line-height:1.55;color:#5B6374;" bgcolor="#F6F7F9">
+                          If the button does not work, copy this link into your browser:<br>
+                          <a href="{{invitation.rsvp_url}}" style="color:#2563EB;text-decoration:none;word-break:break-all;">{{invitation.rsvp_url}}</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr><td height="12" style="height:12px;line-height:12px;font-size:12px;">&nbsp;</td></tr>
+
+          <!-- Footer panel -->
+          <tr>
+            <td style="background:#FFFFFF;border-radius:22px;" bgcolor="#FFFFFF">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td class="pad" style="padding:22px 40px;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="vertical-align:middle;padding-right:12px;">
+                          <img src="https://parliament-protocol-platform.pages.dev/assets/email/mark-navy.png" width="32" height="32" alt="" style="display:block;border:0;width:32px;height:32px;">
+                        </td>
+                        <td style="vertical-align:middle;font-size:13.5px;line-height:1.4;">
+                          <span style="font-weight:500;color:#0D1526;">Protocol Directorate · Parliament of Ghana</span><br>
+                          <span style="color:#5B6374;">Parliament House, Accra</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td align="center" style="padding:18px 24px 6px 24px;font-size:12px;line-height:1.5;color:#8A91A0;">
+              This invitation was sent to you personally. Please quote the reference above in any correspondence.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;

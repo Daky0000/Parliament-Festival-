@@ -6,24 +6,9 @@
   <meta name="x-apple-disable-message-reformatting">
   <meta name="color-scheme" content="light">
   <meta name="supported-color-schemes" content="light">
-  <title>Invitation · {{event.name}}</title>
-  <!--
-    Official invitation email, in the Parliament of Ghana Event & Protocol
-    Platform design system (white panels on #ECEEF1, navy band, one blue accent).
-
-    Placeholders filled by interpolateInvitationTemplate (src/lib/email/provider.ts):
-      {{guest.title}} {{guest.full_name}} {{guest.designation}} {{guest.institution_name}}
-      {{event.name}} {{event.venue_name}} {{invitation.rsvp_url}} {{invitation.reference}}
-    Header colours, from the guest's protocol rank (src/lib/email/rank-theme.ts):
-      {{guest.rank_color}} {{guest.rank_text}} {{guest.rank_text_muted}} {{guest.rank_dots}}
-      {{guest.rank_mark_url}} {{guest.rank_name}} {{guest.rank_order}}
-
-    Email-safe: tables and inline styles only, 600px wide, no SVG, no web fonts
-    required (Outfit is used where the mail app allows it; otherwise Segoe UI /
-    Helvetica). Images are served from the Cloudflare Pages site.
-  -->
+  <title>Invitation · 2026 Festival of Nine Lessons and Carols</title>
   <style>
-    @font-face{font-family:'Outfit';font-style:normal;font-weight:300 700;src:url(https://parliament-protocol-platform.pages.dev/assets/fonts/outfit-latin.woff2) format('woff2')}
+    @font-face{font-family:'Outfit';font-style:normal;font-weight:300 700;src:url(../../../cloudflare-pages-portal/assets/fonts/outfit-latin.woff2) format('woff2')}
     body{margin:0;padding:0;-webkit-text-size-adjust:100%}
     a{color:#2563EB}
     @media (max-width:620px){
@@ -51,21 +36,21 @@
           <!-- Band: who it's from. Its colour is the guest's protocol rank colour;
                text and logo switch between white and ink to stay readable. -->
           <tr>
-            <td style="background:{{guest.rank_color}};background-image:radial-gradient(circle,{{guest.rank_dots}} 1.15px,transparent 1.6px);background-size:11px 11px;border-radius:22px;" class="pad" bgcolor="{{guest.rank_color}}">
+            <td style="background:#091833;background-image:radial-gradient(circle,rgba(255,255,255,.18) 1.15px,transparent 1.6px);background-size:11px 11px;border-radius:22px;" class="pad" bgcolor="#091833">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td class="pad" style="padding:36px 40px 34px 40px;">
-                    <img src="{{guest.rank_mark_url}}" width="48" height="48" alt="" style="display:block;border:0;width:48px;height:48px;">
-                    <p style="margin:22px 0 0 0;font-size:12px;line-height:1.4;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:{{guest.rank_text_muted}};">
+                    <img src="../../../cloudflare-pages-portal/assets/email/mark-on-navy.png" width="48" height="48" alt="" style="display:block;border:0;width:48px;height:48px;">
+                    <p style="margin:22px 0 0 0;font-size:12px;line-height:1.4;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.78);">
                       Parliament of Ghana · Office of the Rt. Hon. Speaker
                     </p>
-                    <h1 class="title" style="margin:10px 0 0 0;font-size:36px;line-height:1.08;font-weight:400;letter-spacing:-.035em;color:{{guest.rank_text}};">
+                    <h1 class="title" style="margin:10px 0 0 0;font-size:36px;line-height:1.08;font-weight:400;letter-spacing:-.035em;color:#FFFFFF;">
                       Festival of Nine Lessons and Carols 2026
                     </h1>
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;">
                       <tr>
-                        <td style="border:1px solid {{guest.rank_dots}};border-radius:10px;padding:7px 12px;font-size:12px;line-height:1.4;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:{{guest.rank_text}};">
-                          Rank {{guest.rank_order}} · {{guest.rank_name}}
+                        <td style="border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:7px 12px;font-size:12px;line-height:1.4;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:#FFFFFF;">
+                          Invited guest
                         </td>
                       </tr>
                     </table>
@@ -87,10 +72,10 @@
                       The Rt. Hon. Speaker and the Leadership of Parliament request the honour of the presence of
                     </p>
                     <p class="name" style="margin:18px 0 0 0;font-size:34px;line-height:1.1;font-weight:400;letter-spacing:-.035em;color:#0D1526;">
-                      {{guest.title}} {{guest.full_name}}
+                      Mr. Kwesi Appiah
                     </p>
                     <p style="margin:8px 0 0 0;font-size:15px;line-height:1.5;color:#5B6374;">
-                      {{guest.designation}} · {{guest.institution_name}}
+                      Example Company Ltd
                     </p>
                     <p style="margin:24px 0 0 0;font-size:16.5px;line-height:1.6;color:#5B6374;">
                       at the <span style="color:#0D1526;font-weight:500;">2026 Festival of Nine Lessons and Carols</span>, an evening of scripture readings and carols on the Forecourt of Parliament House.
@@ -120,7 +105,7 @@
                       </tr>
                       <tr class="row">
                         <td class="k" style="padding:15px 0;border-bottom:1px solid #E3E6EB;color:#5B6374;vertical-align:top;">Invitation reference</td>
-                        <td class="v" style="padding:15px 0;border-bottom:1px solid #E3E6EB;font-weight:500;vertical-align:top;font-family:Consolas,'Courier New',monospace;color:#2563EB;">{{invitation.reference}}</td>
+                        <td class="v" style="padding:15px 0;border-bottom:1px solid #E3E6EB;font-weight:500;vertical-align:top;font-family:Consolas,'Courier New',monospace;color:#2563EB;">GH-GST-PREVIEW-0</td>
                       </tr>
                     </table>
                   </td>
@@ -132,9 +117,9 @@
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                       <tr>
                         <td bgcolor="#2563EB" style="border-radius:10px;background:#2563EB;">
-                          <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="{{invitation.rsvp_url}}" style="height:50px;v-text-anchor:middle;width:260px;" arcsize="20%" stroke="f" fillcolor="#2563EB"><center style="color:#ffffff;font-family:Segoe UI,Arial,sans-serif;font-size:16px;font-weight:600;">Confirm your attendance</center></v:roundrect><![endif]-->
+                          <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="https://parliament-protocol-platform.pages.dev/" style="height:50px;v-text-anchor:middle;width:260px;" arcsize="20%" stroke="f" fillcolor="#2563EB"><center style="color:#ffffff;font-family:Segoe UI,Arial,sans-serif;font-size:16px;font-weight:600;">Confirm your attendance</center></v:roundrect><![endif]-->
                           <!--[if !mso]><!-->
-                          <a href="{{invitation.rsvp_url}}" style="display:inline-block;padding:15px 26px;font-size:16px;line-height:20px;font-weight:500;color:#FFFFFF;text-decoration:none;border-radius:10px;">
+                          <a href="https://parliament-protocol-platform.pages.dev/" style="display:inline-block;padding:15px 26px;font-size:16px;line-height:20px;font-weight:500;color:#FFFFFF;text-decoration:none;border-radius:10px;">
                             Confirm your attendance &nbsp;&rarr;
                           </a>
                           <!--<![endif]-->
@@ -158,7 +143,7 @@
                       <tr>
                         <td style="background:#F6F7F9;border-radius:14px;padding:16px 18px;font-size:13.5px;line-height:1.55;color:#5B6374;" bgcolor="#F6F7F9">
                           If the button does not work, copy this link into your browser:<br>
-                          <a href="{{invitation.rsvp_url}}" style="color:#2563EB;text-decoration:none;word-break:break-all;">{{invitation.rsvp_url}}</a>
+                          <a href="https://parliament-protocol-platform.pages.dev/" style="color:#2563EB;text-decoration:none;word-break:break-all;">https://parliament-protocol-platform.pages.dev/</a>
                         </td>
                       </tr>
                     </table>
@@ -179,7 +164,7 @@
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                       <tr>
                         <td style="vertical-align:middle;padding-right:12px;">
-                          <img src="https://parliament-protocol-platform.pages.dev/assets/email/mark-navy.png" width="32" height="32" alt="" style="display:block;border:0;width:32px;height:32px;">
+                          <img src="../../../cloudflare-pages-portal/assets/email/mark-navy.png" width="32" height="32" alt="" style="display:block;border:0;width:32px;height:32px;">
                         </td>
                         <td style="vertical-align:middle;font-size:13.5px;line-height:1.4;">
                           <span style="font-weight:500;color:#0D1526;">Protocol Directorate · Parliament of Ghana</span><br>
