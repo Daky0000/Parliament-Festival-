@@ -6,7 +6,7 @@ function page(next, error = "", email = "") {
   return new Response(
     `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Super Admin sign in · Parliament of Ghana</title><meta name="robots" content="noindex">
-<link rel="stylesheet" href="/assets/brand.css">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/assets/brand.css">
 <style>
 body{min-height:100vh}
 .auth{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:var(--frame)}
