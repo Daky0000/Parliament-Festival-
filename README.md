@@ -7,6 +7,7 @@ Platform for the **2026 Festival of Nine Lessons and Carols**.
 | Path | Description |
 | --- | --- |
 | `public/index.html` | Landing page deployed to Cloudflare Pages project `parliament-protocol-platform` (https://parliament-protocol-platform.pages.dev). Recovered from production deployment `075ac30f` (2026-11-04). |
+| `public/assets/brand.css`, `public/assets/fonts/` | The design system, ported from the DakyXTech v21 brand system (DESIGN-SYSTEM.md in dakyworld): white panels on the `#ECEEF1` canvas, Outfit self-hosted, blue `#2563EB` as the only accent, navy bands with the dot field. Every page — including the `/login` screen rendered by `functions/login.js` — links this one file. |
 | `functions/api/agent.js` | Pages Function behind the floating ✨ Protocol Assistant chat (calls Claude). Needs the `ANTHROPIC_API_KEY` secret. |
 | `.github/workflows/deploy.yml` | Deploys to Cloudflare Pages on every push to `main`. |
 | `functions/login.js`, `functions/logout.js`, `functions/super-admin/`, `lib/auth.js` | Email + password gate for the Super Admin area. |

@@ -3,260 +3,219 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Parliament of Ghana - Event & Protocol Platform</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <title>Parliament of Ghana · Event &amp; Protocol Platform</title>
+  <meta name="description" content="Official State Protocol platform for the Parliament of Ghana 2026 Festival of Nine Lessons and Carols.">
+  <meta name="theme-color" content="#ECEEF1">
+  <link rel="preload" href="/assets/fonts/outfit-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/brand.css">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html { overflow-x: hidden; }
-    body {
-      background-color: #0A1830;
-      color: #FFFFFF;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      position: relative;
-      overflow-x: hidden;
+    /* hero: a white panel with the task beside a navy band (v22 frame) */
+    .hero{display:grid;grid-template-columns:1.25fr 1fr;gap:var(--frame)}
+    .hero-copy{padding:64px 56px;display:flex;flex-direction:column;gap:24px;justify-content:center}
+    .hero-copy .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+    .hero-band{padding:40px;display:flex;flex-direction:column;justify-content:space-between;gap:32px;min-height:460px}
+    .hero-band .cap{color:rgba(255,255,255,.72)}
+    .hero-band h2{font-size:clamp(26px,2.6vw,34px);color:#fff}
+    .hero-band h2 span{color:var(--blue-light)}
+    .band-tiles{display:grid;gap:10px;position:relative}
+    .band-tiles div{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:var(--r-card);padding:14px 16px;display:flex;flex-direction:column}
+    .band-tiles b{font-weight:500;font-size:15.5px}
+    .band-tiles span{font-size:14px;color:rgba(255,255,255,.72)}
+    @media (max-width:960px){
+      .hero{grid-template-columns:1fr}
+      .hero-copy{padding:44px 28px}
+      .hero-band{min-height:0;padding:32px 24px}
     }
-    .gold-glow {
-      position: absolute;
-      top: 15%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: min(500px, 100vw);
-      height: 350px;
-      background: radial-gradient(circle, rgba(198, 166, 91, 0.15) 0%, rgba(10, 24, 48, 0) 70%);
-      pointer-events: none;
-    }
-    .card {
-      background: #0D1C38;
-      border: 2px solid #C6A65B;
-      border-radius: 16px;
-      max-width: 680px;
-      width: 100%;
-      padding: 40px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-      text-align: center;
-      position: relative;
-      z-index: 10;
-    }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(16, 185, 129, 0.15);
-      border: 1px solid rgba(16, 185, 129, 0.4);
-      color: #34D399;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      padding: 6px 14px;
-      border-radius: 9999px;
-      margin-bottom: 20px;
-    }
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #34D399;
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.9); }
-    }
-    h1 {
-      font-family: 'Playfair Display', serif;
-      font-size: 32px;
-      font-weight: 700;
-      color: #FFFFFF;
-      margin-bottom: 8px;
-    }
-    .sub {
-      color: #DFCA95;
-      font-size: 14px;
-      margin-bottom: 24px;
-    }
-    .desc {
-      color: #CBD5E1;
-      font-size: 14px;
-      line-height: 1.6;
-      margin-bottom: 32px;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 32px;
-    }
-    .btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 14px 20px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-size: 13px;
-      font-weight: 700;
-      transition: all 0.2s ease;
-    }
-    .btn-primary {
-      background: #C6A65B;
-      color: #0A1830;
-      grid-column: span 2;
-      font-size: 15px;
-    }
-    .btn-primary:hover {
-      background: #DFCA95;
-      transform: translateY(-1px);
-    }
-    .btn-secondary {
-      background: #102343;
-      color: #DFCA95;
-      border: 1px solid rgba(198, 166, 91, 0.4);
-    }
-    .btn-secondary:hover {
-      background: rgba(198, 166, 91, 0.15);
-      color: #FFFFFF;
-      border-color: #C6A65B;
-    }
-    .meta-box {
-      background: #070D18;
-      border: 1px solid rgba(198, 166, 91, 0.2);
-      border-radius: 8px;
-      padding: 16px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      color: #DFCA95;
-      text-align: left;
-    }
-    .meta-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 4px 0;
-      border-bottom: 1px solid rgba(198, 166, 91, 0.1);
-    }
-    .meta-row:last-child { border-bottom: none; }
-    .meta-label { color: rgba(223, 202, 149, 0.6); }
-    .meta-value { color: #FFFFFF; font-weight: 600; }
+    .sec-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:40px}
+    .sec-head > div{display:flex;flex-direction:column;gap:14px;max-width:640px}
+    .cards{grid-template-columns:repeat(4,1fr)}
+    .card.featured{background:var(--navy);color:#fff}
+    .card.featured p{color:rgba(255,255,255,.72)}
+    .card.featured .icon-sq{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);color:var(--blue-light)}
+    .card.featured .link{color:var(--blue-light)}
+    a.card.featured:hover{background:#0E2246;border-color:transparent}
+    @media (max-width:1040px){.cards{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:560px){.cards{grid-template-columns:1fr}}
+    .infra{display:grid;grid-template-columns:1fr 1.4fr;gap:56px;align-items:start}
+    .infra > div:first-child{display:flex;flex-direction:column;gap:14px}
+    @media (max-width:860px){.infra{grid-template-columns:1fr;gap:32px}}
+    .assist{padding:64px 0}
+    .assist .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:28px}
+    .assist .wrap > div{display:flex;flex-direction:column;gap:14px;max-width:620px}
+    .assist .cap{color:rgba(255,255,255,.72)}
+    .assist h2 span{color:var(--blue-light)}
+    .assist p{color:rgba(255,255,255,.72)}
+    @media (max-width:640px){.assist .dotfield{display:none}}
 
-    /* ---- Floating AI agent ---- */
-    .agent-fab {
-      position: fixed; right: 20px; bottom: 20px; z-index: 50;
-      width: 60px; height: 60px; border-radius: 50%; border: 1px solid rgba(198,166,91,.6);
-      background: radial-gradient(circle at 30% 30%, #DFCA95, #C6A65B 55%, #9C7F3A);
-      color: #0A1830; cursor: pointer; display: grid; place-items: center;
-      box-shadow: 0 10px 30px rgba(0,0,0,.45), 0 0 0 0 rgba(198,166,91,.5);
-      animation: agent-pulse 2.6s ease-out infinite; transition: transform .2s ease;
-    }
-    .agent-fab:hover { transform: scale(1.06); }
-    .agent-fab svg { width: 28px; height: 28px; }
-    .agent-fab[aria-expanded="true"] { animation: none; }
-    @keyframes agent-pulse { 70% { box-shadow: 0 10px 30px rgba(0,0,0,.45), 0 0 0 14px rgba(198,166,91,0); } 100% { box-shadow: 0 10px 30px rgba(0,0,0,.45), 0 0 0 0 rgba(198,166,91,0); } }
-    .agent-panel {
-      position: fixed; right: 20px; bottom: 92px; z-index: 50;
-      width: min(380px, calc(100vw - 32px)); height: min(560px, calc(100vh - 120px));
-      background: #0D1F3D; border: 1px solid rgba(198,166,91,.35); border-radius: 16px;
-      box-shadow: 0 24px 60px rgba(0,0,0,.55); display: flex; flex-direction: column; overflow: hidden;
-      opacity: 0; transform: translateY(16px) scale(.98); pointer-events: none; transition: opacity .2s ease, transform .2s ease;
-    }
-    .agent-panel.open { opacity: 1; transform: none; pointer-events: auto; }
-    .agent-head { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid rgba(198,166,91,.2); background: #0A1830; }
-    .agent-head .spark { color: #C6A65B; display: grid; }
-    .agent-head .spark svg { width: 20px; height: 20px; }
-    .agent-title { font-weight: 700; font-size: 14px; }
-    .agent-subtitle { font-size: 11px; color: rgba(223,202,149,.7); }
-    .agent-head .grow { flex: 1; text-align: left; }
-    .agent-icon-btn { background: none; border: 0; color: #DFCA95; cursor: pointer; font-size: 18px; padding: 4px 6px; border-radius: 6px; text-decoration: none; }
-    .agent-icon-btn:hover { background: rgba(198,166,91,.15); }
-    .agent-log { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; text-align: left; }
-    .msg { max-width: 85%; padding: 10px 12px; border-radius: 12px; font-size: 13.5px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
-    .msg.user { align-self: flex-end; background: #C6A65B; color: #0A1830; border-bottom-right-radius: 4px; }
-    .msg.bot { align-self: flex-start; background: #132B52; color: #fff; border-bottom-left-radius: 4px; }
-    .msg.err { align-self: flex-start; background: rgba(200,60,60,.18); color: #FFB4B4; }
-    .msg.typing { color: rgba(255,255,255,.6); font-style: italic; }
-    .agent-form { display: flex; gap: 8px; padding: 12px; border-top: 1px solid rgba(198,166,91,.2); background: #0A1830; }
-    .agent-form textarea { flex: 1; resize: none; height: 42px; max-height: 120px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(198,166,91,.3); background: #070D18; color: #fff; font: inherit; font-size: 14px; }
-    .agent-form textarea:focus { outline: none; border-color: #C6A65B; }
-    .agent-form button { padding: 0 16px; border-radius: 10px; border: 0; background: #C6A65B; color: #0A1830; font-weight: 700; cursor: pointer; }
-    .agent-form button:disabled { opacity: .5; cursor: default; }
-    @media (max-width: 480px) { .agent-panel { right: 16px; left: 16px; width: auto; bottom: 88px; } .agent-fab { right: 16px; bottom: 16px; } }
+    /* ---- Floating assistant ---- */
+    .agent-fab{position:fixed;right:20px;bottom:20px;z-index:50;width:56px;height:56px;border-radius:50%;border:0;
+      background:var(--blue);color:#fff;cursor:pointer;display:grid;place-items:center;box-shadow:var(--shadow-float);transition:background .2s}
+    .agent-fab:hover{background:var(--blue-d)}
+    .agent-fab svg{width:24px;height:24px}
+    .agent-panel{position:fixed;right:20px;bottom:88px;z-index:50;width:min(390px,calc(100vw - 32px));height:min(560px,calc(100vh - 120px));
+      background:var(--white);border:1px solid var(--line);border-radius:var(--r-panel);box-shadow:0 30px 60px -24px rgba(13,21,38,.45);
+      display:flex;flex-direction:column;overflow:hidden;opacity:0;transform:translateY(16px);pointer-events:none;transition:opacity .25s var(--ease),transform .25s var(--ease)}
+    .agent-panel.open{opacity:1;transform:none;pointer-events:auto}
+    .agent-head{position:relative;display:flex;align-items:center;gap:12px;padding:16px 16px 16px 18px;background:var(--navy);color:#fff;overflow:hidden}
+    .agent-head .dotfield{color:rgba(130,165,255,.22)}
+    .agent-head > *{position:relative}
+    .agent-head .spark{width:36px;height:36px;border-radius:var(--r-ctl);background:rgba(255,255,255,.08);display:grid;place-items:center;color:var(--blue-light)}
+    .agent-head .spark svg{width:18px;height:18px}
+    .agent-head .grow{flex:1;line-height:1.3}
+    .agent-title{font-weight:500;font-size:15px}
+    .agent-subtitle{font-size:12.5px;color:rgba(255,255,255,.72)}
+    .agent-icon-btn{background:none;border:0;color:rgba(255,255,255,.8);cursor:pointer;width:32px;height:32px;border-radius:var(--r-ctl);display:grid;place-items:center;text-decoration:none;font-size:18px}
+    .agent-icon-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+    .agent-log{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:10px;background:var(--soft)}
+    .msg{max-width:85%;padding:10px 13px;border-radius:var(--r-card);font-size:14.5px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+    .msg.user{align-self:flex-end;background:var(--blue);color:#fff}
+    .msg.bot{align-self:flex-start;background:var(--white);border:1px solid var(--line)}
+    .msg.err{align-self:flex-start;background:var(--danger-bg);color:var(--danger)}
+    .msg.typing{color:var(--muted)}
+    .agent-form{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+    .agent-form textarea{flex:1;resize:none;height:44px;max-height:120px;padding:11px 13px;border-radius:var(--r-ctl);border:1px solid var(--line-2);font:inherit;font-size:15px;color:var(--ink)}
+    .agent-form textarea::placeholder{color:var(--faint)}
+    .agent-form textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(37,99,235,.18)}
+    @media (max-width:480px){.agent-panel{right:12px;left:12px;width:auto;bottom:84px}.agent-fab{right:16px;bottom:16px}}
   </style>
 </head>
 <body>
-  <div class="gold-glow"></div>
-  <div class="card">
-    <div class="badge">
-      <span class="dot"></span>
-      Cloudflare Global Edge Active
-    </div>
-    <h1>Parliament of Ghana</h1>
-    <div class="sub">Event & Protocol Platform &bull; Version 3.0</div>
-    <p class="desc">
-      Official State Protocol platform for the <strong>2026 Festival of Nine Lessons and Carols</strong>.
-      Secured by Cloudflare Edge with Full (Strict) SSL, WAF protection, and real-time integration routing.
-    </p>
+  <a class="skip" href="#main">Skip to content</a>
 
-    <div class="grid">
-      <a href="https://concentration-fantastic-mods-usd.trycloudflare.com/" class="btn btn-primary">
-        &#127963; Launch Executive Protocol Platform &rarr;
-      </a>
-      <a href="/super-admin" class="btn btn-secondary">
-        &#128737; Super Admin Console
-      </a>
-      <a href="https://concentration-fantastic-mods-usd.trycloudflare.com/usher" class="btn btn-secondary">
-        &#128241; Mobile Usher Scanner
-      </a>
-      <a href="https://concentration-fantastic-mods-usd.trycloudflare.com/seating" class="btn btn-secondary">
-        &#128186; VIP Seating Engine
-      </a>
-    </div>
-
-    <div class="meta-box">
-      <div class="meta-row">
-        <span class="meta-label">Cloudflare Edge:</span>
-        <span class="meta-value">TLS 1.3 &bull; DDoS Mitigation &bull; WAF Active</span>
-      </div>
-      <div class="meta-row">
-        <span class="meta-label">Email Gateway:</span>
-        <span class="meta-value">Resend Production (marketing.dakyworld.com)</span>
-      </div>
-      <div class="meta-row">
-        <span class="meta-label">SMS Gateway:</span>
-        <span class="meta-value">Vynfy SMS (Sender ID: PARLIAMENT)</span>
-      </div>
-      <div class="meta-row">
-        <span class="meta-label">Object Storage:</span>
-        <span class="meta-value">Cloudflare R2 (dakyxtech-private)</span>
-      </div>
-      <div class="meta-row">
-        <span class="meta-label">Live Tunnel Endpoint:</span>
-        <span class="meta-value" style="color: #C6A65B;">concentration-fantastic-mods-usd.trycloudflare.com</span>
-      </div>
-    </div>
+  <div class="announce">
+    <b>Festival of Nine Lessons and Carols 2026.</b> The protocol platform is live.
+    <a href="https://concentration-fantastic-mods-usd.trycloudflare.com/">Launch <span class="arr">&rarr;</span></a>
   </div>
 
-  <button class="agent-fab" id="agentFab" aria-label="Open Protocol AI assistant" aria-expanded="false" aria-controls="agentPanel"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9z"/><path d="M19 14l.9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9z" opacity=".75"/></svg></button>
-  <section class="agent-panel" id="agentPanel" role="dialog" aria-label="Protocol AI assistant" aria-hidden="true">
+  <header class="panel header">
+    <a class="brand" href="/">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 4l9 5.5"/><path d="M4.5 10h15"/><path d="M6.5 10v7.5M10 10v7.5M14 10v7.5M17.5 10v7.5"/><path d="M4 20h16"/></svg>
+      </span>
+      <span class="brand-name"><b>Parliament of Ghana</b><span>Event &amp; Protocol Platform · v3.0</span></span>
+    </a>
+    <nav class="nav" aria-label="Primary">
+      <a href="#platform">Platform</a>
+      <a href="#infrastructure">Infrastructure</a>
+      <a href="#assistant">Assistant</a>
+    </nav>
+    <div class="header-cta">
+      <a class="text" href="/super-admin">Sign in</a>
+      <a class="btn btn-b" href="https://concentration-fantastic-mods-usd.trycloudflare.com/">Launch platform <span class="arr">&rarr;</span></a>
+    </div>
+  </header>
+
+  <main id="main" style="display:contents">
+    <section class="hero">
+      <div class="panel hero-copy">
+        <span class="chip"><span class="pip"></span>Cloudflare edge active</span>
+        <h1>State protocol for the Festival. <span class="muted">Run from one place.</span></h1>
+        <p class="lead">The official protocol platform for the <b style="color:var(--ink);font-weight:500">2026 Festival of Nine Lessons and Carols</b> at the Parliament of Ghana — guest lists, seating and ushering, secured at the edge with Full (Strict) SSL and WAF protection.</p>
+        <div class="actions">
+          <a class="btn btn-b" href="https://concentration-fantastic-mods-usd.trycloudflare.com/">Launch Executive Protocol Platform <span class="arr">&rarr;</span></a>
+          <a class="btn btn-o" href="/super-admin">Super Admin console</a>
+        </div>
+      </div>
+      <div class="band hero-band">
+        <div class="dotfield" aria-hidden="true"></div>
+        <span class="cap" style="position:relative">Parliament House · Accra</span>
+        <h2 style="position:relative">Every guest received. <span>Every seat accounted for.</span></h2>
+        <div class="band-tiles">
+          <div><b>Executive protocol</b><span>Invitations, arrivals and the order of precedence.</span></div>
+          <div><b>VIP seating</b><span>Assigned seats that follow the guest list as it changes.</span></div>
+          <div><b>Usher scanner</b><span>Guests checked in at the door from a phone.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel section" id="platform">
+      <div class="wrap">
+        <div class="sec-head rise">
+          <div>
+            <span class="cap">The platform</span>
+            <h2>Four tools. <span class="muted">One guest list.</span></h2>
+          </div>
+          <p class="lead" style="max-width:420px">Each part of the event works from the same records, so a change at the desk reaches the door and the hall.</p>
+        </div>
+        <div class="grid cards rise">
+          <a class="card featured" href="https://concentration-fantastic-mods-usd.trycloudflare.com/">
+            <span class="icon-sq" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 4l9 5.5"/><path d="M6.5 10v7.5M12 10v7.5M17.5 10v7.5"/><path d="M4 20h16"/></svg></span>
+            <span class="card-title">Executive protocol</span>
+            <p>The main platform: invitations, accreditation and the running order for the evening.</p>
+            <span class="link">Launch <span class="arr">&rarr;</span></span>
+          </a>
+          <a class="card" href="/super-admin">
+            <span class="icon-sq" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z"/><path d="m9 12 2 2 4-4"/></svg></span>
+            <span class="card-title">Super Admin</span>
+            <p>Users, providers and settings. Signed in with email and password.</p>
+            <span class="link">Sign in <span class="arr">&rarr;</span></span>
+          </a>
+          <a class="card" href="https://concentration-fantastic-mods-usd.trycloudflare.com/usher">
+            <span class="icon-sq" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M10 6h4M11 18h2"/></svg></span>
+            <span class="card-title">Usher scanner</span>
+            <p>Check guests in at the door and direct them to their seats from a phone.</p>
+            <span class="link">Open scanner <span class="arr">&rarr;</span></span>
+          </a>
+          <a class="card" href="https://concentration-fantastic-mods-usd.trycloudflare.com/seating">
+            <span class="icon-sq" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 11V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v5"/><path d="M4 11h16v4H4z"/><path d="M6 15v5M18 15v5"/></svg></span>
+            <span class="card-title">VIP seating</span>
+            <p>The seating plan for dignitaries, kept in step with the guest list.</p>
+            <span class="link">Open seating <span class="arr">&rarr;</span></span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel soft section" id="infrastructure">
+      <div class="wrap infra">
+        <div class="rise">
+          <span class="cap">Infrastructure</span>
+          <h2>Secured at the edge. <span class="muted">Delivered by gateway.</span></h2>
+          <p class="lead">Where each part of the platform runs, and the services it sends through.</p>
+        </div>
+        <ul class="ruled rise">
+          <li><span>Cloudflare edge</span><span>TLS 1.3 · DDoS mitigation · WAF active</span></li>
+          <li><span>Email gateway</span><span>Resend production (marketing.dakyworld.com)</span></li>
+          <li><span>SMS gateway</span><span>Vynfy SMS (Sender ID: PARLIAMENT)</span></li>
+          <li><span>Object storage</span><span>Cloudflare R2 (dakyxtech-private)</span></li>
+          <li><span>Live tunnel endpoint</span><span style="color:var(--blue)">concentration-fantastic-mods-usd.trycloudflare.com</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="band assist" id="assistant">
+      <div class="dotfield" aria-hidden="true"></div>
+      <div class="wrap">
+        <div>
+          <span class="cap">Protocol Assistant</span>
+          <h2>Ask about the evening. <span>Get an answer straight away.</span></h2>
+          <p>Seating, ushering and protocol arrangements for the Festival — the assistant answers from the bottom-right of every page.</p>
+        </div>
+        <button class="btn btn-w" type="button" id="assistOpen">Ask the assistant <span class="arr">&rarr;</span></button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="panel foot">
+    <span>© 2026 Parliament of Ghana · Festival of Nine Lessons and Carols</span>
+    <span><a href="/super-admin">Super Admin</a></span>
+  </footer>
+
+  <button class="agent-fab" id="agentFab" aria-label="Open Protocol Assistant" aria-expanded="false" aria-controls="agentPanel"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9z"/><path d="M19 14l.9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9z" opacity=".75"/></svg></button>
+  <section class="agent-panel" id="agentPanel" role="dialog" aria-label="Protocol Assistant" aria-hidden="true">
     <div class="agent-head">
+      <div class="dotfield" aria-hidden="true"></div>
       <span class="spark"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9z"/><path d="M19 14l.9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9z" opacity=".75"/></svg></span>
       <div class="grow"><div class="agent-title">Protocol Assistant</div><div class="agent-subtitle">Festival of Nine Lessons &amp; Carols 2026</div></div>
-      <a class="agent-icon-btn" href="/super-admin/ai" title="AI provider routing settings">&#9881;</a>
+      <a class="agent-icon-btn" href="/super-admin/ai" title="AI provider routing settings" aria-label="AI provider settings">&#9881;</a>
       <button class="agent-icon-btn" id="agentClose" aria-label="Close assistant">&times;</button>
     </div>
     <div class="agent-log" id="agentLog" aria-live="polite">
       <div class="msg bot">Hello! I'm the Protocol Assistant. Ask me about the event, seating, ushering or protocol arrangements.</div>
     </div>
     <form class="agent-form" id="agentForm">
-      <textarea id="agentInput" placeholder="Ask the assistant..." rows="1" aria-label="Message"></textarea>
-      <button type="submit" id="agentSend">Send</button>
+      <textarea id="agentInput" placeholder="Ask the assistant…" rows="1" aria-label="Message"></textarea>
+      <button class="btn btn-b" type="submit" id="agentSend">Send</button>
     </form>
   </section>
   <script>
@@ -272,6 +231,7 @@
       if (open) setTimeout(function () { input.focus(); }, 150);
     }
     fab.addEventListener('click', function () { setOpen(!panel.classList.contains('open')); });
+    document.getElementById('assistOpen').addEventListener('click', function () { setOpen(true); });
     document.getElementById('agentClose').addEventListener('click', function () { setOpen(false); fab.focus(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && panel.classList.contains('open')) setOpen(false); });
     function add(cls, text) {
@@ -285,7 +245,7 @@
       e.preventDefault();
       var text = input.value.trim(); if (!text || send.disabled) return;
       input.value = ''; add('user', text); history.push({ role: 'user', content: text });
-      send.disabled = true; var t = add('bot typing', 'Thinking...');
+      send.disabled = true; var t = add('bot typing', 'Thinking…');
       try {
         var r = await fetch('/api/agent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: history }) });
         var data = await r.json().catch(function () { return {}; });
@@ -295,6 +255,15 @@
       } catch (err) { t.remove(); history.pop(); add('err', 'Network error - please try again.'); }
       send.disabled = false; input.focus();
     });
+
+    // §8 motion: a 16px rise as a section enters
+    var els = document.querySelectorAll('.rise');
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
+      }, { rootMargin: '0px 0px -8% 0px' });
+      els.forEach(function (el) { io.observe(el); });
+    } else { els.forEach(function (el) { el.classList.add('in'); }); }
   })();
   </script>
 </body>

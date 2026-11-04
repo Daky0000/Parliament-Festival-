@@ -5,30 +5,51 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&
 function page(next, error = "", email = "") {
   return new Response(
     `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Super Admin Sign In</title><meta name="robots" content="noindex">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<title>Super Admin sign in · Parliament of Ghana</title><meta name="robots" content="noindex">
+<link rel="stylesheet" href="/assets/brand.css">
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:#0A1830;color:#fff;font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;display:grid;place-items:center;padding:16px}
-.card{background:#0D1C38;border:2px solid #C6A65B;border-radius:16px;width:100%;max-width:400px;padding:36px 28px;box-shadow:0 25px 50px -12px rgba(0,0,0,.7)}
-h1{font-family:'Playfair Display',serif;font-size:26px;text-align:center}
-.sub{color:#DFCA95;text-align:center;font-size:13px;margin:6px 0 26px}
-label{display:block;font-size:13px;font-weight:600;color:#DFCA95;margin:14px 0 6px}
-input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(198,166,91,.35);background:#070D18;color:#fff;font:inherit;font-size:15px}
-input:focus{outline:none;border-color:#C6A65B}
-button{width:100%;margin-top:24px;padding:13px;border:0;border-radius:10px;background:#C6A65B;color:#0A1830;font:inherit;font-weight:700;font-size:15px;cursor:pointer}
-button:hover{background:#DFCA95}
-.err{background:rgba(200,60,60,.18);color:#FFB4B4;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:6px}
-.back{display:block;text-align:center;margin-top:18px;color:rgba(223,202,149,.75);font-size:13px;text-decoration:none}
-</style></head><body><main class="card">
-<h1>Super Admin</h1><div class="sub">Parliament of Ghana &bull; Protocol Platform</div>
-${error ? `<div class="err" role="alert">${esc(error)}</div>` : ""}
+body{min-height:100vh}
+.auth{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:var(--frame)}
+.auth-intro{padding:40px;display:flex;flex-direction:column;justify-content:space-between;gap:40px}
+.auth-intro > *{position:relative}
+.auth-intro .cap{color:rgba(255,255,255,.72)}
+.auth-intro h2 span{color:var(--blue-light)}
+.auth-intro p{color:rgba(255,255,255,.72);max-width:44ch;margin-top:16px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:28px}
+.tiles div{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:var(--r-card);padding:14px;display:flex;flex-direction:column;gap:2px}
+.tiles b{font-weight:500;font-size:15px}.tiles span{font-size:13.5px;color:rgba(255,255,255,.72)}
+.auth-panel{display:flex;flex-direction:column;justify-content:space-between;padding:32px}
+.auth-form{width:100%;max-width:400px;margin:auto;padding:40px 0}
+.auth-form .brand{margin-bottom:28px}
+.auth-form h1{font-size:40px;letter-spacing:-.04em}
+.auth-form .lead{font-size:16px;margin:8px 0 12px}
+.auth-form .notice{margin-top:16px}
+.auth-form .btn{width:100%;margin-top:24px;height:48px}
+.auth-form .back{display:inline-block;margin-top:18px;font-size:14.5px;color:var(--muted);text-decoration:none}
+.auth-form .back:hover{color:var(--ink)}
+.auth-foot{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;color:var(--muted)}
+@media (max-width:900px){.auth{grid-template-columns:1fr}.auth-intro{display:none}.auth-panel{padding:24px}}
+</style></head><body><main class="auth">
+<section class="band auth-intro"><div class="dotfield" aria-hidden="true"></div>
+<span class="cap">Parliament of Ghana · Protocol Platform</span>
+<div><h2>The Festival, behind the scenes. <span>For administrators only.</span></h2>
+<p>Manage users, providers and settings for the 2026 Festival of Nine Lessons and Carols.</p>
+<div class="tiles"><div><b>Guests</b><span>Invitations and accreditation</span></div><div><b>Seating</b><span>The VIP plan</span></div><div><b>Gateways</b><span>Email, SMS and AI</span></div></div></div>
+</section>
+<section class="panel auth-panel"><div class="auth-form">
+<a class="brand" href="/"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 4l9 5.5"/><path d="M4.5 10h15"/><path d="M6.5 10v7.5M10 10v7.5M14 10v7.5M17.5 10v7.5"/><path d="M4 20h16"/></svg></span><span class="brand-name"><b>Parliament of Ghana</b><span>Event &amp; Protocol Platform</span></span></a>
+<span class="chip">Super Admin</span>
+<h1 style="margin-top:16px">Welcome back</h1>
+<p class="lead">Sign in to the Super Admin console.</p>
+${error ? `<div class="notice danger" role="alert">${esc(error)}</div>` : ""}
 <form method="POST" action="/login">
 <input type="hidden" name="next" value="${esc(next)}">
-<label for="email">Email</label><input id="email" name="email" type="email" autocomplete="username" required value="${esc(email)}" autofocus>
-<label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required>
-<button type="submit">Sign in</button></form>
-<a class="back" href="/">&larr; Back to platform</a></main></body></html>`,
+<label class="field"><span>Email</span><input class="input" id="email" name="email" type="email" autocomplete="username" required value="${esc(email)}" autofocus></label>
+<label class="field"><span>Password</span><input class="input" id="password" name="password" type="password" autocomplete="current-password" required></label>
+<button class="btn btn-b" type="submit">Sign in <span class="arr">&rarr;</span></button></form>
+<a class="back" href="/">&larr; Back to the platform</a></div>
+<div class="auth-foot"><span>&copy; 2026 Parliament of Ghana</span><span>Sessions last 8 hours</span></div>
+</section></main></body></html>`,
     {
       status: error ? 401 : 200,
       headers: {
