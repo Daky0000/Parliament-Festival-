@@ -1,12 +1,16 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Parliamentary Event & Protocol Management Platform",
+  title: "Parliament of Ghana · Event & Protocol Platform",
   description: "Official Protocol and Event Operations Platform - Parliament of Ghana",
   icons: {
-    icon: "/favicon.ico",
+    icon: { url: "/favicon.svg", type: "image/svg+xml" },
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#ECEEF1",
 };
 
 export default function RootLayout({
@@ -16,10 +20,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-[#F7F5F0] text-[#202A38] antialiased">
-        {children}
-      </body>
+      <head>
+        <link rel="preload" href="/fonts/outfit-latin.woff2" as="font" type="font/woff2" crossOrigin="" />
+      </head>
+      <body className="min-h-screen bg-brand-canvas text-brand-ink antialiased">{children}</body>
     </html>
   );
 }
-

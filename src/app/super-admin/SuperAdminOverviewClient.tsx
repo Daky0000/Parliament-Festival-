@@ -108,7 +108,7 @@ export function SuperAdminOverviewClient({
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="bg-[#0A1830] border-2 border-[#C6A65B] rounded-xl p-6 shadow-xl relative overflow-hidden">
+      <div className="bg-[#091833] border-2 border-[#8FB2FF] rounded-xl p-6 shadow-float relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -117,22 +117,22 @@ export function SuperAdminOverviewClient({
                 Control Plane &bull; Master Telemetry & API Key Vault
               </span>
             </div>
-            <h1 className="font-editorial text-2xl font-bold text-white">
+            <h1 className="font-editorial text-2xl font-medium text-white">
               Platform Integration & Provider Management
             </h1>
-            <p className="text-xs text-[#DFCA95]/80 mt-1 max-w-2xl">
+            <p className="text-xs text-white/60 mt-1 max-w-2xl">
               Centralized credential management, live failover routing, and telemetry for OpenAI, Anthropic Claude, Resend, Vynfy SMS, and Cloudflare.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="bg-[#102343] border border-[#C6A65B]/30 rounded-lg p-3 text-center min-w-[120px]">
-              <div className="text-[10px] text-[#DFCA95]/70 uppercase">SMS Dispatches</div>
-              <div className="text-lg font-bold text-[#C6A65B]">{metrics.totalSmsCount}</div>
+            <div className="bg-[#091833] border border-[#8FB2FF]/30 rounded-lg p-3 text-center min-w-[120px]">
+              <div className="text-[10px] text-white/55 uppercase">SMS Dispatches</div>
+              <div className="text-lg font-bold text-[#8FB2FF]">{metrics.totalSmsCount}</div>
             </div>
-            <div className="bg-[#102343] border border-[#C6A65B]/30 rounded-lg p-3 text-center min-w-[120px]">
-              <div className="text-[10px] text-[#DFCA95]/70 uppercase">AI Tasks Routed</div>
-              <div className="text-lg font-bold text-[#C6A65B]">{metrics.totalAiRequests}</div>
+            <div className="bg-[#091833] border border-[#8FB2FF]/30 rounded-lg p-3 text-center min-w-[120px]">
+              <div className="text-[10px] text-white/55 uppercase">AI Tasks Routed</div>
+              <div className="text-lg font-bold text-[#8FB2FF]">{metrics.totalAiRequests}</div>
             </div>
           </div>
         </div>
@@ -154,9 +154,9 @@ export function SuperAdminOverviewClient({
           return (
             <div
               key={item.id}
-              className={`bg-[#0D1C38] border rounded-xl p-5 shadow-lg flex flex-col justify-between space-y-4 transition-all ${
+              className={`bg-[#091833] border rounded-xl p-5 shadow-float flex flex-col justify-between space-y-4 transition-all ${
                 item.isEnabled
-                  ? "border-[#C6A65B]/40 hover:border-[#C6A65B]"
+                  ? "border-[#8FB2FF]/40 hover:border-[#8FB2FF]"
                   : "border-rose-900/60 opacity-75"
               }`}
             >
@@ -164,13 +164,13 @@ export function SuperAdminOverviewClient({
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     {item.providerKey === "openai" || item.providerKey === "anthropic" ? (
-                      <Cpu className="w-5 h-5 text-[#C6A65B]" />
+                      <Cpu className="w-5 h-5 text-[#8FB2FF]" />
                     ) : item.providerKey === "resend" ? (
-                      <Mail className="w-5 h-5 text-[#C6A65B]" />
+                      <Mail className="w-5 h-5 text-[#8FB2FF]" />
                     ) : item.providerKey === "vynfy" ? (
-                      <MessageSquare className="w-5 h-5 text-[#C6A65B]" />
+                      <MessageSquare className="w-5 h-5 text-[#8FB2FF]" />
                     ) : (
-                      <Cloud className="w-5 h-5 text-[#C6A65B]" />
+                      <Cloud className="w-5 h-5 text-[#8FB2FF]" />
                     )}
                     <h3 className="font-bold text-sm text-white">{item.displayName}</h3>
                   </div>
@@ -187,25 +187,25 @@ export function SuperAdminOverviewClient({
                 </div>
 
                 {/* Secret Reference Box (Masked) */}
-                <div className="bg-[#070D18] border border-[#C6A65B]/20 rounded p-2.5 space-y-1 text-xs font-mono">
-                  <div className="flex items-center justify-between text-[10px] text-[#DFCA95]/60 uppercase">
+                <div className="bg-[#0D1526] border border-[#8FB2FF]/20 rounded p-2.5 space-y-1 text-xs font-mono">
+                  <div className="flex items-center justify-between text-[10px] text-white/45 uppercase">
                     <span>Masked Secret Hint</span>
                     {isKeyPending ? (
-                      <span className="text-amber-400 font-bold">Key Needed</span>
+                      <span className="text-[#8FB2FF] font-bold">Key Needed</span>
                     ) : (
                       <span className="text-emerald-400 font-bold">Configured</span>
                     )}
                   </div>
-                  <div className="text-[#C6A65B] font-bold font-mono">
+                  <div className="text-[#8FB2FF] font-bold font-mono">
                     {cred?.maskedHint || "••••••••••••••••"}
                   </div>
-                  <div className="text-[9px] text-[#DFCA95]/40 truncate">
+                  <div className="text-[9px] text-white/40 truncate">
                     Ref: {cred?.secretReference || "vault://default"}
                   </div>
                 </div>
 
                 {/* Provider Metadata Snippet */}
-                <div className="mt-3 text-[11px] text-[#DFCA95]/80 space-y-1">
+                <div className="mt-3 text-[11px] text-white/60 space-y-1">
                   {item.providerKey === "openai" && (
                     <div>Role: <strong className="text-white">Primary AI Engine</strong> (gpt-4o)</div>
                   )}
@@ -246,12 +246,12 @@ export function SuperAdminOverviewClient({
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-3 border-t border-[#C6A65B]/20 flex items-center justify-between gap-1.5 flex-wrap">
+              <div className="pt-3 border-t border-[#8FB2FF]/20 flex items-center justify-between gap-1.5 flex-wrap">
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => handleTestConnection(item.providerKey)}
                     disabled={isTesting}
-                    className="bg-[#102343] hover:bg-[#C6A65B] hover:text-[#0A1830] text-[#DFCA95] border border-[#C6A65B]/30 text-xs font-semibold px-2.5 py-1.5 rounded transition-colors flex items-center gap-1"
+                    className="bg-[#091833] hover:bg-[#8FB2FF] hover:text-[#091833] text-white/75 border border-[#8FB2FF]/30 text-xs font-semibold px-2.5 py-1.5 rounded transition-colors flex items-center gap-1"
                   >
                     {isTesting ? (
                       <RefreshCw className="w-3 h-3 animate-spin" />
@@ -263,7 +263,7 @@ export function SuperAdminOverviewClient({
 
                   <button
                     onClick={() => setEditingItem(item)}
-                    className="bg-[#C6A65B] hover:bg-[#DFCA95] text-[#0A1830] text-xs font-bold px-2.5 py-1.5 rounded transition-colors flex items-center gap-1 shadow"
+                    className="bg-[#8FB2FF] hover:bg-[#8FB2FF] text-[#091833] text-xs font-bold px-2.5 py-1.5 rounded transition-colors flex items-center gap-1 "
                   >
                     <Key className="w-3 h-3" />
                     <span>{isKeyPending ? "Add Key" : "Edit Key"}</span>
@@ -288,22 +288,22 @@ export function SuperAdminOverviewClient({
       </div>
 
       {/* Integration Test Logs Table */}
-      <div className="bg-[#0D1C38] border border-[#C6A65B]/30 rounded-xl overflow-hidden shadow-lg">
-        <div className="p-4 border-b border-[#C6A65B]/20 flex items-center justify-between">
+      <div className="bg-[#091833] border border-[#8FB2FF]/30 rounded-xl overflow-hidden shadow-float">
+        <div className="p-4 border-b border-[#8FB2FF]/20 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Terminal className="w-4 h-4 text-[#C6A65B]" />
-            <h3 className="font-editorial text-sm font-bold text-white uppercase tracking-wider">
+            <Terminal className="w-4 h-4 text-[#8FB2FF]" />
+            <h3 className="font-editorial text-sm font-medium text-white uppercase tracking-wider">
               Recent Provider Health Verification Checks
             </h3>
           </div>
-          <span className="text-[10px] text-[#DFCA95]/60 font-mono">
+          <span className="text-[10px] text-white/45 font-mono">
             Live Verification Stream
           </span>
         </div>
 
         <div className="table-responsive-container">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#070D18] text-[#C6A65B]">
+            <thead className="bg-[#0D1526] text-[#8FB2FF]">
               <tr>
                 <th className="p-3">Integration</th>
                 <th className="p-3">Test Type</th>
@@ -314,9 +314,9 @@ export function SuperAdminOverviewClient({
                 <th className="p-3">Timestamp</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#C6A65B]/10 text-[#DFCA95]">
+            <tbody className="divide-y divide-[#8FB2FF]/10 text-white/75">
               {testLogs.map((log) => (
-                <tr key={log.id} className="hover:bg-[#102343]/50">
+                <tr key={log.id} className="hover:bg-[#091833]/50">
                   <td className="p-3 font-bold text-white">{log.integration?.displayName}</td>
                   <td className="p-3 font-mono text-[11px]">{log.testType}</td>
                   <td className="p-3">
@@ -331,11 +331,11 @@ export function SuperAdminOverviewClient({
                     </span>
                   </td>
                   <td className="p-3 font-mono text-emerald-400">{log.latencyMs}ms</td>
-                  <td className="p-3 text-[11px] text-[#DFCA95]/80 max-w-xs truncate">
+                  <td className="p-3 text-[11px] text-white/60 max-w-xs truncate">
                     {log.sanitisedError || "Verified operational."}
                   </td>
-                  <td className="p-3 text-[#DFCA95]/70">{log.testedBy || "Super Admin"}</td>
-                  <td className="p-3 font-mono text-[11px] text-[#DFCA95]/60">
+                  <td className="p-3 text-white/55">{log.testedBy || "Super Admin"}</td>
+                  <td className="p-3 font-mono text-[11px] text-white/45" suppressHydrationWarning>
                     {log.testedAt ? new Date(log.testedAt).toLocaleTimeString() : "Just now"}
                   </td>
                 </tr>

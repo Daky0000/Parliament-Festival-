@@ -38,22 +38,22 @@ export default async function GuestsPage() {
   if (!event) return <div>No active event found.</div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-[var(--frame)]">
+      <div className="panel px-6 py-6 sm:px-8 sm:py-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="font-editorial text-2xl font-bold text-[#102343]">
+          <h2 className="font-editorial text-[28px] sm:text-[34px] leading-[1.1] font-normal tracking-[-0.035em] text-[#0D1526]">
             Guest Register & Protocol Directory
           </h2>
-          <p className="text-xs text-[#667085] mt-1">
+          <p className="text-[15px] leading-relaxed text-[#5B6374] mt-2 max-w-[70ch]">
             Official roster of invited dignitaries, leaders, and state delegations.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Link
             href="/guests/import"
-            className="bg-white border border-[#E4E7EC] text-[#102343] hover:border-[#C6A65B] px-3 py-2 rounded-md text-xs font-semibold flex items-center gap-2 shadow-sm"
+            className="bg-white border border-[#E3E6EB] text-[#091833] hover:border-[#2563EB] px-3 py-2 rounded-md text-xs font-semibold flex items-center gap-2 "
           >
-            <FileSpreadsheet className="w-4 h-4 text-[#C6A65B]" />
+            <FileSpreadsheet className="w-4 h-4 text-[#2563EB]" />
             Import CSV / XLSX
           </Link>
         </div>

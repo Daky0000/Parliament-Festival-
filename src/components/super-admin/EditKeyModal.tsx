@@ -108,34 +108,34 @@ export function EditKeyModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#0A1830] border-2 border-[#C6A65B] rounded-2xl max-w-lg w-full p-6 shadow-2xl relative space-y-4 text-white">
+      <div className="bg-[#091833] border-2 border-[#8FB2FF] rounded-2xl max-w-lg w-full p-6 shadow-float relative space-y-4 text-white">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#C6A65B]/20 pb-3">
+        <div className="flex items-center justify-between border-b border-[#8FB2FF]/20 pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-[#102343] rounded-lg border border-[#C6A65B]/30 text-[#C6A65B]">
+            <div className="p-2 bg-[#091833] rounded-lg border border-[#8FB2FF]/30 text-[#8FB2FF]">
               <Key className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-editorial text-lg font-bold text-white">
+              <h3 className="font-editorial text-lg font-medium text-white">
                 Configure {displayName}
               </h3>
-              <p className="text-[11px] text-[#DFCA95]/80">
+              <p className="text-[11px] text-white/60">
                 Update or rotate live secret credentials
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-[#DFCA95]/60 hover:text-white p-1 rounded-lg hover:bg-[#102343] transition-colors"
+            className="text-white/45 hover:text-white p-1 rounded-lg hover:bg-[#091833] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Current Active Key Pill */}
-        <div className="bg-[#070D18] border border-[#C6A65B]/20 rounded-lg p-3 flex items-center justify-between text-xs font-mono">
-          <span className="text-[#DFCA95]/60">Currently Active:</span>
-          <span className="text-[#C6A65B] font-bold">
+        <div className="bg-[#0D1526] border border-[#8FB2FF]/20 rounded-lg p-3 flex items-center justify-between text-xs font-mono">
+          <span className="text-white/45">Currently Active:</span>
+          <span className="text-[#8FB2FF] font-bold">
             {currentMaskedHint || "••••••••••••••••"}
           </span>
         </div>
@@ -163,17 +163,17 @@ export function EditKeyModal({
                     ? "cfat_... or Bearer Token"
                     : "Paste API key here..."
                 }
-                className="w-full bg-[#070D18] border border-[#C6A65B]/40 focus:border-[#C6A65B] rounded-lg p-2.5 pr-10 text-white font-mono focus:outline-none"
+                className="w-full bg-[#0D1526] border border-[#8FB2FF]/40 focus:border-[#8FB2FF] rounded-lg p-2.5 pr-10 text-white font-mono focus:outline-none"
               />
               <button
                 type="button"
                 onClick={() => setShowSecret(!showSecret)}
-                className="absolute right-2.5 top-2.5 text-[#DFCA95]/60 hover:text-white"
+                className="absolute right-2.5 top-2.5 text-white/45 hover:text-white"
               >
                 {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-            <p className="text-[10px] text-[#DFCA95]/70 mt-1">
+            <p className="text-[10px] text-white/55 mt-1">
               {providerKey === "openai" &&
                 "Paste your OpenAI API key (sk-...). Used as Primary AI Engine for VIP protocol drafting & seating suggestions."}
               {providerKey === "anthropic" &&
@@ -189,47 +189,47 @@ export function EditKeyModal({
 
           {/* Cloudflare Extra Fields */}
           {providerKey === "cloudflare" && (
-            <div className="p-3 bg-[#070D18] border border-[#C6A65B]/20 rounded-lg space-y-2.5 text-[11px]">
-              <div className="font-bold text-[#C6A65B] flex items-center gap-1.5 uppercase tracking-wider text-[10px]">
+            <div className="p-3 bg-[#0D1526] border border-[#8FB2FF]/20 rounded-lg space-y-2.5 text-[11px]">
+              <div className="font-bold text-[#8FB2FF] flex items-center gap-1.5 uppercase tracking-wider text-[10px]">
                 <ShieldCheck className="w-3.5 h-3.5" />
                 R2 S3-Compatible Credentials
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[#DFCA95]/80 block mb-0.5">Account ID</label>
+                  <label className="text-white/60 block mb-0.5">Account ID</label>
                   <input
                     type="text"
                     value={extraAccountId}
                     onChange={(e) => setExtraAccountId(e.target.value)}
-                    className="w-full bg-[#102343] border border-[#C6A65B]/30 rounded p-1.5 text-white font-mono"
+                    className="w-full bg-[#091833] border border-[#8FB2FF]/30 rounded p-1.5 text-white font-mono"
                   />
                 </div>
                 <div>
-                  <label className="text-[#DFCA95]/80 block mb-0.5">R2 Access Key ID</label>
+                  <label className="text-white/60 block mb-0.5">R2 Access Key ID</label>
                   <input
                     type="text"
                     value={extraR2AccessKey}
                     onChange={(e) => setExtraR2AccessKey(e.target.value)}
-                    className="w-full bg-[#102343] border border-[#C6A65B]/30 rounded p-1.5 text-white font-mono"
+                    className="w-full bg-[#091833] border border-[#8FB2FF]/30 rounded p-1.5 text-white font-mono"
                   />
                 </div>
                 <div>
-                  <label className="text-[#DFCA95]/80 block mb-0.5">R2 Secret Key (Optional update)</label>
+                  <label className="text-white/60 block mb-0.5">R2 Secret Key (Optional update)</label>
                   <input
                     type="password"
                     placeholder="Leave blank to keep current"
                     value={extraR2SecretKey}
                     onChange={(e) => setExtraR2SecretKey(e.target.value)}
-                    className="w-full bg-[#102343] border border-[#C6A65B]/30 rounded p-1.5 text-white font-mono"
+                    className="w-full bg-[#091833] border border-[#8FB2FF]/30 rounded p-1.5 text-white font-mono"
                   />
                 </div>
                 <div>
-                  <label className="text-[#DFCA95]/80 block mb-0.5">R2 Bucket Name</label>
+                  <label className="text-white/60 block mb-0.5">R2 Bucket Name</label>
                   <input
                     type="text"
                     value={extraR2Bucket}
                     onChange={(e) => setExtraR2Bucket(e.target.value)}
-                    className="w-full bg-[#102343] border border-[#C6A65B]/30 rounded p-1.5 text-white font-mono"
+                    className="w-full bg-[#091833] border border-[#8FB2FF]/30 rounded p-1.5 text-white font-mono"
                   />
                 </div>
               </div>
@@ -238,16 +238,16 @@ export function EditKeyModal({
 
           {/* Vynfy Extra Fields */}
           {providerKey === "vynfy" && (
-            <div className="p-3 bg-[#070D18] border border-[#C6A65B]/20 rounded-lg space-y-1.5 text-[11px]">
-              <label className="text-[#DFCA95]/80 block font-semibold">Registered Sender ID</label>
+            <div className="p-3 bg-[#0D1526] border border-[#8FB2FF]/20 rounded-lg space-y-1.5 text-[11px]">
+              <label className="text-white/60 block font-semibold">Registered Sender ID</label>
               <input
                 type="text"
                 value={extraSenderId}
                 onChange={(e) => setExtraSenderId(e.target.value)}
                 placeholder="PARLIAMENT"
-                className="w-full bg-[#102343] border border-[#C6A65B]/30 rounded p-1.5 text-white font-mono"
+                className="w-full bg-[#091833] border border-[#8FB2FF]/30 rounded p-1.5 text-white font-mono"
               />
-              <span className="text-[10px] text-[#DFCA95]/60 block">
+              <span className="text-[10px] text-white/45 block">
                 Up to 11 alphanumeric characters approved with the National Communications Authority (NCA).
               </span>
             </div>
@@ -255,16 +255,16 @@ export function EditKeyModal({
 
           {/* Resend Extra Fields */}
           {providerKey === "resend" && (
-            <div className="p-3 bg-[#070D18] border border-[#C6A65B]/20 rounded-lg space-y-1.5 text-[11px]">
-              <label className="text-[#DFCA95]/80 block font-semibold">Sender Display & Email</label>
+            <div className="p-3 bg-[#0D1526] border border-[#8FB2FF]/20 rounded-lg space-y-1.5 text-[11px]">
+              <label className="text-white/60 block font-semibold">Sender Display & Email</label>
               <input
                 type="text"
                 value={extraFromEmail}
                 onChange={(e) => setExtraFromEmail(e.target.value)}
                 placeholder="Parliament Protocol <onboarding@resend.dev>"
-                className="w-full bg-[#102343] border border-[#C6A65B]/30 rounded p-1.5 text-white font-mono"
+                className="w-full bg-[#091833] border border-[#8FB2FF]/30 rounded p-1.5 text-white font-mono"
               />
-              <span className="text-[10px] text-[#DFCA95]/60 block">
+              <span className="text-[10px] text-white/45 block">
                 Uses verified sender address (e.g. <code>onboarding@resend.dev</code> or <code>invitations@marketing.dakyworld.com</code>).
               </span>
             </div>
@@ -286,19 +286,19 @@ export function EditKeyModal({
           )}
 
           {/* Action buttons */}
-          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-[#C6A65B]/20">
+          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-[#8FB2FF]/20">
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2 rounded-lg bg-[#102343] text-[#DFCA95] hover:text-white border border-[#C6A65B]/30 font-semibold transition-colors"
+              className="px-4 py-2 rounded-lg bg-[#091833] text-white/75 hover:text-white border border-[#8FB2FF]/30 font-semibold transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2 rounded-lg bg-[#C6A65B] hover:bg-[#DFCA95] text-[#0A1830] font-bold flex items-center gap-2 transition-colors disabled:opacity-50 shadow-md"
+              className="px-5 py-2 rounded-lg bg-[#8FB2FF] hover:bg-[#8FB2FF] text-[#091833] font-bold flex items-center gap-2 transition-colors disabled:opacity-50 "
             >
               {isSubmitting ? (
                 <RefreshCw className="w-4 h-4 animate-spin" />

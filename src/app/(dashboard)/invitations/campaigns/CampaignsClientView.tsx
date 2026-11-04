@@ -87,13 +87,13 @@ export function CampaignsClientView({
   return (
     <div className="space-y-6">
       {/* Top Bar */}
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-[#E4E7EC] shadow-sm">
-        <div className="text-xs text-[#667085]">
+      <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-[#E3E6EB] ">
+        <div className="text-xs text-[#5B6374]">
           All campaigns enforce the strict Two-Person Rule: creation requires separate authorized Campaign Approver sign-off.
         </div>
         <button
           onClick={() => setIsCreateOpen(true)}
-          className="bg-[#102343] text-[#DFCA95] border border-[#C6A65B] hover:bg-[#C6A65B] hover:text-[#0A1830] transition-colors px-3.5 py-2 rounded-md text-xs font-bold flex items-center gap-2 shadow-sm"
+          className="bg-white/[0.06] border border-white/20 text-white hover:bg-white/[0.12] hover:text-white transition-colors px-3.5 py-2 rounded-md text-xs font-semibold flex items-center gap-2 "
         >
           <Plus className="w-4 h-4" />
           Create Invitation Campaign
@@ -103,36 +103,36 @@ export function CampaignsClientView({
       {/* Campaigns List */}
       <div className="space-y-4">
         {campaigns.length === 0 ? (
-          <div className="bg-white border border-[#E4E7EC] rounded-lg p-8 text-center text-[#667085]">
+          <div className="bg-white border border-[#E3E6EB] rounded-lg p-8 text-center text-[#5B6374]">
             No campaigns created yet. Click "Create Invitation Campaign" above to begin.
           </div>
         ) : (
           campaigns.map((camp) => (
             <div
               key={camp.id}
-              className="bg-white border border-[#E4E7EC] rounded-lg p-5 shadow-sm space-y-4 hover:border-[#C6A65B] transition-all"
+              className="bg-white border border-[#E3E6EB] rounded-lg p-5 space-y-4 hover:border-[#2563EB] transition-all"
             >
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-[#E4E7EC]">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-[#E3E6EB]">
                 <div>
                   <div className="flex items-center gap-2.5">
-                    <h3 className="font-editorial text-base font-bold text-[#102343]">
+                    <h3 className="font-editorial text-base font-medium text-[#091833]">
                       {camp.name}
                     </h3>
                     <span
-                      className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                      className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
                         camp.status === "completed"
-                          ? "bg-emerald-100 text-emerald-800"
+                          ? "bg-[#EEF6DC] text-[#3F6212]"
                           : camp.status === "approved"
-                          ? "bg-blue-100 text-blue-800"
+                          ? "bg-[#EAF1FF] text-[#2563EB]"
                           : camp.status === "sending"
-                          ? "bg-indigo-100 text-indigo-800"
+                          ? "bg-[#EAF1FF] text-[#2563EB]"
                           : "bg-amber-100 text-amber-800"
                       }`}
                     >
                       {camp.status.replace("_", " ")}
                     </span>
                   </div>
-                  <p className="text-xs text-[#667085] mt-1">
+                  <p className="text-xs text-[#5B6374] mt-1">
                     Subject: <em>{camp.subjectSnapshot}</em>
                   </p>
                 </div>
@@ -142,7 +142,7 @@ export function CampaignsClientView({
                   {camp.status === "pending_approval" && (
                     <button
                       onClick={() => handleApprove(camp.id)}
-                      className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-1.5 rounded transition-colors"
+                      className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-1.5 rounded transition-colors"
                     >
                       Approve for Dispatch
                     </button>
@@ -152,7 +152,7 @@ export function CampaignsClientView({
                     <button
                       onClick={() => handleDispatch(camp.id)}
                       disabled={isDispatching}
-                      className="bg-[#C6A65B] hover:bg-[#DFCA95] text-[#0A1830] text-xs font-bold px-4 py-1.5 rounded transition-colors flex items-center gap-1.5 shadow-sm"
+                      className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-semibold px-4 py-1.5 rounded transition-colors flex items-center gap-1.5 "
                     >
                       {isDispatching ? (
                         <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -166,7 +166,7 @@ export function CampaignsClientView({
                   {camp.status === "completed" && (
                     <button
                       onClick={() => setSelectedCampaign(camp)}
-                      className="bg-[#102343] text-[#DFCA95] hover:bg-[#C6A65B] hover:text-[#0A1830] text-xs font-bold px-3 py-1.5 rounded border border-[#C6A65B] transition-colors"
+                      className="bg-white/[0.06] border border-white/20 text-white hover:bg-white/[0.12] hover:text-white text-xs font-semibold px-3 py-1.5 rounded transition-colors"
                     >
                       Inspect Recipient Activity ({camp.invitations?.length || 0})
                     </button>
@@ -176,23 +176,23 @@ export function CampaignsClientView({
 
               {/* Campaign Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                <div className="bg-[#F7F5F0] p-2.5 rounded">
-                  <span className="text-[10px] text-[#667085] uppercase block">Sender Identity</span>
-                  <span className="font-semibold text-[#102343]">{camp.senderName}</span>
+                <div className="bg-[#F6F7F9] p-2.5 rounded">
+                  <span className="text-[10px] text-[#5B6374] uppercase block">Sender Identity</span>
+                  <span className="font-semibold text-[#091833]">{camp.senderName}</span>
                 </div>
-                <div className="bg-[#F7F5F0] p-2.5 rounded">
-                  <span className="text-[10px] text-[#667085] uppercase block">Audience Target</span>
-                  <span className="font-semibold text-[#102343]">{camp.audienceCount} Dignitaries</span>
+                <div className="bg-[#F6F7F9] p-2.5 rounded">
+                  <span className="text-[10px] text-[#5B6374] uppercase block">Audience Target</span>
+                  <span className="font-semibold text-[#091833]">{camp.audienceCount} Dignitaries</span>
                 </div>
-                <div className="bg-[#F7F5F0] p-2.5 rounded">
-                  <span className="text-[10px] text-[#667085] uppercase block">Approved By</span>
-                  <span className="font-semibold text-[#102343]">
+                <div className="bg-[#F6F7F9] p-2.5 rounded">
+                  <span className="text-[10px] text-[#5B6374] uppercase block">Approved By</span>
+                  <span className="font-semibold text-[#091833]">
                     {camp.approver?.fullName || "Awaiting Sign-off"}
                   </span>
                 </div>
-                <div className="bg-[#F7F5F0] p-2.5 rounded">
-                  <span className="text-[10px] text-[#667085] uppercase block">Template Snapshot</span>
-                  <span className="font-semibold text-[#102343]">
+                <div className="bg-[#F6F7F9] p-2.5 rounded">
+                  <span className="text-[10px] text-[#5B6374] uppercase block">Template Snapshot</span>
+                  <span className="font-semibold text-[#091833]">
                     {camp.templateVersion?.template?.name || "State Template"} (v1)
                   </span>
                 </div>
@@ -205,19 +205,19 @@ export function CampaignsClientView({
       {/* Recipient Activity Detail Modal */}
       {selectedCampaign && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg border border-[#C6A65B] max-w-4xl w-full p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
-            <div className="border-b border-[#E4E7EC] pb-3 flex items-center justify-between">
+          <div className="bg-white rounded-lg border border-[#2563EB] max-w-4xl w-full p-6 shadow-float space-y-4 max-h-[85vh] flex flex-col">
+            <div className="border-b border-[#E3E6EB] pb-3 flex items-center justify-between">
               <div>
-                <h3 className="font-editorial text-lg font-bold text-[#102343]">
+                <h3 className="font-editorial text-lg font-medium text-[#091833]">
                   Recipient Activity Timeline: {selectedCampaign.name}
                 </h3>
-                <p className="text-xs text-[#667085]">
+                <p className="text-xs text-[#5B6374]">
                   Reconciliation of individual delivery, bounce, open signals, and link access.
                 </p>
               </div>
               <button
                 onClick={() => setSelectedCampaign(null)}
-                className="text-gray-400 hover:text-gray-600 text-sm font-bold"
+                className="text-[#8A91A0] hover:text-[#5B6374] text-sm font-semibold"
               >
                 ✕
               </button>
@@ -232,44 +232,44 @@ export function CampaignsClientView({
                 return (
                   <div
                     key={inv.id}
-                    className="border border-[#E4E7EC] rounded-md p-3 text-xs bg-[#F7F5F0]/30 hover:bg-[#F7F5F0] transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3"
+                    className="border border-[#E3E6EB] rounded-md p-3 text-xs bg-[#F6F7F9]/30 hover:bg-[#F6F7F9] transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3"
                   >
                     <div>
-                      <div className="font-bold text-[#102343]">
+                      <div className="font-semibold text-[#091833]">
                         {inv.eventGuest.person.title} {inv.recipientNameSnapshot}
                       </div>
-                      <div className="text-[11px] text-[#667085]">
+                      <div className="text-[11px] text-[#5B6374]">
                         {inv.recipientEmailSnapshot} &bull; Ref: {inv.invitationReference}
                       </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#EEF6DC] text-[#3F6212]">
                         Delivered
                       </span>
 
                       {events.some((e: any) => e.eventType === "open_signal") && (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#EAF1FF] text-[#2563EB]">
                           Open Signal
                         </span>
                       )}
 
                       {events.some((e: any) => e.eventType === "link_access") && (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#EAF1FF] text-[#2563EB]">
                           Link Accessed
                         </span>
                       )}
 
                       {latestRsvp?.response === "accepted" ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-700 text-white">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-700 text-white">
                           RSVP: Accepted
                         </span>
                       ) : latestRsvp?.response === "declined" ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-700 text-white">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-700 text-white">
                           RSVP: Declined
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800">
                           RSVP: Pending
                         </span>
                       )}
@@ -279,10 +279,10 @@ export function CampaignsClientView({
               })}
             </div>
 
-            <div className="pt-3 border-t border-[#E4E7EC] flex justify-end">
+            <div className="pt-3 border-t border-[#E3E6EB] flex justify-end">
               <button
                 onClick={() => setSelectedCampaign(null)}
-                className="px-4 py-2 bg-[#102343] text-white text-xs font-bold rounded"
+                className="px-4 py-2 bg-[#091833] text-white text-xs font-semibold rounded"
               >
                 Close Inspector
               </button>
@@ -294,14 +294,14 @@ export function CampaignsClientView({
       {/* Create Campaign Modal */}
       {isCreateOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg border border-[#C6A65B] max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <div className="border-b border-[#E4E7EC] pb-3 flex items-center justify-between">
-              <h3 className="font-editorial text-lg font-bold text-[#102343]">
+          <div className="bg-white rounded-lg border border-[#2563EB] max-w-lg w-full p-6 shadow-float space-y-4">
+            <div className="border-b border-[#E3E6EB] pb-3 flex items-center justify-between">
+              <h3 className="font-editorial text-lg font-medium text-[#091833]">
                 Create Formal Invitation Campaign
               </h3>
               <button
                 onClick={() => setIsCreateOpen(false)}
-                className="text-gray-400 hover:text-gray-600 text-sm font-bold"
+                className="text-[#8A91A0] hover:text-[#5B6374] text-sm font-semibold"
               >
                 ✕
               </button>
@@ -315,7 +315,7 @@ export function CampaignsClientView({
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full border border-[#E4E7EC] rounded p-2"
+                  className="w-full border border-[#E3E6EB] rounded p-2"
                 />
               </div>
 
@@ -326,7 +326,7 @@ export function CampaignsClientView({
                   required
                   value={formData.senderName}
                   onChange={(e) => setFormData({ ...formData, senderName: e.target.value })}
-                  className="w-full border border-[#E4E7EC] rounded p-2"
+                  className="w-full border border-[#E3E6EB] rounded p-2"
                 />
               </div>
 
@@ -338,7 +338,7 @@ export function CampaignsClientView({
                     required
                     value={formData.senderEmail}
                     onChange={(e) => setFormData({ ...formData, senderEmail: e.target.value })}
-                    className="w-full border border-[#E4E7EC] rounded p-2"
+                    className="w-full border border-[#E3E6EB] rounded p-2"
                   />
                 </div>
                 <div>
@@ -347,7 +347,7 @@ export function CampaignsClientView({
                     type="email"
                     value={formData.replyToEmail}
                     onChange={(e) => setFormData({ ...formData, replyToEmail: e.target.value })}
-                    className="w-full border border-[#E4E7EC] rounded p-2"
+                    className="w-full border border-[#E3E6EB] rounded p-2"
                   />
                 </div>
               </div>
@@ -357,7 +357,7 @@ export function CampaignsClientView({
                 <select
                   value={formData.categoryKey}
                   onChange={(e) => setFormData({ ...formData, categoryKey: e.target.value })}
-                  className="w-full border border-[#E4E7EC] rounded p-2 bg-white"
+                  className="w-full border border-[#E3E6EB] rounded p-2 bg-white"
                 >
                   <option value="all">All Dignitaries (Full Protocol Roster)</option>
                   {categories.map((c) => (
@@ -368,17 +368,17 @@ export function CampaignsClientView({
                 </select>
               </div>
 
-              <div className="pt-3 border-t border-[#E4E7EC] flex justify-end gap-2">
+              <div className="pt-3 border-t border-[#E3E6EB] flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsCreateOpen(false)}
-                  className="px-3 py-2 border rounded text-gray-600 hover:bg-gray-100"
+                  className="px-3 py-2 border rounded text-[#5B6374] hover:bg-[#F6F7F9]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#102343] text-[#DFCA95] font-bold rounded hover:bg-[#C6A65B] hover:text-[#0A1830] transition-colors"
+                  className="px-4 py-2 bg-white/[0.06] border border-white/20 text-white font-semibold rounded hover:bg-white/[0.12] hover:text-white transition-colors"
                 >
                   Submit for Approval
                 </button>

@@ -87,23 +87,23 @@ export function SeatingPlannerClientView({
   return (
     <div className="space-y-6">
       {/* Top Controls Bar */}
-      <div className="bg-white p-4 rounded-lg border border-[#E4E7EC] flex flex-wrap items-center justify-between gap-4 shadow-sm">
+      <div className="bg-white p-4 rounded-lg border border-[#E3E6EB] flex flex-wrap items-center justify-between gap-4 ">
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-bold text-sm text-[#102343]">
+            <span className="font-semibold text-sm text-[#091833]">
               {currentPlan.name}
             </span>
             <span
-              className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
+              className={`text-[10px] font-semibold px-2 py-0.5 rounded uppercase tracking-wider ${
                 currentPlan.status === "approved"
-                  ? "bg-emerald-100 text-emerald-800"
+                  ? "bg-[#EEF6DC] text-[#3F6212]"
                   : "bg-amber-100 text-amber-800"
               }`}
             >
               {currentPlan.status}
             </span>
           </div>
-          <p className="text-xs text-[#667085] mt-0.5">
+          <p className="text-xs text-[#5B6374] mt-0.5">
             Total Allocated: {totalSeatsAssigned} / {totalCapacity} seats across 5 sections.
           </p>
         </div>
@@ -112,7 +112,7 @@ export function SeatingPlannerClientView({
           <button
             onClick={handleRunSeatingEngine}
             disabled={isAllocating}
-            className="bg-[#102343] text-[#DFCA95] border border-[#C6A65B] hover:bg-[#C6A65B] hover:text-[#0A1830] transition-colors text-xs font-bold px-4 py-2 rounded-md shadow-sm flex items-center gap-2"
+            className="bg-white/[0.06] border border-white/20 text-white hover:bg-white/[0.12] hover:text-white transition-colors text-xs font-semibold px-4 py-2 rounded-md flex items-center gap-2"
           >
             {isAllocating ? (
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -125,7 +125,7 @@ export function SeatingPlannerClientView({
           {currentPlan.status !== "approved" && (
             <button
               onClick={handleApprovePlan}
-              className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-4 py-2 rounded-md shadow-sm flex items-center gap-1.5"
+              className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2 rounded-md flex items-center gap-1.5"
             >
               <ShieldCheck className="w-3.5 h-3.5" />
               Approve & Lock Plan
@@ -135,8 +135,8 @@ export function SeatingPlannerClientView({
       </div>
 
       {allocationNotice && (
-        <div className="bg-emerald-50 border border-emerald-300 text-emerald-800 p-3 rounded-md text-xs font-semibold flex items-center gap-2">
-          <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+        <div className="bg-[#EEF6DC] border border-[#D9E8B8] text-[#3F6212] p-3 rounded-md text-xs font-semibold flex items-center gap-2">
+          <CheckCircle className="w-4 h-4 text-[#3F6212] flex-shrink-0" />
           <span>{allocationNotice}</span>
         </div>
       )}
@@ -154,8 +154,8 @@ export function SeatingPlannerClientView({
               onClick={() => setSelectedSectionId(section.id)}
               className={`border rounded-lg p-4 cursor-pointer transition-all ${
                 isSelected
-                  ? "bg-[#0A1830] text-white border-[#C6A65B] shadow-md ring-2 ring-[#C6A65B]/30"
-                  : "bg-white text-[#202A38] border-[#E4E7EC] hover:border-[#C6A65B]"
+                  ? "bg-[#091833] text-white border-[#2563EB] ring-2 ring-[#2563EB]/30"
+                  : "bg-white text-[#0D1526] border-[#E3E6EB] hover:border-[#2563EB]"
               }`}
             >
               <div className="flex items-center justify-between mb-2">
@@ -164,21 +164,21 @@ export function SeatingPlannerClientView({
                   style={{ backgroundColor: section.colourHex }}
                 ></span>
                 <span
-                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                    isSelected ? "bg-[#102343] text-[#DFCA95]" : "bg-gray-100 text-gray-700"
+                  className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                    isSelected ? "bg-[#091833] text-[#8FB2FF]" : "bg-[#F6F7F9] text-[#5B6374]"
                   }`}
                 >
                   {section.sectionCode}
                 </span>
               </div>
 
-              <h4 className="font-editorial font-bold text-xs line-clamp-1 mb-1">
+              <h4 className="font-editorial font-medium text-xs line-clamp-1 mb-1">
                 {section.name}
               </h4>
 
               <div className="space-y-1.5 mt-3">
                 <div className="flex justify-between text-[11px] font-semibold">
-                  <span className={isSelected ? "text-[#DFCA95]" : "text-[#667085]"}>
+                  <span className={isSelected ? "text-[#8FB2FF]" : "text-[#5B6374]"}>
                     Utilization
                   </span>
                   <span>
@@ -190,7 +190,7 @@ export function SeatingPlannerClientView({
                     className="h-full rounded-full transition-all"
                     style={{
                       width: `${Math.min(utilizationPct, 100)}%`,
-                      backgroundColor: section.colourHex || "#C6A65B",
+                      backgroundColor: section.colourHex || "#2563EB",
                     }}
                   ></div>
                 </div>
@@ -202,25 +202,25 @@ export function SeatingPlannerClientView({
 
       {/* Selected Section Seats and Attendees View */}
       {selectedSection && (
-        <div className="bg-white rounded-lg border border-[#E4E7EC] p-6 shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#E4E7EC] gap-2">
+        <div className="bg-white rounded-lg border border-[#E3E6EB] p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#E3E6EB] gap-2">
             <div>
               <div className="flex items-center gap-2">
                 <span
                   className="w-3.5 h-3.5 rounded-full"
                   style={{ backgroundColor: selectedSection.colourHex }}
                 ></span>
-                <h3 className="font-editorial text-base font-bold text-[#102343]">
+                <h3 className="font-editorial text-base font-medium text-[#091833]">
                   {selectedSection.name}
                 </h3>
               </div>
-              <p className="text-xs text-[#667085] mt-0.5">
+              <p className="text-xs text-[#5B6374] mt-0.5">
                 Eligible Protocol Rank:{" "}
                 <strong>{selectedSection.protocolCategory?.name || "General"}</strong> &bull; Capacity:{" "}
                 <strong>{selectedSection.capacity} seats</strong>
               </p>
             </div>
-            <div className="text-xs font-bold text-[#102343] bg-[#F7F5F0] px-3 py-1.5 rounded border border-[#E4E7EC]">
+            <div className="text-xs font-semibold text-[#091833] bg-[#F6F7F9] px-3 py-1.5 rounded border border-[#E3E6EB]">
               {selectedSection.seatAssignments?.length || 0} Dignitaries Allocated
             </div>
           </div>
@@ -228,29 +228,29 @@ export function SeatingPlannerClientView({
           {/* Seat Grid / Dignitary Allocations List */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {selectedSection.seatAssignments?.length === 0 ? (
-              <div className="col-span-3 p-8 text-center text-[#667085] text-xs">
+              <div className="col-span-3 p-8 text-center text-[#5B6374] text-xs">
                 No dignitaries allocated to this section yet. Click "Run Protocol Seating Engine" above to allocate based on official rank.
               </div>
             ) : (
               selectedSection.seatAssignments.map((assignment: any) => (
                 <div
                   key={assignment.id}
-                  className="border border-[#E4E7EC] rounded-md p-3 text-xs bg-[#F7F5F0]/40 flex items-start gap-3 hover:border-[#C6A65B] transition-colors"
+                  className="border border-[#E3E6EB] rounded-md p-3 text-xs bg-[#F6F7F9]/40 flex items-start gap-3 hover:border-[#2563EB] transition-colors"
                 >
                   <div
-                    className="w-7 h-7 rounded flex items-center justify-center font-bold text-white text-xs flex-shrink-0 mt-0.5 shadow-sm"
+                    className="w-7 h-7 rounded flex items-center justify-center font-semibold text-white text-xs flex-shrink-0 mt-0.5 "
                     style={{ backgroundColor: selectedSection.colourHex }}
                   >
                     <Armchair className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-[#102343] truncate">
+                    <div className="font-semibold text-[#091833] truncate">
                       {assignment.eventGuest.person.title} {assignment.eventGuest.person.fullName}
                     </div>
-                    <div className="text-[11px] text-[#667085] truncate">
+                    <div className="text-[11px] text-[#5B6374] truncate">
                       {assignment.eventGuest.person.designation}
                     </div>
-                    <div className="text-[10px] text-[#C6A65B] font-bold mt-1">
+                    <div className="text-[10px] text-[#2563EB] font-semibold mt-1">
                       Seat: {assignment.seat?.seatCode || "Unnumbered VIP Block"}
                     </div>
                   </div>

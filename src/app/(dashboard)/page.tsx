@@ -117,125 +117,102 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
-      <div className="bg-[#0A1830] border-2 border-[#C6A65B] rounded-lg p-6 text-white relative overflow-hidden shadow-lg">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="bg-[#C6A65B] text-[#0A1830] text-[10px] font-bold px-2 py-0.5 rounded tracking-widest uppercase">
-                Official Parliamentary Briefing
-              </span>
-              <span className="text-[#DFCA95] text-xs font-medium">
-                Accra, Ghana
-              </span>
-            </div>
-            <h2 className="font-editorial text-2xl font-bold tracking-tight text-[#FFFFFF]">
-              {event.name}
-            </h2>
-            <p className="text-xs text-[#DFCA95]/80 mt-1 max-w-2xl">
-              Real-time protocol reconciliation engine: individual invitation delivery, mathematical seating allocation, and event-day check-in operations.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/guests/import"
-              className="bg-[#102343] border border-[#C6A65B] text-[#DFCA95] hover:bg-[#C6A65B] hover:text-[#0A1830] transition-colors text-xs font-semibold px-4 py-2 rounded-md shadow-sm"
-            >
-              Import Guests
-            </Link>
+      <div className="grid lg:grid-cols-[1.35fr_1fr] gap-[var(--frame)]">
+        <section className="panel p-7 sm:p-10 flex flex-col justify-center gap-5">
+          <span className="chip self-start">
+            <span className="pip" />
+            Official parliamentary briefing · Accra
+          </span>
+          <h1 className="text-[34px] sm:text-[44px] leading-[1.06] font-normal tracking-[-0.04em] text-[#0D1526]">
+            {event.name}
+          </h1>
+          <p className="text-[16.5px] leading-relaxed text-[#5B6374] max-w-[56ch]">
+            Real-time protocol reconciliation: individual invitation delivery, mathematical seating allocation and
+            event-day check-in, in one place.
+          </p>
+          <div className="flex flex-wrap gap-2.5">
             <Link
               href="/invitations/campaigns"
-              className="bg-[#C6A65B] text-[#0A1830] hover:bg-[#DFCA95] transition-colors text-xs font-bold px-4 py-2 rounded-md shadow-sm flex items-center gap-1.5"
+              className="group inline-flex items-center gap-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[15px] font-medium px-5 py-3 rounded-[10px] transition-colors"
             >
-              <Send className="w-3.5 h-3.5" />
-              Campaigns
+              <Send className="w-4 h-4" />
+              Invitation campaigns
+              <span className="transition-transform group-hover:translate-x-[3px]">&rarr;</span>
+            </Link>
+            <Link
+              href="/guests/import"
+              className="inline-flex items-center gap-2.5 bg-white border border-[#D2D7DF] hover:border-[#0D1526] text-[#0D1526] text-[15px] font-medium px-5 py-3 rounded-[10px] transition-colors"
+            >
+              Import guests
             </Link>
           </div>
-        </div>
+        </section>
+
+        <section className="band p-6 sm:p-8 flex flex-col justify-center gap-5" aria-label="Event at a glance">
+          <div className="dotfield" aria-hidden="true" />
+          <span className="relative cap !text-white/70">At a glance</span>
+          <div className="relative grid grid-cols-2 gap-2.5">
+            {[
+              { label: "Invited", value: totalGuests },
+              { label: "Confirmed", value: acceptedCount },
+              { label: "Seats assigned", value: `${totalSeatsAssigned}/${totalCapacity}` },
+              { label: "Checked in", value: checkedInCount },
+            ].map((s) => (
+              <div key={s.label} className="rounded-[14px] bg-white/[0.06] border border-white/[0.12] px-4 py-3.5">
+                <div className="text-[12px] text-white/70">{s.label}</div>
+                <div className="text-[28px] leading-tight font-normal tracking-[-0.03em] text-white mt-0.5">
+                  {s.value}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
 
-      {/* Top 8 Operations Metrics Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-        <div className="bg-white border border-[#E4E7EC] rounded-lg p-3 shadow-sm text-center">
-          <div className="text-[10px] font-semibold text-[#667085] uppercase tracking-wider">
-            Total Invited
+      {/* Operations metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-[var(--frame)]">
+        {[
+          { label: "Total invited", value: totalGuests, note: "Protocol roster", tone: "muted" },
+          { label: "Dispatched", value: invitationsSent, note: "Approved queue", tone: "muted" },
+          { label: "Delivered", value: deliveredCount, note: "Provider verified", tone: "positive" },
+          { label: "Open signals", value: openSignalsCount, note: "Image signal", tone: "muted" },
+          { label: "Link access", value: linkAccessCount, note: "URL clicks", tone: "muted" },
+          { label: "Confirmed", value: acceptedCount, note: "RSVP accepted", tone: "positive" },
+          { label: "Seats assigned", value: totalSeatsAssigned, note: `Capacity ${totalCapacity}`, tone: "blue" },
+          { label: "Checked in", value: checkedInCount, note: "Usher validated", tone: "blue" },
+        ].map((m) => (
+          <div key={m.label} className="bg-white border border-[#E3E6EB] rounded-[14px] p-4 flex flex-col gap-3">
+            <span className="cap !text-[11px]">{m.label}</span>
+            <div>
+              <div className="text-[30px] leading-none font-normal tracking-[-0.03em] text-[#0D1526]">{m.value}</div>
+              <div
+                className={`text-[12.5px] mt-1.5 ${
+                  m.tone === "positive" ? "text-[#3F6212]" : m.tone === "blue" ? "text-[#2563EB]" : "text-[#5B6374]"
+                }`}
+              >
+                {m.note}
+              </div>
+            </div>
           </div>
-          <div className="text-xl font-bold text-[#102343] mt-1">{totalGuests}</div>
-          <div className="text-[10px] text-emerald-700 font-medium mt-0.5">Protocol Roster</div>
-        </div>
-
-        <div className="bg-white border border-[#E4E7EC] rounded-lg p-3 shadow-sm text-center">
-          <div className="text-[10px] font-semibold text-[#667085] uppercase tracking-wider">
-            Dispatched
-          </div>
-          <div className="text-xl font-bold text-[#102343] mt-1">{invitationsSent}</div>
-          <div className="text-[10px] text-blue-700 font-medium mt-0.5">Approved Queue</div>
-        </div>
-
-        <div className="bg-white border border-[#E4E7EC] rounded-lg p-3 shadow-sm text-center">
-          <div className="text-[10px] font-semibold text-[#667085] uppercase tracking-wider">
-            Delivered
-          </div>
-          <div className="text-xl font-bold text-emerald-700 mt-1">{deliveredCount}</div>
-          <div className="text-[10px] text-emerald-800 font-medium mt-0.5">Provider Verified</div>
-        </div>
-
-        <div className="bg-white border border-[#E4E7EC] rounded-lg p-3 shadow-sm text-center">
-          <div className="text-[10px] font-semibold text-[#667085] uppercase tracking-wider">
-            Open Signals
-          </div>
-          <div className="text-xl font-bold text-indigo-700 mt-1">{openSignalsCount}</div>
-          <div className="text-[10px] text-indigo-800 font-medium mt-0.5">Image Signal</div>
-        </div>
-
-        <div className="bg-white border border-[#E4E7EC] rounded-lg p-3 shadow-sm text-center">
-          <div className="text-[10px] font-semibold text-[#667085] uppercase tracking-wider">
-            Link Access
-          </div>
-          <div className="text-xl font-bold text-purple-700 mt-1">{linkAccessCount}</div>
-          <div className="text-[10px] text-purple-800 font-medium mt-0.5">URL Clicks</div>
-        </div>
-
-        <div className="bg-white border border-[#E4E7EC] rounded-lg p-3 shadow-sm text-center">
-          <div className="text-[10px] font-semibold text-[#667085] uppercase tracking-wider">
-            Confirmed
-          </div>
-          <div className="text-xl font-bold text-emerald-600 mt-1">{acceptedCount}</div>
-          <div className="text-[10px] text-emerald-700 font-medium mt-0.5">RSVP Accepted</div>
-        </div>
-
-        <div className="bg-white border border-[#E4E7EC] rounded-lg p-3 shadow-sm text-center">
-          <div className="text-[10px] font-semibold text-[#667085] uppercase tracking-wider">
-            Seats Assigned
-          </div>
-          <div className="text-xl font-bold text-[#C6A65B] mt-1">{totalSeatsAssigned}</div>
-          <div className="text-[10px] text-[#A66A12] font-medium mt-0.5">Capacity: {totalCapacity}</div>
-        </div>
-
-        <div className="bg-white border border-[#E4E7EC] rounded-lg p-3 shadow-sm text-center">
-          <div className="text-[10px] font-semibold text-[#667085] uppercase tracking-wider">
-            Checked In
-          </div>
-          <div className="text-xl font-bold text-sky-700 mt-1">{checkedInCount}</div>
-          <div className="text-[10px] text-sky-800 font-medium mt-0.5">Usher Validated</div>
-        </div>
+        ))}
       </div>
 
       {/* Main Grid: Protocol Hierarchy Breakdown & Event Readiness */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-[var(--frame)]">
         {/* Protocol Precedence Breakdown */}
-        <div className="lg:col-span-2 bg-white rounded-lg border border-[#E4E7EC] p-5 shadow-sm">
-          <div className="flex items-center justify-between pb-3 border-b border-[#E4E7EC] mb-4">
+        <div className="lg:col-span-2 panel p-6 ">
+          <div className="flex items-center justify-between pb-3 border-b border-[#E3E6EB] mb-4">
             <div>
-              <h3 className="font-editorial text-base font-bold text-[#102343]">
+              <h3 className="font-editorial text-base font-medium text-[#091833]">
                 Protocol Precedence & RSVP Status
               </h3>
-              <p className="text-xs text-[#667085]">
+              <p className="text-xs text-[#5B6374]">
                 Distribution by approved parliamentary precedence order
               </p>
             </div>
             <Link
               href="/protocol"
-              className="text-xs text-[#102343] font-semibold flex items-center gap-1 hover:text-[#C6A65B]"
+              className="text-xs text-[#091833] font-semibold flex items-center gap-1 hover:text-[#2563EB]"
             >
               Configure Ranks <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
@@ -245,18 +222,18 @@ export default async function DashboardPage() {
             {categoryStats.map((cat) => (
               <div
                 key={cat.id}
-                className="border border-[#E4E7EC] rounded-md p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:border-[#C6A65B] transition-colors"
+                className="border border-[#E3E6EB] rounded-md p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:border-[#2563EB] transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs text-white shadow-sm flex-shrink-0"
+                    className="w-7 h-7 rounded-full flex items-center justify-center font-semibold text-xs text-white flex-shrink-0"
                     style={{ backgroundColor: cat.color }}
                   >
                     {cat.rank}
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-[#102343]">{cat.name}</h4>
-                    <p className="text-[11px] text-[#667085]">
+                    <h4 className="text-xs font-semibold text-[#091833]">{cat.name}</h4>
+                    <p className="text-[11px] text-[#5B6374]">
                       Rank {cat.rank} &bull; Official Protocol Category
                     </p>
                   </div>
@@ -264,16 +241,16 @@ export default async function DashboardPage() {
 
                 <div className="flex items-center gap-4 text-xs">
                   <div className="text-center">
-                    <span className="text-[10px] text-[#667085] uppercase block">Invited</span>
-                    <span className="font-bold text-[#102343]">{cat.count}</span>
+                    <span className="text-[10px] text-[#5B6374] uppercase block">Invited</span>
+                    <span className="font-semibold text-[#091833]">{cat.count}</span>
                   </div>
                   <div className="text-center">
-                    <span className="text-[10px] text-[#667085] uppercase block">Confirmed</span>
-                    <span className="font-bold text-emerald-700">{cat.accepted}</span>
+                    <span className="text-[10px] text-[#5B6374] uppercase block">Confirmed</span>
+                    <span className="font-semibold text-[#3F6212]">{cat.accepted}</span>
                   </div>
                   <div className="text-center">
-                    <span className="text-[10px] text-[#667085] uppercase block">Seated</span>
-                    <span className="font-bold text-[#C6A65B]">{cat.assigned}</span>
+                    <span className="text-[10px] text-[#5B6374] uppercase block">Seated</span>
+                    <span className="font-semibold text-[#2563EB]">{cat.assigned}</span>
                   </div>
                 </div>
               </div>
@@ -284,65 +261,65 @@ export default async function DashboardPage() {
         {/* Event Readiness & Quick AI Actions */}
         <div className="space-y-6">
           {/* Readiness Checklist */}
-          <div className="bg-white rounded-lg border border-[#E4E7EC] p-5 shadow-sm">
-            <h3 className="font-editorial text-base font-bold text-[#102343] mb-1">
+          <div className="panel p-6 ">
+            <h3 className="font-editorial text-base font-medium text-[#091833] mb-1">
               Event Readiness Status
             </h3>
-            <p className="text-xs text-[#667085] mb-4">
+            <p className="text-xs text-[#5B6374] mb-4">
               P0 & P1 operational release gates
             </p>
 
             <ul className="space-y-3 text-xs">
               <li className="flex items-start gap-2.5">
-                <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                <CheckCircle className="w-4 h-4 text-[#3F6212] flex-shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-semibold text-[#102343]">Event Scope & Venue Verified</span>
-                  <p className="text-[11px] text-[#667085]">Forecourt of Parliament confirmed</p>
+                  <span className="font-semibold text-[#091833]">Event Scope & Venue Verified</span>
+                  <p className="text-[11px] text-[#5B6374]">Forecourt of Parliament confirmed</p>
                 </div>
               </li>
               <li className="flex items-start gap-2.5">
-                <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                <CheckCircle className="w-4 h-4 text-[#3F6212] flex-shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-semibold text-[#102343]">Protocol Hierarchy Locked</span>
-                  <p className="text-[11px] text-[#667085]">5 Precedence ranks active</p>
+                  <span className="font-semibold text-[#091833]">Protocol Hierarchy Locked</span>
+                  <p className="text-[11px] text-[#5B6374]">5 Precedence ranks active</p>
                 </div>
               </li>
               <li className="flex items-start gap-2.5">
-                <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                <CheckCircle className="w-4 h-4 text-[#3F6212] flex-shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-semibold text-[#102343]">Luxury Email Template Approved</span>
-                  <p className="text-[11px] text-[#667085]">Version 1 signed off by Clerk</p>
+                  <span className="font-semibold text-[#091833]">Luxury Email Template Approved</span>
+                  <p className="text-[11px] text-[#5B6374]">Version 1 signed off by Clerk</p>
                 </div>
               </li>
               <li className="flex items-start gap-2.5">
-                <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                <CheckCircle className="w-4 h-4 text-[#3F6212] flex-shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-semibold text-[#102343]">Deterministic Seating Ready</span>
-                  <p className="text-[11px] text-[#667085]">5 sections with 250 capacity</p>
+                  <span className="font-semibold text-[#091833]">Deterministic Seating Ready</span>
+                  <p className="text-[11px] text-[#5B6374]">5 sections with 250 capacity</p>
                 </div>
               </li>
               <li className="flex items-start gap-2.5">
-                <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                <CheckCircle className="w-4 h-4 text-[#3F6212] flex-shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-semibold text-[#102343]">Mobile Usher Scanner Active</span>
-                  <p className="text-[11px] text-[#667085]">QR credential server validation</p>
+                  <span className="font-semibold text-[#091833]">Mobile Usher Scanner Active</span>
+                  <p className="text-[11px] text-[#5B6374]">QR credential server validation</p>
                 </div>
               </li>
             </ul>
           </div>
 
           {/* AI Command Centre Card */}
-          <div className="bg-[#102343] border border-[#C6A65B] rounded-lg p-5 text-white shadow-sm">
-            <div className="flex items-center gap-2 mb-2 text-[#DFCA95]">
+          <div className="band p-6 text-white">
+            <div className="flex items-center gap-2 mb-2 text-[#8FB2FF]">
               <Sparkles className="w-4 h-4" />
-              <h4 className="text-xs font-bold uppercase tracking-wider">AI Protocol Assistant</h4>
+              <h4 className="text-xs font-semibold uppercase tracking-wider">AI Protocol Assistant</h4>
             </div>
-            <p className="text-xs text-[#DFCA95]/80 mb-4">
+            <p className="text-xs text-white/70 mb-4">
               Query guest records, draft invitation reminder notices, or propose seating plans with institutional oversight.
             </p>
             <Link
               href="/ai-centre"
-              className="w-full bg-[#C6A65B] text-[#0A1830] hover:bg-[#DFCA95] transition-colors text-xs font-bold py-2 px-3 rounded flex items-center justify-center gap-2"
+              className="w-full bg-[#2563EB] text-white hover:bg-[#1D4ED8] transition-colors text-xs font-semibold py-2 px-3 rounded flex items-center justify-center gap-2"
             >
               <span>Launch AI Command Centre</span>
               <ChevronRight className="w-4 h-4" />

@@ -1,5 +1,13 @@
 import Link from "next/link";
-import { ShieldCheck, Cpu, Mail, MessageSquare, Cloud, Activity, Lock, ArrowLeft, Server } from "lucide-react";
+import { ShieldCheck, Cpu, Mail, MessageSquare, Cloud, ArrowLeft, Server } from "lucide-react";
+
+const tabs = [
+  { href: "/super-admin", label: "Platform overview", icon: Server },
+  { href: "/super-admin/ai", label: "AI providers (OpenAI / Claude)", icon: Cpu },
+  { href: "/super-admin/sms", label: "SMS gateway (Vynfy)", icon: MessageSquare },
+  { href: "/super-admin/email", label: "Email (Resend)", icon: Mail },
+  { href: "/super-admin/cloudflare", label: "Cloudflare & edge", icon: Cloud },
+];
 
 export default function SuperAdminLayout({
   children,
@@ -7,96 +15,63 @@ export default function SuperAdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#070D18] text-[#F7F5F0] flex flex-col font-sans">
-      {/* Super Admin Top Header */}
-      <header className="h-16 bg-[#0A1830] border-b border-[#C6A65B]/30 flex items-center justify-between px-6 z-20">
-        <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-[#0D1526] text-white flex flex-col gap-[var(--frame)] p-[var(--frame)]">
+      <header className="band">
+        <div className="dotfield" aria-hidden="true" />
+        <div className="relative flex flex-wrap items-center gap-4 px-5 sm:px-6 py-4">
           <Link
             href="/"
-            className="flex items-center gap-1.5 text-xs text-[#DFCA95] hover:text-white transition-colors py-1 px-2 rounded bg-[#102343] border border-[#C6A65B]/30"
+            className="inline-flex items-center gap-2 text-[14px] text-white/75 hover:text-white bg-white/[0.06] border border-white/[0.12] hover:bg-white/[0.11] px-3 py-2 rounded-[10px] transition-colors"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Parliament Event Portal</span>
+            <ArrowLeft className="w-4 h-4" />
+            Event portal
           </Link>
-          <div className="h-5 w-px bg-[#C6A65B]/30 hidden sm:block"></div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-editorial font-bold text-sm text-[#C6A65B] tracking-wider uppercase">
-                DakyXTech Super Admin
-              </span>
-              <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                Production Control Plane
+
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span className="text-[17px] font-medium tracking-[-0.02em]">DakyXTech Super Admin</span>
+              <span className="inline-flex items-center gap-2 bg-white/10 text-[#8FB2FF] rounded-[10px] text-[11px] font-medium uppercase tracking-[0.12em] px-2.5 py-1">
+                <span className="w-[7px] h-[7px] rounded-full bg-current" />
+                Production control plane
               </span>
             </div>
-            <div className="text-[10px] text-[#DFCA95]/70">
-              Provider Infrastructure, Secrets, AI Routing & Telemetry
+            <div className="text-[13px] text-white/60 mt-0.5">
+              Provider infrastructure, secrets, AI routing and telemetry
             </div>
+          </div>
+
+          <div className="hidden sm:flex items-center gap-3">
+            <div className="text-right leading-tight">
+              <div className="text-[14px] font-medium">Platform operations</div>
+              <div className="text-[12px] text-[#A3E635]">All systems operational</div>
+            </div>
+            <span className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[13px] font-medium">DX</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="text-right hidden sm:block">
-            <div className="text-xs font-bold text-white">Platform Operations</div>
-            <div className="text-[10px] text-emerald-400 font-mono">Status: All Systems Operational</div>
-          </div>
-          <div className="w-8 h-8 rounded bg-[#102343] border border-[#C6A65B] flex items-center justify-center font-bold text-xs text-[#DFCA95]">
-            DX
-          </div>
-        </div>
+        <nav
+          className="relative flex gap-1 overflow-x-auto px-4 sm:px-5 pb-4 text-[14px]"
+          aria-label="Super Admin sections"
+        >
+          {tabs.map(({ href, label, icon: Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              className="inline-flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-[10px] text-white/75 hover:text-white hover:bg-white/[0.08] transition-colors"
+            >
+              <Icon className="w-4 h-4 text-[#8FB2FF]" />
+              {label}
+            </Link>
+          ))}
+        </nav>
       </header>
 
-      {/* Secondary Navigation Ribbon */}
-      <div className="bg-[#0D1C38] border-b border-[#C6A65B]/20 px-6 overflow-x-auto">
-        <div className="flex items-center gap-1 py-2 text-xs">
-          <Link
-            href="/super-admin"
-            className="px-3 py-1.5 rounded-md hover:bg-[#102343] text-[#DFCA95] hover:text-white font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap"
-          >
-            <Server className="w-3.5 h-3.5 text-[#C6A65B]" />
-            Platform Overview
-          </Link>
-          <Link
-            href="/super-admin/ai"
-            className="px-3 py-1.5 rounded-md hover:bg-[#102343] text-[#DFCA95] hover:text-white font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap"
-          >
-            <Cpu className="w-3.5 h-3.5 text-[#C6A65B]" />
-            AI Providers (OpenAI / Claude)
-          </Link>
-          <Link
-            href="/super-admin/sms"
-            className="px-3 py-1.5 rounded-md hover:bg-[#102343] text-[#DFCA95] hover:text-white font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap"
-          >
-            <MessageSquare className="w-3.5 h-3.5 text-[#C6A65B]" />
-            SMS Gateway (Vynfy)
-          </Link>
-          <Link
-            href="/super-admin/email"
-            className="px-3 py-1.5 rounded-md hover:bg-[#102343] text-[#DFCA95] hover:text-white font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap"
-          >
-            <Mail className="w-3.5 h-3.5 text-[#C6A65B]" />
-            Email (Resend)
-          </Link>
-          <Link
-            href="/super-admin/cloudflare"
-            className="px-3 py-1.5 rounded-md hover:bg-[#102343] text-[#DFCA95] hover:text-white font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap"
-          >
-            <Cloud className="w-3.5 h-3.5 text-[#C6A65B]" />
-            Cloudflare & Edge
-          </Link>
-        </div>
-      </div>
+      <main className="flex-1 w-full max-w-[1280px] mx-auto space-y-6 py-2">{children}</main>
 
-      {/* Main Super Admin Workspace */}
-      <main className="flex-1 p-6 max-w-7xl mx-auto w-full space-y-6">
-        {children}
-      </main>
-
-      {/* Footer */}
-      <footer className="p-4 border-t border-[#C6A65B]/20 bg-[#070D18] text-center text-[11px] text-[#DFCA95]/50 flex items-center justify-center gap-2">
-        <ShieldCheck className="w-4 h-4 text-[#C6A65B]" />
-        <span>DakyXTech Super Admin &bull; Provider Credentials Encrypted at Rest &bull; Zero Plaintext Secrets in Logs</span>
+      <footer className="rounded-[22px] bg-white/[0.04] px-6 py-5 text-[13px] text-white/55 flex flex-wrap items-center justify-center gap-2 text-center">
+        <ShieldCheck className="w-4 h-4 text-[#8FB2FF]" />
+        <span>DakyXTech Super Admin · Provider credentials encrypted at rest · Zero plaintext secrets in logs</span>
       </footer>
     </div>
   );
 }
-

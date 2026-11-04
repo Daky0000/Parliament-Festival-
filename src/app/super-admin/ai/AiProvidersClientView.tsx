@@ -92,10 +92,10 @@ export function AiProvidersClientView({
       {/* AI Key Configuration Panels */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* OpenAI Card */}
-        <div className="bg-[#0D1C38] border-2 border-[#C6A65B]/40 hover:border-[#C6A65B] rounded-xl p-5 shadow-lg space-y-3">
+        <div className="bg-[#091833] border-2 border-[#8FB2FF]/40 hover:border-[#8FB2FF] rounded-xl p-5 shadow-float space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Cpu className="w-5 h-5 text-[#C6A65B]" />
+              <Cpu className="w-5 h-5 text-[#8FB2FF]" />
               <div>
                 <h3 className="font-bold text-sm text-white">OpenAI API (Primary Engine)</h3>
                 <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">
@@ -108,10 +108,10 @@ export function AiProvidersClientView({
             </span>
           </div>
 
-          <div className="bg-[#070D18] border border-[#C6A65B]/20 rounded p-3 text-xs font-mono flex items-center justify-between">
+          <div className="bg-[#0D1526] border border-[#8FB2FF]/20 rounded p-3 text-xs font-mono flex items-center justify-between">
             <div>
-              <div className="text-[10px] text-[#DFCA95]/60 uppercase">Configured Secret Hint</div>
-              <div className="text-[#C6A65B] font-bold mt-0.5">
+              <div className="text-[10px] text-white/45 uppercase">Configured Secret Hint</div>
+              <div className="text-[#8FB2FF] font-bold mt-0.5">
                 {openaiIntegration?.credentials?.[0]?.maskedHint || "sk-proj-...[Pending Setup]"}
               </div>
             </div>
@@ -123,7 +123,7 @@ export function AiProvidersClientView({
                   credentials: openaiIntegration?.credentials,
                 })
               }
-              className="bg-[#C6A65B] hover:bg-[#DFCA95] text-[#0A1830] font-bold text-xs px-3 py-1.5 rounded transition-colors flex items-center gap-1 shadow"
+              className="bg-[#8FB2FF] hover:bg-[#8FB2FF] text-[#091833] font-bold text-xs px-3 py-1.5 rounded transition-colors flex items-center gap-1 "
             >
               <Key className="w-3.5 h-3.5" />
               <span>
@@ -157,13 +157,13 @@ export function AiProvidersClientView({
           )}
 
           <div className="pt-2 flex items-center justify-between text-xs">
-            <span className="text-[11px] text-[#DFCA95]/70">
+            <span className="text-[11px] text-white/55">
               Used for guest categorization & seating constraints
             </span>
             <button
               onClick={() => handleTestKey("openai")}
               disabled={testingKey === "openai"}
-              className="bg-[#102343] hover:bg-[#C6A65B] hover:text-[#0A1830] text-[#DFCA95] border border-[#C6A65B]/30 px-2.5 py-1 rounded text-xs font-semibold flex items-center gap-1 transition-colors"
+              className="bg-[#091833] hover:bg-[#8FB2FF] hover:text-[#091833] text-white/75 border border-[#8FB2FF]/30 px-2.5 py-1 rounded text-xs font-semibold flex items-center gap-1 transition-colors"
             >
               {testingKey === "openai" ? (
                 <RefreshCw className="w-3 h-3 animate-spin" />
@@ -176,10 +176,10 @@ export function AiProvidersClientView({
         </div>
 
         {/* Anthropic Claude Card */}
-        <div className="bg-[#0D1C38] border-2 border-[#C6A65B]/40 hover:border-[#C6A65B] rounded-xl p-5 shadow-lg space-y-3">
+        <div className="bg-[#091833] border-2 border-[#8FB2FF]/40 hover:border-[#8FB2FF] rounded-xl p-5 shadow-float space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Cpu className="w-5 h-5 text-[#C6A65B]" />
+              <Cpu className="w-5 h-5 text-[#8FB2FF]" />
               <div>
                 <h3 className="font-bold text-sm text-white">Anthropic Claude (Failover Standby)</h3>
                 <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">
@@ -192,10 +192,10 @@ export function AiProvidersClientView({
             </span>
           </div>
 
-          <div className="bg-[#070D18] border border-[#C6A65B]/20 rounded p-3 text-xs font-mono flex items-center justify-between">
+          <div className="bg-[#0D1526] border border-[#8FB2FF]/20 rounded p-3 text-xs font-mono flex items-center justify-between">
             <div>
-              <div className="text-[10px] text-[#DFCA95]/60 uppercase">Configured Secret Hint</div>
-              <div className="text-[#C6A65B] font-bold mt-0.5">
+              <div className="text-[10px] text-white/45 uppercase">Configured Secret Hint</div>
+              <div className="text-[#8FB2FF] font-bold mt-0.5">
                 {anthropicIntegration?.credentials?.[0]?.maskedHint || "sk-ant-...[Pending Setup]"}
               </div>
             </div>
@@ -207,7 +207,7 @@ export function AiProvidersClientView({
                   credentials: anthropicIntegration?.credentials,
                 })
               }
-              className="bg-[#C6A65B] hover:bg-[#DFCA95] text-[#0A1830] font-bold text-xs px-3 py-1.5 rounded transition-colors flex items-center gap-1 shadow"
+              className="bg-[#8FB2FF] hover:bg-[#8FB2FF] text-[#091833] font-bold text-xs px-3 py-1.5 rounded transition-colors flex items-center gap-1 "
             >
               <Key className="w-3.5 h-3.5" />
               <span>
@@ -241,13 +241,13 @@ export function AiProvidersClientView({
           )}
 
           <div className="pt-2 flex items-center justify-between text-xs">
-            <span className="text-[11px] text-[#DFCA95]/70">
+            <span className="text-[11px] text-white/55">
               Automated high-availability failover target
             </span>
             <button
               onClick={() => handleTestKey("anthropic")}
               disabled={testingKey === "anthropic"}
-              className="bg-[#102343] hover:bg-[#C6A65B] hover:text-[#0A1830] text-[#DFCA95] border border-[#C6A65B]/30 px-2.5 py-1 rounded text-xs font-semibold flex items-center gap-1 transition-colors"
+              className="bg-[#091833] hover:bg-[#8FB2FF] hover:text-[#091833] text-white/75 border border-[#8FB2FF]/30 px-2.5 py-1 rounded text-xs font-semibold flex items-center gap-1 transition-colors"
             >
               {testingKey === "anthropic" ? (
                 <RefreshCw className="w-3 h-3 animate-spin" />
@@ -261,20 +261,20 @@ export function AiProvidersClientView({
       </div>
 
       {/* Primary & Backup Routing Table */}
-      <div className="bg-[#0D1C38] border border-[#C6A65B]/30 rounded-xl overflow-hidden shadow-lg">
-        <div className="p-4 border-b border-[#C6A65B]/20 flex items-center justify-between">
+      <div className="bg-[#091833] border border-[#8FB2FF]/30 rounded-xl overflow-hidden shadow-float">
+        <div className="p-4 border-b border-[#8FB2FF]/20 flex items-center justify-between">
           <div>
-            <h3 className="font-editorial text-sm font-bold text-white uppercase tracking-wider">
+            <h3 className="font-editorial text-sm font-medium text-white uppercase tracking-wider">
               Configured Task-to-Model Routing Table
             </h3>
-            <p className="text-[11px] text-[#DFCA95]/70">
+            <p className="text-[11px] text-white/55">
               Deterministic priority order: Priority 1 (Primary) &bull; Priority 2 (Standby Backup)
             </p>
           </div>
           <button
             onClick={handleSimulateFailover}
             disabled={isSimulating}
-            className="bg-[#102343] hover:bg-[#C6A65B] hover:text-[#0A1830] text-[#DFCA95] border border-[#C6A65B]/30 px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-1.5"
+            className="bg-[#091833] hover:bg-[#8FB2FF] hover:text-[#091833] text-white/75 border border-[#8FB2FF]/30 px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-1.5"
           >
             {isSimulating ? (
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -299,7 +299,7 @@ export function AiProvidersClientView({
 
         <div className="table-responsive-container">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#070D18] text-[#C6A65B]">
+            <thead className="bg-[#0D1526] text-[#8FB2FF]">
               <tr>
                 <th className="p-3">Task Key</th>
                 <th className="p-3">Priority</th>
@@ -310,9 +310,9 @@ export function AiProvidersClientView({
                 <th className="p-3">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#C6A65B]/10 text-[#DFCA95]">
+            <tbody className="divide-y divide-[#8FB2FF]/10 text-white/75">
               {configs.map((c) => (
-                <tr key={c.id} className="hover:bg-[#102343]/50">
+                <tr key={c.id} className="hover:bg-[#091833]/50">
                   <td className="p-3 font-mono font-bold text-white">{c.taskKey}</td>
                   <td className="p-3">
                     <span

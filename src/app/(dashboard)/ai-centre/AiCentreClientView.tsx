@@ -114,23 +114,23 @@ export function AiCentreClientView({ eventId }: { eventId: string }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Main Chat Interface */}
-      <div className="lg:col-span-2 bg-white rounded-lg border border-[#E4E7EC] flex flex-col h-[650px] shadow-sm">
+      <div className="lg:col-span-2 bg-white rounded-lg border border-[#E3E6EB] flex flex-col h-[650px] ">
         {/* Chat Header */}
-        <div className="p-4 border-b border-[#E4E7EC] flex items-center justify-between bg-[#0A1830] text-white rounded-t-lg">
+        <div className="p-4 border-b border-[#E3E6EB] flex items-center justify-between bg-[#091833] text-white rounded-t-lg">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-[#102343] border border-[#C6A65B] flex items-center justify-center text-[#C6A65B]">
+            <div className="w-8 h-8 rounded-full bg-[#091833] flex items-center justify-center text-[#2563EB]">
               <Sparkles className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-editorial text-sm font-bold text-[#FFFFFF]">
+              <h3 className="font-editorial text-sm font-medium text-[#FFFFFF]">
                 Protocol Command Assistant
               </h3>
-              <p className="text-[10px] text-[#DFCA95]">
+              <p className="text-[10px] text-[#8FB2FF]">
                 Least-Privilege Policy Active &bull; Zero SQL Access
               </p>
             </div>
           </div>
-          <span className="text-[10px] bg-[#18794E] text-white font-bold px-2 py-0.5 rounded-full">
+          <span className="text-[10px] bg-[#3F6212] text-white font-semibold px-2 py-0.5 rounded-full">
             Policy Gate: Verified
           </span>
         </div>
@@ -147,23 +147,23 @@ export function AiCentreClientView({ eventId }: { eventId: string }) {
               <div
                 className={`max-w-[85%] rounded-lg p-3.5 text-xs ${
                   msg.sender === "user"
-                    ? "bg-[#102343] text-[#F7F5F0]"
-                    : "bg-[#F7F5F0] text-[#202A38] border border-[#E4E7EC]"
+                    ? "bg-[#091833] text-[#F6F7F9]"
+                    : "bg-[#F6F7F9] text-[#0D1526] border border-[#E3E6EB]"
                 }`}
               >
-                <div className="font-semibold mb-1 text-[10px] uppercase tracking-wider text-[#C6A65B]">
+                <div className="font-semibold mb-1 text-[10px] uppercase tracking-wider text-[#2563EB]">
                   {msg.sender === "user" ? "Authorized Officer" : "Parliamentary AI Assistant"}
                 </div>
                 <p className="whitespace-pre-line leading-relaxed">{msg.text}</p>
 
                 {/* Tool Execution Results */}
                 {msg.toolExecution?.result && (
-                  <div className="mt-3 pt-3 border-t border-[#C6A65B]/30 space-y-2">
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#102343]">
-                      <Terminal className="w-3.5 h-3.5 text-[#C6A65B]" />
+                  <div className="mt-3 pt-3 border-t border-[#2563EB]/30 space-y-2">
+                    <div className="flex items-center gap-1.5 text-[10px] font-semibold text-[#091833]">
+                      <Terminal className="w-3.5 h-3.5 text-[#2563EB]" />
                       Authoritative Database Record:
                     </div>
-                    <pre className="bg-[#0A1830] text-[#DFCA95] p-2.5 rounded text-[11px] font-mono overflow-x-auto max-h-48">
+                    <pre className="bg-[#091833] text-[#8FB2FF] p-2.5 rounded text-[11px] font-mono overflow-x-auto max-h-48">
                       {JSON.stringify(msg.toolExecution.result, null, 2)}
                     </pre>
                   </div>
@@ -172,7 +172,7 @@ export function AiCentreClientView({ eventId }: { eventId: string }) {
                 {/* Human-in-the-Loop Approval Card */}
                 {msg.approvalRequired && (
                   <div className="mt-3 p-3 bg-amber-50 border border-amber-300 rounded text-amber-900 space-y-2">
-                    <div className="flex items-center gap-1.5 font-bold text-xs text-amber-800">
+                    <div className="flex items-center gap-1.5 font-semibold text-xs text-amber-800">
                       <AlertTriangle className="w-4 h-4 text-amber-600" />
                       Human Approval Required
                     </div>
@@ -186,7 +186,7 @@ export function AiCentreClientView({ eventId }: { eventId: string }) {
                             msg.approvalRequired!.args
                           )
                         }
-                        className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-3 py-1 rounded text-xs transition-colors flex items-center gap-1"
+                        className="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold px-3 py-1 rounded text-xs transition-colors flex items-center gap-1"
                       >
                         <CheckCircle className="w-3.5 h-3.5" />
                         Approve & Execute Action
@@ -198,15 +198,15 @@ export function AiCentreClientView({ eventId }: { eventId: string }) {
             </div>
           ))}
           {isLoading && (
-            <div className="flex items-center gap-2 text-xs text-[#667085] italic">
-              <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#C6A65B]" />
+            <div className="flex items-center gap-2 text-xs text-[#5B6374] italic">
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#2563EB]" />
               Consulting Parliamentary Protocol Rules...
             </div>
           )}
         </div>
 
         {/* Input Bar */}
-        <div className="p-3 border-t border-[#E4E7EC] bg-white rounded-b-lg">
+        <div className="p-3 border-t border-[#E3E6EB] bg-white rounded-b-lg">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -219,12 +219,12 @@ export function AiCentreClientView({ eventId }: { eventId: string }) {
               placeholder="Ask about guests, pending RSVPs, seating, or draft copy..."
               value={inputQuery}
               onChange={(e) => setInputQuery(e.target.value)}
-              className="flex-1 text-xs border border-[#E4E7EC] rounded-md px-3 py-2.5 focus:outline-none focus:border-[#C6A65B]"
+              className="flex-1 text-xs border border-[#E3E6EB] rounded-md px-3 py-2.5 focus:outline-none focus:border-[#2563EB]"
             />
             <button
               type="submit"
               disabled={isLoading || !inputQuery.trim()}
-              className="bg-[#102343] text-[#DFCA95] border border-[#C6A65B] hover:bg-[#C6A65B] hover:text-[#0A1830] transition-colors p-2.5 rounded-md text-xs font-bold disabled:opacity-50"
+              className="bg-white/[0.06] border border-white/20 text-white hover:bg-white/[0.12] hover:text-white transition-colors p-2.5 rounded-md text-xs font-semibold disabled:opacity-50"
             >
               <Send className="w-4 h-4" />
             </button>
@@ -235,8 +235,8 @@ export function AiCentreClientView({ eventId }: { eventId: string }) {
       {/* Sidebar: Quick Prompts & Registered Tools */}
       <div className="space-y-4">
         {/* Suggestion Prompts */}
-        <div className="bg-white rounded-lg border border-[#E4E7EC] p-4 shadow-sm space-y-3">
-          <h4 className="text-xs font-bold text-[#102343] uppercase tracking-wider">
+        <div className="bg-white rounded-lg border border-[#E3E6EB] p-4 space-y-3">
+          <h4 className="text-xs font-semibold text-[#091833] uppercase tracking-wider">
             Operational Prompts
           </h4>
           <div className="space-y-2">
@@ -249,27 +249,27 @@ export function AiCentreClientView({ eventId }: { eventId: string }) {
               <button
                 key={idx}
                 onClick={() => handleSend(prompt)}
-                className="w-full text-left text-xs p-2.5 rounded border border-[#E4E7EC] hover:border-[#C6A65B] hover:bg-[#F7F5F0] transition-all flex items-center justify-between text-[#202A38] group"
+                className="w-full text-left text-xs p-2.5 rounded border border-[#E3E6EB] hover:border-[#2563EB] hover:bg-[#F6F7F9] transition-all flex items-center justify-between text-[#0D1526] group"
               >
                 <span>{prompt}</span>
-                <ArrowRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-[#C6A65B] flex-shrink-0" />
+                <ArrowRight className="w-3.5 h-3.5 text-[#8A91A0] group-hover:text-[#2563EB] flex-shrink-0" />
               </button>
             ))}
           </div>
         </div>
 
         {/* Typed Tool Registry Card */}
-        <div className="bg-[#0A1830] border border-[#C6A65B]/30 rounded-lg p-4 text-[#F7F5F0] shadow-sm space-y-3">
-          <div className="flex items-center gap-2 text-[#C6A65B]">
+        <div className="bg-[#091833] rounded-2xl p-4 text-[#F6F7F9] space-y-3">
+          <div className="flex items-center gap-2 text-[#2563EB]">
             <ShieldCheck className="w-4 h-4" />
-            <h4 className="text-xs font-bold uppercase tracking-wider">
+            <h4 className="text-xs font-semibold uppercase tracking-wider">
               Enforced Policy Boundaries
             </h4>
           </div>
-          <p className="text-[11px] text-[#DFCA95]/80 leading-relaxed">
+          <p className="text-[11px] text-white/70 leading-relaxed">
             All AI suggestions are bounded by typed domain services. Write operations must be approved by an authorized officer and are recorded in the append-only audit trail.
           </p>
-          <div className="text-[10px] space-y-1 text-[#DFCA95]/60 pt-2 border-t border-[#C6A65B]/20">
+          <div className="text-[10px] space-y-1 text-white/55 pt-2 border-t border-[#2563EB]/20">
             <div>&bull; Direct SQL Execution: <strong>BLOCKED</strong></div>
             <div>&bull; Autonomous Mass Dispatch: <strong>BLOCKED</strong></div>
             <div>&bull; Precedence Rank Override: <strong>HUMAN APPROVAL REQUIRED</strong></div>

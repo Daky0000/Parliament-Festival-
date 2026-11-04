@@ -101,12 +101,12 @@ export function ResendEmailClientView({
     <div className="space-y-6">
       {/* Resend Configuration Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-[#0D1C38] border border-[#C6A65B]/30 rounded-xl p-5 space-y-3 shadow-lg">
+        <div className="bg-[#091833] border border-[#8FB2FF]/30 rounded-xl p-5 space-y-3 shadow-float">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] text-[#DFCA95]/60 uppercase font-mono">Resend API Secret</span>
+            <span className="text-[10px] text-white/45 uppercase font-mono">Resend API Secret</span>
             <button
               onClick={() => setIsEditingKey(true)}
-              className="bg-[#C6A65B] hover:bg-[#DFCA95] text-[#0A1830] font-bold text-[11px] px-2.5 py-1 rounded transition-colors flex items-center gap-1 shadow"
+              className="bg-[#8FB2FF] hover:bg-[#8FB2FF] text-[#091833] font-bold text-[11px] px-2.5 py-1 rounded transition-colors flex items-center gap-1 "
             >
               <Key className="w-3 h-3" />
               <span>Edit Key</span>
@@ -123,53 +123,53 @@ export function ResendEmailClientView({
             <button
               onClick={handleVerifyConnection}
               disabled={isVerifying}
-              className="text-[11px] text-[#DFCA95] hover:text-white underline flex items-center gap-1"
+              className="text-[11px] text-white/75 hover:text-white underline flex items-center gap-1"
             >
               {isVerifying ? <RefreshCw className="w-3 h-3 animate-spin" /> : "Verify Now"}
             </button>
           </div>
         </div>
 
-        <div className="bg-[#0D1C38] border border-[#C6A65B]/30 rounded-xl p-5 space-y-2 shadow-lg">
-          <div className="text-[10px] text-[#DFCA95]/60 uppercase font-mono">Verified Sending Domain</div>
+        <div className="bg-[#091833] border border-[#8FB2FF]/30 rounded-xl p-5 space-y-2 shadow-float">
+          <div className="text-[10px] text-white/45 uppercase font-mono">Verified Sending Domain</div>
           <div className="text-base font-bold text-white font-mono">
             {meta.verifiedDomain || "marketing.dakyworld.com"}
           </div>
-          <div className="text-[11px] text-[#DFCA95]/80">
+          <div className="text-[11px] text-white/60">
             Sender: <span className="text-white font-mono">{meta.senderEmail || "onboarding@resend.dev"}</span>
           </div>
         </div>
 
-        <div className="bg-[#0D1C38] border border-[#C6A65B]/30 rounded-xl p-5 space-y-2 shadow-lg">
-          <div className="text-[10px] text-[#DFCA95]/60 uppercase font-mono">Webhook Endpoint</div>
+        <div className="bg-[#091833] border border-[#8FB2FF]/30 rounded-xl p-5 space-y-2 shadow-float">
+          <div className="text-[10px] text-white/45 uppercase font-mono">Webhook Endpoint</div>
           <div className="text-xs font-mono text-white truncate">
             /api/v1/webhooks/email
           </div>
-          <div className="text-[11px] text-[#DFCA95]/80">
+          <div className="text-[11px] text-white/60">
             DKIM / SPF: <span className="text-emerald-400 font-bold">Resend Live</span>
           </div>
         </div>
       </div>
 
       {verifyStatus && (
-        <div className="p-3 bg-[#102343] border border-[#C6A65B]/40 rounded-lg text-xs text-[#DFCA95] flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-[#C6A65B] shrink-0" />
+        <div className="p-3 bg-[#091833] border border-[#8FB2FF]/40 rounded-lg text-xs text-white/75 flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-[#8FB2FF] shrink-0" />
           <span>{verifyStatus}</span>
         </div>
       )}
 
       {/* Test Email Dispatcher */}
-      <div className="bg-[#0D1C38] border border-[#C6A65B]/30 rounded-xl p-6 shadow-lg space-y-4">
-        <div className="border-b border-[#C6A65B]/20 pb-3 flex items-center justify-between">
+      <div className="bg-[#091833] border border-[#8FB2FF]/30 rounded-xl p-6 shadow-float space-y-4">
+        <div className="border-b border-[#8FB2FF]/20 pb-3 flex items-center justify-between">
           <div>
-            <h3 className="font-editorial text-sm font-bold text-white uppercase tracking-wider">
+            <h3 className="font-editorial text-sm font-medium text-white uppercase tracking-wider">
               Resend Delivery Verification Test
             </h3>
-            <p className="text-xs text-[#DFCA95]/70">
+            <p className="text-xs text-white/55">
               Dispatches a live state invitation test email using the official Parliamentary header & protocol seal.
             </p>
           </div>
-          <span className="text-[10px] bg-[#102343] text-[#C6A65B] px-2.5 py-1 rounded border border-[#C6A65B]/30 font-mono">
+          <span className="text-[10px] bg-[#091833] text-[#8FB2FF] px-2.5 py-1 rounded border border-[#8FB2FF]/30 font-mono">
             Provider: Resend Live
           </span>
         </div>
@@ -185,12 +185,12 @@ export function ResendEmailClientView({
                 required
                 value={testEmail}
                 onChange={(e) => setTestEmail(e.target.value)}
-                className="flex-1 bg-[#070D18] border border-[#C6A65B]/30 rounded p-2.5 text-white font-mono focus:outline-none focus:border-[#C6A65B]"
+                className="flex-1 bg-[#0D1526] border border-[#8FB2FF]/30 rounded p-2.5 text-white font-mono focus:outline-none focus:border-[#8FB2FF]"
               />
               <button
                 type="submit"
                 disabled={isSending}
-                className="bg-[#C6A65B] hover:bg-[#DFCA95] text-[#0A1830] font-bold px-5 py-2.5 rounded text-xs transition-colors flex items-center gap-2 shadow disabled:opacity-50"
+                className="bg-[#8FB2FF] hover:bg-[#8FB2FF] text-[#091833] font-bold px-5 py-2.5 rounded text-xs transition-colors flex items-center gap-2 disabled:opacity-50"
               >
                 {isSending ? (
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -200,14 +200,14 @@ export function ResendEmailClientView({
                 <span>Send Live Test Email</span>
               </button>
             </div>
-            <p className="text-[10px] text-[#DFCA95]/60 mt-1">
+            <p className="text-[10px] text-white/45 mt-1">
               Sends an institutional test invitation to the specified inbox using Resend credentials.
             </p>
           </div>
         </form>
 
         {testResult && (
-          <div className="p-4 bg-[#070D18] border border-emerald-500/40 rounded-lg text-xs text-emerald-300 space-y-1">
+          <div className="p-4 bg-[#0D1526] border border-emerald-500/40 rounded-lg text-xs text-emerald-300 space-y-1">
             <div className="font-bold text-emerald-400 flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4" />
               Email Successfully Accepted by Resend Gateway!
@@ -230,19 +230,19 @@ export function ResendEmailClientView({
       </div>
 
       {/* Recent Email Attempts Ledger */}
-      <div className="bg-[#0D1C38] border border-[#C6A65B]/30 rounded-xl overflow-hidden shadow-lg">
-        <div className="p-4 border-b border-[#C6A65B]/20 flex items-center justify-between">
-          <h3 className="font-editorial text-sm font-bold text-white uppercase tracking-wider">
+      <div className="bg-[#091833] border border-[#8FB2FF]/30 rounded-xl overflow-hidden shadow-float">
+        <div className="p-4 border-b border-[#8FB2FF]/20 flex items-center justify-between">
+          <h3 className="font-editorial text-sm font-medium text-white uppercase tracking-wider">
             Recent Email Attempts Ledger
           </h3>
-          <span className="text-[10px] text-[#DFCA95]/70 font-mono">
+          <span className="text-[10px] text-white/55 font-mono">
             {attempts.length} Logged
           </span>
         </div>
 
         <div className="table-responsive-container">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#070D18] text-[#C6A65B]">
+            <thead className="bg-[#0D1526] text-[#8FB2FF]">
               <tr>
                 <th className="p-3">Recipient Email</th>
                 <th className="p-3">Provider</th>
@@ -251,9 +251,9 @@ export function ResendEmailClientView({
                 <th className="p-3">Timestamp</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#C6A65B]/10 text-[#DFCA95]">
+            <tbody className="divide-y divide-[#8FB2FF]/10 text-white/75">
               {attempts.map((a) => (
-                <tr key={a.id} className="hover:bg-[#102343]/50">
+                <tr key={a.id} className="hover:bg-[#091833]/50">
                   <td className="p-3 font-mono font-bold text-white">{a.recipientEmail}</td>
                   <td className="p-3 uppercase">{a.provider}</td>
                   <td className="p-3 font-mono text-[11px] text-white/70">{a.providerMessageId || "—"}</td>
@@ -262,7 +262,7 @@ export function ResendEmailClientView({
                       {a.status}
                     </span>
                   </td>
-                  <td className="p-3 font-mono text-[11px] text-[#DFCA95]/60">
+                  <td className="p-3 font-mono text-[11px] text-white/45">
                     {new Date(a.createdAt).toLocaleTimeString()}
                   </td>
                 </tr>

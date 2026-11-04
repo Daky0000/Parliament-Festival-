@@ -77,9 +77,9 @@ export default function PublicRsvpPage({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#0A1830] flex flex-col items-center justify-center p-6 text-white text-center">
-        <RefreshCw className="w-8 h-8 text-[#C6A65B] animate-spin mb-3" />
-        <p className="font-editorial text-sm tracking-wider text-[#DFCA95]">
+      <div className="min-h-screen bg-[#091833] flex flex-col items-center justify-center p-6 text-white text-center">
+        <RefreshCw className="w-8 h-8 text-[#2563EB] animate-spin mb-3" />
+        <p className="font-editorial text-sm tracking-wider text-[#8FB2FF]">
           Resolving Official Parliamentary Invitation...
         </p>
       </div>
@@ -88,16 +88,16 @@ export default function PublicRsvpPage({
 
   if (error || !invitation) {
     return (
-      <div className="min-h-screen bg-[#0A1830] flex flex-col items-center justify-center p-6 text-white text-center">
-        <div className="bg-[#102343] border border-rose-500/50 rounded-xl p-8 max-w-md w-full shadow-2xl space-y-4">
+      <div className="min-h-screen bg-[#091833] flex flex-col items-center justify-center p-6 text-white text-center">
+        <div className="bg-[#091833] border-rose-500/50 rounded-2xl p-8 max-w-md w-full shadow-float space-y-4">
           <AlertCircle className="w-12 h-12 text-rose-500 mx-auto" />
-          <h2 className="font-editorial text-xl font-bold text-white">
+          <h2 className="font-editorial text-xl font-medium text-white">
             Invitation Link Notice
           </h2>
-          <p className="text-xs text-[#DFCA95]/80">
+          <p className="text-xs text-white/70">
             {error || "This invitation link is unrecognized or has expired."}
           </p>
-          <div className="pt-2 text-[11px] text-[#DFCA95]/60">
+          <div className="pt-2 text-[11px] text-white/55">
             Please contact Protocol Services: <strong>protocol@parliament.gh</strong>
           </div>
         </div>
@@ -106,17 +106,17 @@ export default function PublicRsvpPage({
   }
 
   return (
-    <div className="min-h-screen bg-[#0A1830] text-[#F7F5F0] py-12 px-4 flex flex-col items-center justify-center">
-      <div className="max-w-2xl w-full bg-[#102343] border-2 border-[#C6A65B] rounded-xl shadow-2xl overflow-hidden">
+    <div className="min-h-screen bg-[#091833] text-[#F6F7F9] py-12 px-4 flex flex-col items-center justify-center">
+      <div className="max-w-2xl w-full bg-[#091833] rounded-2xl shadow-float overflow-hidden">
         {/* Formal Institutional Header */}
-        <div className="p-8 text-center border-b border-[#C6A65B]/40 bg-[#0A1830]">
-          <div className="w-14 h-14 rounded-full bg-[#102343] border-2 border-[#C6A65B] flex items-center justify-center font-editorial font-bold text-[#C6A65B] text-xl mx-auto mb-3 shadow-lg">
+        <div className="p-8 text-center border-b bg-[#091833]">
+          <div className="w-14 h-14 rounded-full bg-[#091833] flex items-center justify-center font-editorial font-medium text-[#2563EB] text-xl mx-auto mb-3 shadow-float">
             GH
           </div>
-          <h1 className="font-editorial text-xl font-bold tracking-widest text-[#C6A65B] uppercase">
+          <h1 className="font-editorial text-xl font-medium tracking-widest text-[#2563EB] uppercase">
             Parliament of Ghana
           </h1>
-          <p className="text-[11px] text-[#DFCA95] tracking-widest uppercase mt-0.5">
+          <p className="text-[11px] text-[#8FB2FF] tracking-widest uppercase mt-0.5">
             Office of the Rt. Hon. Speaker &bull; Protocol Directorate
           </p>
         </div>
@@ -126,60 +126,60 @@ export default function PublicRsvpPage({
           {!confirmationData ? (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="text-center space-y-2">
-                <p className="font-editorial text-sm italic text-[#DFCA95]">
+                <p className="font-editorial text-sm italic text-[#8FB2FF]">
                   The Rt. Hon. Speaker and Leadership of Parliament request the honour of the presence of
                 </p>
-                <h2 className="font-editorial text-2xl font-bold text-white">
+                <h2 className="font-editorial text-2xl font-medium text-white">
                   {invitation.guestTitle} {invitation.guestFullName}
                 </h2>
-                <p className="text-xs text-[#C6A65B] font-semibold">
+                <p className="text-xs text-[#2563EB] font-semibold">
                   {invitation.designation} &bull; {invitation.institution}
                 </p>
                 <div className="pt-2">
-                  <span className="text-[10px] bg-[#0A1830] text-[#DFCA95] border border-[#C6A65B]/40 px-2.5 py-0.5 rounded-full uppercase tracking-wider font-bold">
+                  <span className="text-[10px] bg-[#091833] text-[#8FB2FF] px-2.5 py-0.5 rounded-full uppercase tracking-wider font-semibold">
                     {invitation.protocolCategory}
                   </span>
                 </div>
               </div>
 
               {/* Event Schedule Box */}
-              <div className="bg-[#0A1830] border border-[#C6A65B]/30 rounded-lg p-5 text-center space-y-3">
-                <p className="text-xs uppercase tracking-widest text-[#DFCA95] font-bold">
+              <div className="bg-[#091833] rounded-2xl p-5 text-center space-y-3">
+                <p className="text-xs uppercase tracking-widest text-[#8FB2FF] font-semibold">
                   at the official
                 </p>
-                <h3 className="font-editorial text-xl font-bold text-white">
+                <h3 className="font-editorial text-xl font-medium text-white">
                   {invitation.eventName}
                 </h3>
-                <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-[#DFCA95] pt-1">
+                <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-[#8FB2FF] pt-1">
                   <span className="flex items-center gap-1.5">
-                    <Calendar className="w-4 h-4 text-[#C6A65B]" />
+                    <Calendar className="w-4 h-4 text-[#2563EB]" />
                     Friday, 18th December 2026
                   </span>
                   <span>&bull;</span>
                   <span className="flex items-center gap-1.5">
-                    <Clock className="w-4 h-4 text-[#C6A65B]" />
+                    <Clock className="w-4 h-4 text-[#2563EB]" />
                     4:00 PM GMT
                   </span>
                 </div>
-                <div className="text-xs text-[#DFCA95]/80 flex items-center justify-center gap-1.5 pt-1">
-                  <MapPin className="w-4 h-4 text-[#C6A65B]" />
+                <div className="text-xs text-white/70 flex items-center justify-center gap-1.5 pt-1">
+                  <MapPin className="w-4 h-4 text-[#2563EB]" />
                   {invitation.eventVenue}, {invitation.eventAddress}
                 </div>
               </div>
 
               {/* Response Selector */}
               <div className="space-y-3">
-                <label className="text-xs font-bold text-[#DFCA95] uppercase tracking-wider block text-center">
+                <label className="text-xs font-semibold text-[#8FB2FF] uppercase tracking-wider block text-center">
                   Your Formal Response
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => setSelectedResponse("accepted")}
-                    className={`py-3 px-4 rounded-lg border text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+                    className={`py-3 px-4 rounded-lg border text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
                       selectedResponse === "accepted"
-                        ? "bg-[#C6A65B] text-[#0A1830] border-[#C6A65B] shadow-md"
-                        : "bg-[#0A1830] text-white border-[#C6A65B]/30 hover:border-[#C6A65B]"
+                        ? "bg-[#2563EB] text-[#091833] border-[#2563EB] shadow-md"
+                        : "bg-[#091833] text-white border-[#2563EB]/30 hover:border-[#2563EB]"
                     }`}
                   >
                     <CheckCircle2 className="w-4 h-4" />
@@ -189,10 +189,10 @@ export default function PublicRsvpPage({
                   <button
                     type="button"
                     onClick={() => setSelectedResponse("declined")}
-                    className={`py-3 px-4 rounded-lg border text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+                    className={`py-3 px-4 rounded-lg border text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
                       selectedResponse === "declined"
                         ? "bg-rose-900 text-white border-rose-500 shadow-md"
-                        : "bg-[#0A1830] text-white border-[#C6A65B]/30 hover:border-[#C6A65B]"
+                        : "bg-[#091833] text-white border-[#2563EB]/30 hover:border-[#2563EB]"
                     }`}
                   >
                     <XCircle className="w-4 h-4" />
@@ -203,17 +203,17 @@ export default function PublicRsvpPage({
 
               {/* Accompanying Persons Selector */}
               {selectedResponse === "accepted" && invitation.companionAllowance > 0 && (
-                <div className="bg-[#0A1830] border border-[#C6A65B]/30 rounded-lg p-4 space-y-2">
+                <div className="bg-[#091833] rounded-2xl p-4 space-y-2">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-[#DFCA95]">Accompanying Persons (Spouse / Aide)</span>
-                    <span className="text-[11px] text-[#DFCA95]/70">
+                    <span className="font-semibold text-[#8FB2FF]">Accompanying Persons (Spouse / Aide)</span>
+                    <span className="text-[11px] text-white/60">
                       Allowance: Max {invitation.companionAllowance}
                     </span>
                   </div>
                   <select
                     value={companionCount}
                     onChange={(e) => setCompanionCount(parseInt(e.target.value) || 0)}
-                    className="w-full bg-[#102343] border border-[#C6A65B]/40 rounded p-2 text-xs text-white focus:outline-none focus:border-[#C6A65B]"
+                    className="w-full bg-[#091833] rounded p-2 text-xs text-white focus:outline-none focus:border-[#2563EB]"
                   >
                     <option value={0}>Attending Alone (0 Companions)</option>
                     {Array.from({ length: invitation.companionAllowance }, (_, i) => i + 1).map(
@@ -232,7 +232,7 @@ export default function PublicRsvpPage({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-[#C6A65B] hover:bg-[#DFCA95] text-[#0A1830] font-bold py-3 px-6 rounded-lg text-sm shadow-lg transition-colors flex items-center justify-center gap-2"
+                  className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold py-3 px-6 rounded-lg text-sm shadow-float transition-colors flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
                     <RefreshCw className="w-4 h-4 animate-spin" />
@@ -241,7 +241,7 @@ export default function PublicRsvpPage({
                   )}
                   Submit Official Response
                 </button>
-                <p className="text-center text-[10px] text-[#DFCA95]/60 mt-2">
+                <p className="text-center text-[10px] text-white/55 mt-2">
                   Ref: {invitation.invitationReference} &bull; Official Parliamentary Security Protocol
                 </p>
               </div>
@@ -254,22 +254,22 @@ export default function PublicRsvpPage({
               </div>
 
               <div>
-                <span className="text-[10px] uppercase font-bold tracking-widest text-[#C6A65B]">
+                <span className="text-[10px] uppercase font-semibold tracking-widest text-[#2563EB]">
                   Official Confirmation Recorded
                 </span>
-                <h2 className="font-editorial text-2xl font-bold text-white mt-1">
+                <h2 className="font-editorial text-2xl font-medium text-white mt-1">
                   {confirmationData.response === "accepted"
                     ? "Attendance Confirmed with Honour"
                     : "Regrets Received with Thanks"}
                 </h2>
-                <p className="text-xs text-[#DFCA95] mt-1 font-mono">
+                <p className="text-xs text-[#8FB2FF] mt-1 font-mono">
                   Confirmation Code: <strong>{confirmationData.confirmationReference}</strong>
                 </p>
               </div>
 
               {confirmationData.response === "accepted" && (
-                <div className="bg-[#0A1830] border border-[#C6A65B] rounded-xl p-6 max-w-sm mx-auto space-y-4 shadow-xl">
-                  <div className="text-xs uppercase font-bold text-[#DFCA95] tracking-wider">
+                <div className="bg-[#091833] rounded-2xl p-6 max-w-sm mx-auto space-y-4 shadow-float">
+                  <div className="text-xs uppercase font-semibold text-[#8FB2FF] tracking-wider">
                     Official Event-Day Credential Pass
                   </div>
 
@@ -277,16 +277,16 @@ export default function PublicRsvpPage({
                     <img
                       src={confirmationData.qrCodeDataUrl}
                       alt="Parliamentary Event Pass"
-                      className="w-48 h-48 mx-auto rounded-lg border-2 border-[#C6A65B] p-2 bg-white"
+                      className="w-48 h-48 mx-auto rounded-lg border-2 border-[#2563EB] p-2 bg-white"
                     />
                   ) : (
-                    <div className="w-48 h-48 mx-auto rounded-lg border border-[#C6A65B] flex items-center justify-center text-xs text-[#DFCA95]">
+                    <div className="w-48 h-48 mx-auto rounded-lg border border-[#2563EB] flex items-center justify-center text-xs text-[#8FB2FF]">
                       Credential Hash Active
                     </div>
                   )}
 
-                  <div className="text-xs text-[#DFCA95]/90 space-y-1">
-                    <div className="font-bold text-white">
+                  <div className="text-xs text-white/75 space-y-1">
+                    <div className="font-semibold text-white">
                       {invitation.guestTitle} {invitation.guestFullName}
                     </div>
                     <div>Allocated Section: <strong>{invitation.protocolCategory}</strong></div>
@@ -296,7 +296,7 @@ export default function PublicRsvpPage({
                       </div>
                     )}
                   </div>
-                  <p className="text-[10px] text-[#DFCA95]/60 italic">
+                  <p className="text-[10px] text-white/55 italic">
                     Please present this digital pass upon arrival at the Forecourt for usher verification.
                   </p>
                 </div>
@@ -306,8 +306,8 @@ export default function PublicRsvpPage({
         </div>
 
         {/* Institutional Footer */}
-        <div className="p-4 bg-[#0A1830] border-t border-[#C6A65B]/30 text-center text-[10px] text-[#DFCA95]/50 flex items-center justify-center gap-1">
-          <ShieldCheck className="w-3.5 h-3.5 text-[#C6A65B]" />
+        <div className="p-4 bg-[#091833] border-t text-center text-[10px] text-white/55 flex items-center justify-center gap-1">
+          <ShieldCheck className="w-3.5 h-3.5 text-[#2563EB]" />
           <span>Parliament of Ghana Event Operations Gateway &bull; Privacy Protected</span>
         </div>
       </div>

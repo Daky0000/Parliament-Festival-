@@ -44,20 +44,20 @@ export default async function AttendancePage() {
   const attendanceRate = totalInvited > 0 ? Math.round((totalCheckedIn / totalInvited) * 100) : 0;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-[var(--frame)]">
+      <div className="panel px-6 py-6 sm:px-8 sm:py-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="font-editorial text-2xl font-bold text-[#102343]">
+          <h2 className="font-editorial text-[28px] sm:text-[34px] leading-[1.1] font-normal tracking-[-0.035em] text-[#0D1526]">
             Event-Day Arrival & Attendance Operations
           </h2>
-          <p className="text-xs text-[#667085] mt-1">
+          <p className="text-[15px] leading-relaxed text-[#5B6374] mt-2 max-w-[70ch]">
             Real-time Forecourt entry stream, usher check-in attribution, and security exception monitoring.
           </p>
         </div>
         <Link
           href="/usher"
           target="_blank"
-          className="bg-[#102343] text-[#DFCA95] border border-[#C6A65B] hover:bg-[#C6A65B] hover:text-[#0A1830] transition-colors px-4 py-2 rounded-md text-xs font-bold flex items-center gap-2 shadow-sm"
+          className="bg-white/[0.06] border border-white/20 text-white hover:bg-white/[0.12] hover:text-white transition-colors px-4 py-2 rounded-md text-xs font-semibold flex items-center gap-2 "
         >
           <QrCode className="w-4 h-4" />
           <span>Launch Usher Scanner App</span>
@@ -67,87 +67,87 @@ export default async function AttendancePage() {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white border border-[#E4E7EC] rounded-lg p-5 shadow-sm">
-          <div className="text-xs font-semibold text-[#667085] uppercase">
+        <div className="bg-white border border-[#E3E6EB] rounded-lg p-5 ">
+          <div className="text-xs font-semibold text-[#5B6374] uppercase">
             Total Checked In
           </div>
-          <div className="text-3xl font-bold text-[#102343] mt-2">{totalCheckedIn}</div>
-          <div className="text-xs text-emerald-700 font-semibold mt-1">
+          <div className="text-3xl font-semibold text-[#091833] mt-2">{totalCheckedIn}</div>
+          <div className="text-xs text-[#3F6212] font-semibold mt-1">
             {attendanceRate}% of Expected Protocol Roster
           </div>
         </div>
 
-        <div className="bg-white border border-[#E4E7EC] rounded-lg p-5 shadow-sm">
-          <div className="text-xs font-semibold text-[#667085] uppercase">
+        <div className="bg-white border border-[#E3E6EB] rounded-lg p-5 ">
+          <div className="text-xs font-semibold text-[#5B6374] uppercase">
             Awaiting Arrival
           </div>
-          <div className="text-3xl font-bold text-amber-600 mt-2">
+          <div className="text-3xl font-semibold text-amber-600 mt-2">
             {totalInvited - totalCheckedIn}
           </div>
-          <div className="text-xs text-[#667085] mt-1">Forecourt Reception Active</div>
+          <div className="text-xs text-[#5B6374] mt-1">Forecourt Reception Active</div>
         </div>
 
-        <div className="bg-white border border-[#E4E7EC] rounded-lg p-5 shadow-sm">
-          <div className="text-xs font-semibold text-[#667085] uppercase">
+        <div className="bg-white border border-[#E3E6EB] rounded-lg p-5 ">
+          <div className="text-xs font-semibold text-[#5B6374] uppercase">
             Check-In Integrity
           </div>
-          <div className="text-3xl font-bold text-emerald-700 mt-2">100%</div>
-          <div className="text-xs text-emerald-800 font-semibold mt-1">
+          <div className="text-3xl font-semibold text-[#3F6212] mt-2">100%</div>
+          <div className="text-xs text-[#3F6212] font-semibold mt-1">
             0 Unattributed or Duplicate Entries
           </div>
         </div>
       </div>
 
       {/* Real-time Arrival Feed */}
-      <div className="bg-white rounded-lg border border-[#E4E7EC] shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-[#E4E7EC] flex items-center justify-between">
-          <h3 className="font-editorial text-base font-bold text-[#102343]">
+      <div className="bg-white rounded-lg border border-[#E3E6EB] overflow-hidden">
+        <div className="p-4 border-b border-[#E3E6EB] flex items-center justify-between">
+          <h3 className="font-editorial text-base font-medium text-[#091833]">
             Live Forecourt Check-In Stream
           </h3>
-          <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+          <span className="text-xs font-semibold text-[#3F6212] bg-[#EEF6DC] px-2 py-0.5 rounded border border-[#D9E8B8]">
             Live Feed Active
           </span>
         </div>
 
         <div className="table-responsive-container">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#0A1830] text-[#F7F5F0]">
+            <thead className="bg-[#F6F7F9] text-[#5B6374] border-b border-[#E3E6EB]">
               <tr>
-                <th className="p-3 text-[#C6A65B]">Dignitary</th>
-                <th className="p-3 text-[#C6A65B]">Protocol Rank</th>
-                <th className="p-3 text-[#C6A65B]">Check-In Method</th>
-                <th className="p-3 text-[#C6A65B]">Verified By Usher</th>
-                <th className="p-3 text-[#C6A65B]">Timestamp</th>
+                <th className="p-3 text-[#5B6374] text-[11px] font-medium uppercase tracking-[0.12em]">Dignitary</th>
+                <th className="p-3 text-[#5B6374] text-[11px] font-medium uppercase tracking-[0.12em]">Protocol Rank</th>
+                <th className="p-3 text-[#5B6374] text-[11px] font-medium uppercase tracking-[0.12em]">Check-In Method</th>
+                <th className="p-3 text-[#5B6374] text-[11px] font-medium uppercase tracking-[0.12em]">Verified By Usher</th>
+                <th className="p-3 text-[#5B6374] text-[11px] font-medium uppercase tracking-[0.12em]">Timestamp</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E4E7EC]">
+            <tbody className="divide-y divide-[#E3E6EB]">
               {event.attendanceRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-[#667085]">
+                  <td colSpan={5} className="p-8 text-center text-[#5B6374]">
                     No attendees checked in yet today. Use the Usher Scanner App to scan or search dignitaries.
                   </td>
                 </tr>
               ) : (
                 event.attendanceRecords.map((att) => (
-                  <tr key={att.id} className="hover:bg-[#F7F5F0]/60">
-                    <td className="p-3 font-bold text-[#102343]">
+                  <tr key={att.id} className="hover:bg-[#F6F7F9]/60">
+                    <td className="p-3 font-semibold text-[#091833]">
                       {att.eventGuest.person.title} {att.eventGuest.person.fullName}
                     </td>
                     <td className="p-3">
-                      <span className="font-semibold text-[#202A38]">
+                      <span className="font-semibold text-[#0D1526]">
                         Rank {att.eventGuest.protocolCategory?.rankOrder || "-"}:{" "}
                         {att.eventGuest.protocolCategory?.name.slice(0, 25)}...
                       </span>
                     </td>
                     <td className="p-3">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 uppercase">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#EAF1FF] text-[#2563EB] uppercase">
                         {att.checkinMethod}
                       </span>
                     </td>
-                    <td className="p-3 text-[#667085]">
+                    <td className="p-3 text-[#5B6374]">
                       {att.recorder?.fullName || "Senior Usher"}
                     </td>
-                    <td className="p-3 font-mono text-[11px] text-[#667085]">
+                    <td className="p-3 font-mono text-[11px] text-[#5B6374]">
                       {new Date(att.checkedInAt).toLocaleTimeString()}
                     </td>
                   </tr>

@@ -2,56 +2,174 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   Parliament of Ghana · Event & Protocol Platform — design system
+   Same tokens as the landing page (cloudflare-pages-portal/assets/brand.css):
+   white panels on a cool grey canvas, one blue accent, the dot field as the
+   only ornament. Tailwind's `parliament-*` colours in tailwind.config.ts
+   point at these values.
+   ========================================================================== */
+
+/* Outfit, self-hosted — no request to Google */
+@font-face {
+  font-family: "Outfit";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url(/fonts/outfit-latin-ext.woff2) format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Outfit";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url(/fonts/outfit-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
-  --navy: #102343;
-  --deep-navy: #0A1830;
-  --gold: #C6A65B;
-  --gold-light: #DFCA95;
-  --ivory: #F7F5F0;
-  --ivory-dark: #EFECE4;
-  --surface: #FFFFFF;
-  --text-primary: #202A38;
-  --text-secondary: #667085;
-  --border: #E4E7EC;
-  --success: #18794E;
-  --warning: #A66A12;
-  --danger: #B42318;
+  --navy: #091833;
+  --ink: #0d1526;
+  --blue: #2563eb;
+  --blue-d: #1d4ed8;
+  --blue-light: #8fb2ff;
+  --pale: #eaf1ff;
+  --canvas: #eceef1;
+  --white: #fff;
+  --soft: #f6f7f9;
+  --line: #e3e6eb;
+  --line-2: #d2d7df;
+  --muted: #5b6374;
+  --faint: #8a91a0;
+  --positive: #3f6212;
+  --positive-bg: #eef6dc;
+  --danger: #b42318;
+  --danger-bg: #fdecea;
+  --r-panel: 22px;
+  --r-card: 14px;
+  --r-ctl: 10px;
+  --frame: 12px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --shadow-float: 0 20px 40px -20px rgba(13, 21, 38, 0.4);
+  --font: "Outfit", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@media (max-width: 640px) {
+  :root {
+    --frame: 8px;
+  }
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
 body {
-  background-color: var(--ivory);
-  color: var(--text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+  background-color: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font);
   -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
 }
 
-/* Luxury Editorial Serif Typography */
+/* Headings: light weight, tight tracking — the landing page voice */
 .font-editorial {
-  font-family: "Georgia", "Cambria", "Times New Roman", serif;
+  font-family: var(--font);
+  letter-spacing: -0.03em;
 }
 
-/* Responsive Table Wrapper with Sticky Headers */
+/* Small uppercase caption */
+.cap {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* The frame */
+.panel {
+  position: relative;
+  background: var(--white);
+  border-radius: var(--r-panel);
+}
+.band {
+  position: relative;
+  background: var(--navy);
+  color: #fff;
+  border-radius: var(--r-panel);
+  overflow: hidden;
+}
+
+/* The dot field — the only ornament */
+.dotfield {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, currentColor 1.15px, transparent 1.6px);
+  background-size: 11px 11px;
+  color: rgba(130, 165, 255, 0.22);
+  -webkit-mask: radial-gradient(38% 30% at 30% 40%, #000 60%, transparent 100%),
+    radial-gradient(30% 26% at 70% 62%, #000 55%, transparent 100%),
+    radial-gradient(22% 20% at 55% 20%, #000 50%, transparent 100%);
+  mask: radial-gradient(38% 30% at 30% 40%, #000 60%, transparent 100%),
+    radial-gradient(30% 26% at 70% 62%, #000 55%, transparent 100%),
+    radial-gradient(22% 20% at 55% 20%, #000 50%, transparent 100%);
+}
+
+/* Chip: pale blue, uppercase */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--pale);
+  color: var(--blue);
+  border-radius: var(--r-ctl);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+}
+.chip .pip {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Responsive table wrapper with sticky headers */
 .table-responsive-container {
   overflow: auto;
   max-inline-size: 100%;
   max-block-size: min(650px, 80vh);
   container-type: inline-size;
 }
-
 .table-responsive-container thead {
   position: sticky;
   inset-block-start: 0;
   z-index: 10;
 }
 
-/* Gold Gradient Accents */
+/* Legacy class names, now on the blue accent */
 .gold-gradient-border {
-  border-image: linear-gradient(to right, #C6A65B, #DFCA95, #C6A65B) 1;
+  border-color: var(--blue);
 }
-
 .gold-badge {
-  background: linear-gradient(135deg, #102343 0%, #0A1830 100%);
-  border: 1px solid #C6A65B;
-  color: #DFCA95;
+  background: var(--navy);
+  border: 1px solid rgba(143, 178, 255, 0.35);
+  color: var(--blue-light);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

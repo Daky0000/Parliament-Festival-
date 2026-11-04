@@ -23,10 +23,10 @@ export default async function SuperAdminEmailPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="font-editorial text-2xl font-bold text-white">
+          <h2 className="font-editorial text-2xl font-medium text-white">
             Resend Transactional Email Infrastructure
           </h2>
-          <p className="text-xs text-[#DFCA95]/80 mt-1">
+          <p className="text-xs text-white/60 mt-1">
             Verified institutional domain sending &bull; Webhook signing secret validation &bull; Idempotent dispatch.
           </p>
         </div>
@@ -34,7 +34,7 @@ export default async function SuperAdminEmailPage() {
           href="https://resend.com/docs"
           target="_blank"
           rel="noreferrer"
-          className="bg-[#102343] border border-[#C6A65B]/40 hover:bg-[#C6A65B] hover:text-[#0A1830] text-[#DFCA95] text-xs font-semibold px-3 py-1.5 rounded transition-colors flex items-center gap-1.5 self-start"
+          className="bg-[#091833] border border-[#8FB2FF]/40 hover:bg-[#8FB2FF] hover:text-[#091833] text-white/75 text-xs font-semibold px-3 py-1.5 rounded transition-colors flex items-center gap-1.5 self-start"
         >
           <span>Resend Docs</span>
           <ExternalLink className="w-3.5 h-3.5" />
