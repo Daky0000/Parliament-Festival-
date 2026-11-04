@@ -7,6 +7,8 @@ Platform for the **2026 Festival of Nine Lessons and Carols**.
 | Path | Description |
 | --- | --- |
 | `public/index.html` | Landing page deployed to Cloudflare Pages project `parliament-protocol-platform` (https://parliament-protocol-platform.pages.dev). Recovered from production deployment `075ac30f` (2026-11-04). |
+| `functions/api/agent.js` | Pages Function behind the floating ✨ Protocol Assistant chat (calls Claude). Needs the `ANTHROPIC_API_KEY` secret. |
+| `.github/workflows/deploy.yml` | Deploys to Cloudflare Pages on every push to `main`. |
 | `wrangler.toml` | Cloudflare Pages config (direct upload, output dir `public`). |
 
 ## Not yet in this repo
@@ -17,10 +19,26 @@ served from a local machine through a Cloudflare quick tunnel
 (`*.trycloudflare.com`) and its source is not stored on Cloudflare. It must be pushed
 from the original development machine (local git commit `d69c4c4`, branch `main`).
 
-## Deploy
+## Protocol Assistant (floating chat)
+
+The AI agent is a floating sparkle button (bottom-right) that opens a chat panel.
+It posts to `/api/agent`, which calls Claude. Set the key once:
 
 ```sh
-npx wrangler pages deploy public --project-name parliament-protocol-platform
+npx wrangler pages secret put ANTHROPIC_API_KEY --project-name parliament-protocol-platform
+```
+
+## Auto-deploy from GitHub
+
+Add these repository secrets (Settings → Secrets and variables → Actions):
+`CLOUDFLARE_API_TOKEN` (Pages: Edit permission) and `CLOUDFLARE_ACCOUNT_ID`.
+Every push to `main` then deploys automatically.
+
+## Manual deploy
+
+```sh
+npm install
+npm run deploy
 ```
 
 Secrets (API keys, SMS/email credentials) must never be committed — use
