@@ -9,6 +9,7 @@ Platform for the **2026 Festival of Nine Lessons and Carols**.
 | `public/index.html` | Landing page deployed to Cloudflare Pages project `parliament-protocol-platform` (https://parliament-protocol-platform.pages.dev). Recovered from production deployment `075ac30f` (2026-11-04). |
 | `functions/api/agent.js` | Pages Function behind the floating ✨ Protocol Assistant chat (calls Claude). Needs the `ANTHROPIC_API_KEY` secret. |
 | `.github/workflows/deploy.yml` | Deploys to Cloudflare Pages on every push to `main`. |
+| `functions/login.js`, `functions/logout.js`, `functions/super-admin/`, `lib/auth.js` | Email + password gate for the Super Admin area. |
 | `wrangler.toml` | Cloudflare Pages config (direct upload, output dir `public`). |
 
 ## Not yet in this repo
@@ -27,6 +28,27 @@ It posts to `/api/agent`, which calls Claude. Set the key once:
 ```sh
 npx wrangler pages secret put ANTHROPIC_API_KEY --project-name parliament-protocol-platform
 ```
+
+## Super Admin sign-in
+
+`/super-admin/*` requires an email + password login (`/login`, `/logout`).
+Credentials live only in Cloudflare Pages secrets — never in this repo:
+
+| Secret | Value |
+| --- | --- |
+| `ADMIN_EMAIL` | Admin email address |
+| `ADMIN_PASSWORD_HASH` | `pbkdf2$100000$<salt>$<hash>` (PBKDF2-SHA256, base64url) |
+| `SESSION_SECRET` | Random 32-byte hex string used to sign the session cookie |
+| `ADMIN_CONSOLE_URL` | Optional; where signed-in admins are forwarded (defaults to the tunnel URL) |
+
+To change the password, generate a new hash and update the secret:
+
+```sh
+node -e 'const c=require("crypto"),s=c.randomBytes(16),u=b=>b.toString("base64url");console.log(`pbkdf2$100000$${u(s)}$${u(c.pbkdf2Sync(process.argv[1],s,100000,32,"sha256"))}`)' 'NEW_PASSWORD' \
+  | npx wrangler pages secret put ADMIN_PASSWORD_HASH --project-name parliament-protocol-platform
+```
+
+Sessions last 8 hours (HttpOnly, Secure, SameSite=Strict cookie).
 
 ## Auto-deploy from GitHub
 
