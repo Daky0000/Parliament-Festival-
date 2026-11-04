@@ -1,0 +1,144 @@
+/* Signed-in screens and the sign-in page. Tokens come from brand.css. */
+
+/* --- sign in: one white panel on the canvas, nothing else ----------- */
+.auth-body{justify-content:center;align-items:center}
+.auth-card{width:min(460px,100%);padding:44px 40px 40px;box-shadow:var(--shadow-float)}
+.auth-dots{inset:auto -90px -110px auto;width:260px;height:220px}
+.auth-inner{position:relative}
+.auth-inner .brand{margin-bottom:34px}
+.auth-inner h1{font-size:40px;letter-spacing:-.04em;margin-bottom:6px}
+.auth-inner .notice{margin-top:14px}
+.auth-inner .btn{width:100%;height:48px;margin-top:26px}
+@media (max-width:520px){.auth-body{justify-content:flex-start;padding-top:12vh}.auth-card{padding:32px 24px}}
+
+/* --- header for signed-in pages -------------------------------------- */
+.app-nav a[aria-current=page]{color:var(--ink);font-weight:500}
+.app-nav a{padding:8px 12px;border-radius:var(--r-ctl)}
+.app-nav a[aria-current=page]{background:var(--pale);color:var(--blue)}
+.app-nav{gap:6px}
+.nav-spacer{margin-left:auto}
+.who{gap:14px}
+.who-name{display:flex;align-items:center;gap:10px;font-size:15px}
+.who-name b{font-weight:500}
+@media (max-width:900px){.app-nav{display:flex;order:3;width:100%;margin-left:0;overflow-x:auto}.header{flex-wrap:wrap}}
+@media (max-width:620px){.who-name b{display:none}}
+.chip.role-super{background:var(--navy);color:#fff}
+.chip.role-admin{background:var(--pale);color:var(--blue)}
+.chip.role-usher{background:var(--soft);color:var(--ink);border:1px solid var(--line)}
+
+/* --- page body -------------------------------------------------------- */
+.app-main{display:flex;flex-direction:column;gap:var(--frame);flex:1}
+.app-hero{display:grid;grid-template-columns:1fr 1.15fr;gap:var(--frame)}
+.app-hero-copy{padding:44px 44px;display:flex;flex-direction:column;justify-content:center;gap:16px}
+.tiles{grid-template-columns:repeat(2,1fr)}
+.tile{justify-content:space-between;min-height:128px}
+.figure{display:block;font-size:40px;font-weight:400;letter-spacing:-.04em;line-height:1}
+.tile-note{display:block;margin-top:8px;font-size:14px;color:var(--muted)}
+@media (max-width:960px){.app-hero{grid-template-columns:1fr}.app-hero-copy{padding:32px 24px}}
+@media (max-width:420px){.tiles{grid-template-columns:1fr 1fr}.figure{font-size:32px}.tile{min-height:112px;padding:16px}}
+.app-section{padding:36px 40px}
+@media (max-width:640px){.app-section{padding:26px 18px}}
+.sec-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:24px}
+.sec-head > div{display:flex;flex-direction:column;gap:8px}
+.cards{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.card.featured{background:var(--navy);color:#fff}
+.card.featured p{color:rgba(255,255,255,.72)}
+.card.featured .icon-sq{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);color:var(--blue-light)}
+.card.featured .link{color:var(--blue-light)}
+a.card.featured:hover{background:#0E2246;border-color:transparent}
+
+/* --- buttons, notices ------------------------------------------------- */
+.btn-sm{padding:8px 12px;font-size:14px}
+.btn-o.danger{color:var(--danger)}
+.btn-o.danger:hover{border-color:var(--danger)}
+.notice.info{background:var(--pale);color:var(--ink);display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.notice.danger{margin-bottom:16px}
+.pw-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.pw{font:500 17px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--white);border:1px solid var(--line-2);border-radius:var(--r-ctl);padding:11px 14px;letter-spacing:.04em}
+
+/* --- add a person ----------------------------------------------------- */
+.add-form{background:var(--soft);border-radius:var(--r-card);padding:8px 20px 20px;margin-bottom:20px}
+.add-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0 14px}
+@media (max-width:1000px){.add-grid{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.add-grid{grid-template-columns:1fr}}
+.add-actions{display:flex;gap:10px;margin-top:20px}
+select.input{appearance:none;background:var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235B6374' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center/16px;padding-right:38px}
+
+/* --- people table ----------------------------------------------------- */
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-card)}
+.people{width:100%;border-collapse:collapse;font-size:15px}
+.people th{background:var(--soft);text-align:left;font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:12px 16px;border-bottom:1px solid var(--line)}
+.people td{padding:14px 16px;border-bottom:1px solid var(--line);vertical-align:middle}
+.people tr:last-child td{border-bottom:0}
+.people td b{font-weight:500;display:block}
+.people .sub{display:block;color:var(--muted);font-size:14px}
+.people .nowrap{white-space:nowrap;color:var(--muted)}
+.people .empty{text-align:center;color:var(--muted);padding:36px 16px}
+.row-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+.status{display:inline-flex;align-items:center;gap:7px;font-size:14px}
+.status::before{content:"";width:8px;height:8px;border-radius:50%}
+.status.on::before{background:var(--positive)}
+.status.off{color:var(--muted)}
+.status.off::before{background:var(--faint)}
+@media (max-width:760px){
+  .people thead{display:none}
+  .people tr{display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:14px 16px;border-bottom:1px solid var(--line)}
+  .people tr:last-child{border-bottom:0}
+  .people td{padding:0;border:0}
+  .people td:nth-child(1){grid-column:1/-1}
+  .people td:nth-child(4){grid-column:1/-1;font-size:14px}
+  .people td:nth-child(4)::before{content:"Last sign-in: "}
+  .people td:nth-child(5){grid-column:1/-1}
+  .row-actions{justify-content:flex-start;margin-top:6px}
+}
+.activity li{grid-template-columns:150px 1fr}
+@media (max-width:560px){.activity li{grid-template-columns:1fr}}
+.activity li span:last-child{font-weight:400}
+
+/* --- usher ------------------------------------------------------------ */
+.usher-band{padding:28px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.usher-big{position:relative;display:flex;flex-direction:column;gap:6px;min-height:220px;justify-content:flex-end;padding:24px;border-radius:var(--r-card);
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#fff;text-decoration:none;transition:background .2s}
+.usher-big:hover{background:rgba(255,255,255,.1)}
+.usher-big .icon-sq{position:absolute;top:24px;left:24px;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);color:var(--blue-light)}
+.usher-big b{font-size:22px;font-weight:500;letter-spacing:-.02em}
+.usher-big span:not(.arr):not(.icon-sq){color:rgba(255,255,255,.72);font-size:15px}
+.usher-big .arr{position:absolute;top:28px;right:24px;color:var(--blue-light);font-size:20px;transition:transform .25s var(--ease)}
+.usher-big:hover .arr{transform:translateX(3px)}
+@media (max-width:560px){.usher-band{grid-template-columns:1fr;padding:16px}.usher-big{min-height:150px}}
+@media (max-width:640px){.usher-band .dotfield{display:none}}
+
+/* --- floating assistant ---------------------------------------------- */
+.agent-fab{position:fixed;right:20px;bottom:20px;z-index:50;width:56px;height:56px;border-radius:50%;border:0;
+  background:var(--blue);color:#fff;cursor:pointer;display:grid;place-items:center;box-shadow:var(--shadow-float);transition:background .2s}
+.agent-fab:hover{background:var(--blue-d)}
+.agent-fab svg{width:24px;height:24px}
+.agent-panel{position:fixed;right:20px;bottom:88px;z-index:50;width:min(390px,calc(100vw - 32px));height:min(560px,calc(100vh - 120px));
+  background:var(--white);border:1px solid var(--line);border-radius:var(--r-panel);box-shadow:0 30px 60px -24px rgba(13,21,38,.45);
+  display:flex;flex-direction:column;overflow:hidden;opacity:0;transform:translateY(16px);pointer-events:none;transition:opacity .25s var(--ease),transform .25s var(--ease)}
+.agent-panel.open{opacity:1;transform:none;pointer-events:auto}
+.agent-head{position:relative;display:flex;align-items:center;gap:12px;padding:16px 16px 16px 18px;background:var(--navy);color:#fff;overflow:hidden}
+.agent-head .dotfield{color:rgba(130,165,255,.22)}
+.agent-head > *{position:relative}
+.agent-head > .dotfield{position:absolute}
+.agent-head .spark{width:36px;height:36px;border-radius:var(--r-ctl);background:rgba(255,255,255,.08);display:grid;place-items:center;color:var(--blue-light)}
+.agent-head .spark svg{width:18px;height:18px}
+.agent-head .grow{flex:1;line-height:1.3}
+.agent-title{font-weight:500;font-size:15px}
+.agent-subtitle{font-size:12.5px;color:rgba(255,255,255,.72)}
+.agent-icon-btn{background:none;border:0;color:rgba(255,255,255,.8);cursor:pointer;width:32px;height:32px;border-radius:var(--r-ctl);display:grid;place-items:center;font-size:18px}
+.agent-icon-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+.agent-log{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:10px;background:var(--soft)}
+.msg{max-width:85%;padding:10px 13px;border-radius:var(--r-card);font-size:14.5px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.user{align-self:flex-end;background:var(--blue);color:#fff}
+.msg.bot{align-self:flex-start;background:var(--white);border:1px solid var(--line)}
+.msg.err{align-self:flex-start;background:var(--danger-bg);color:var(--danger)}
+.msg.typing{color:var(--muted)}
+.agent-form{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+.agent-form textarea{flex:1;resize:none;height:44px;max-height:120px;padding:11px 13px;border-radius:var(--r-ctl);border:1px solid var(--line-2);font:inherit;font-size:15px;color:var(--ink)}
+.agent-form textarea::placeholder{color:var(--faint)}
+.agent-form textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(37,99,235,.18)}
+@media (max-width:480px){.agent-panel{right:12px;left:12px;width:auto;bottom:84px}.agent-fab{right:16px;bottom:16px}}
+
+/* keep the footer text clear of the assistant button */
+.foot{padding-right:96px}

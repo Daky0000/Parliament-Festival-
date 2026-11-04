@@ -1,7 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { readSession } from "../../lib/auth.js";
 
 const SYSTEM = `You are the Protocol Assistant for the Parliament of Ghana Event & Protocol Platform,
-serving the 2026 Festival of Nine Lessons and Carols. Help guests, ushers and protocol staff with
+serving the 2026 Festival of Nine Lessons and Carols. Help admins, ushers and protocol staff with
 questions about the event, seating, ushering and protocol etiquette. Be concise, warm and formal.
 If you do not know a specific detail (times, seat numbers, names), say so and suggest contacting
 the protocol office rather than guessing.`;
@@ -16,6 +17,7 @@ const json = (body, status = 200) =>
   });
 
 export async function onRequestPost({ request, env }) {
+  if (!(await readSession(request, env))) return json({ error: "Sign in to use the assistant." }, 401);
   if (!env.ANTHROPIC_API_KEY) {
     return json({ error: "The assistant isn't configured yet (missing ANTHROPIC_API_KEY)." }, 503);
   }
