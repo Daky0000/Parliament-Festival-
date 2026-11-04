@@ -2,6 +2,8 @@ node_modules
 /.next/
 /out/
 .env*
+.dev.vars
+.wrangler/
 *.log
 dev.db
 dev.db-journal

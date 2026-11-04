@@ -3,219 +3,130 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Parliament of Ghana - Event & Protocol Platform</title>
-  <meta http-equiv="refresh" content="3;url=https://opportunity-boolean-mambo-prefers.trycloudflare.com/">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <title>Parliament of Ghana · Event &amp; Protocol Platform</title>
+  <!-- Hands visitors to the live platform after 3 seconds, as before. -->
+  <meta http-equiv="refresh" content="3;url=https://increases-medicare-multiple-aspect.trycloudflare.com/">
+  <meta name="description" content="Official State Protocol platform for the Parliament of Ghana 2026 Festival of Nine Lessons and Carols.">
+  <meta name="theme-color" content="#ECEEF1">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/assets/fonts/outfit-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/brand.css">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background-color: #0A1830;
-      color: #FFFFFF;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      position: relative;
-      overflow-x: hidden;
+    .hero{display:grid;grid-template-columns:1.2fr 1fr;gap:var(--frame);flex:1}
+    .hero-copy{padding:56px;display:flex;flex-direction:column;justify-content:center;gap:22px}
+    .hero-copy .actions{display:flex;flex-wrap:wrap;gap:10px}
+    .hero-band{padding:36px;display:flex;flex-direction:column;gap:22px;justify-content:center}
+    .hero-band > *{position:relative}
+    .hero-band .cap{color:rgba(255,255,255,.72)}
+    .dest{display:grid;gap:10px}
+    .dest a{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:var(--r-card);
+      background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#fff;text-decoration:none;transition:background .2s}
+    .dest a:hover{background:rgba(255,255,255,.11)}
+    .dest .ico{flex:none;width:40px;height:40px;border-radius:var(--r-ctl);background:rgba(255,255,255,.08);display:grid;place-items:center;color:var(--blue-light)}
+    .dest .ico svg{width:20px;height:20px}
+    .dest b{display:block;font-weight:500;font-size:16px}
+    .dest span.t{display:block;font-size:13.5px;color:rgba(255,255,255,.72)}
+    .dest .grow{flex:1;min-width:0}
+    .dest .arr{color:var(--blue-light);transition:transform .25s var(--ease)}
+    .dest a:hover .arr{transform:translateX(3px)}
+
+    /* the 3-second hand-off, drawn as a filling bar */
+    .handoff{background:var(--soft);border:1px solid var(--line);border-radius:var(--r-card);padding:14px 16px;display:flex;flex-direction:column;gap:10px;max-width:560px}
+    .handoff p{font-size:14.5px;color:var(--muted)}
+    .handoff p b{color:var(--ink);font-weight:500}
+    .bar{height:4px;border-radius:4px;background:var(--line);overflow:hidden}
+    .bar i{display:block;height:100%;width:100%;background:var(--blue);transform-origin:left;animation:fill 3s linear forwards}
+    @keyframes fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+
+    .meta{padding:40px 0}
+    .meta .wrap{display:grid;grid-template-columns:1fr 1.6fr;gap:48px;align-items:start}
+    .meta .wrap > div:first-child{display:flex;flex-direction:column;gap:10px}
+    .tunnel{color:var(--blue)}
+
+    @media (max-width:960px){
+      .hero{grid-template-columns:1fr}
+      .hero-copy{padding:36px 24px}
+      .hero-band{padding:24px}
+      .meta .wrap{grid-template-columns:1fr;gap:20px}
     }
-    .gold-glow {
-      position: absolute;
-      top: 15%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 500px;
-      height: 350px;
-      background: radial-gradient(circle, rgba(198, 166, 91, 0.15) 0%, rgba(10, 24, 48, 0) 70%);
-      pointer-events: none;
-    }
-    .card {
-      background: #0D1C38;
-      border: 2px solid #C6A65B;
-      border-radius: 16px;
-      max-width: 680px;
-      width: 100%;
-      padding: 40px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-      text-align: center;
-      position: relative;
-      z-index: 10;
-    }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(16, 185, 129, 0.15);
-      border: 1px solid rgba(16, 185, 129, 0.4);
-      color: #34D399;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      padding: 6px 14px;
-      border-radius: 9999px;
-      margin-bottom: 20px;
-    }
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #34D399;
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.9); }
-    }
-    h1 {
-      font-family: 'Playfair Display', serif;
-      font-size: 32px;
-      font-weight: 700;
-      color: #FFFFFF;
-      margin-bottom: 8px;
-    }
-    .sub {
-      color: #DFCA95;
-      font-size: 14px;
-      margin-bottom: 24px;
-    }
-    .desc {
-      color: #CBD5E1;
-      font-size: 14px;
-      line-height: 1.6;
-      margin-bottom: 24px;
-    }
-    .redirect-note {
-      font-size: 12px;
-      color: #DFCA95;
-      background: rgba(198, 166, 91, 0.1);
-      border: 1px solid rgba(198, 166, 91, 0.3);
-      padding: 8px 16px;
-      border-radius: 6px;
-      margin-bottom: 24px;
-      display: inline-block;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 32px;
-    }
-    .btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 14px 20px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-size: 13px;
-      font-weight: 700;
-      transition: all 0.2s ease;
-    }
-    .btn-primary {
-      background: #C6A65B;
-      color: #0A1830;
-      grid-column: span 2;
-      font-size: 15px;
-    }
-    .btn-primary:hover {
-      background: #DFCA95;
-      transform: translateY(-1px);
-    }
-    .btn-secondary {
-      background: #102343;
-      color: #DFCA95;
-      border: 1px solid rgba(198, 166, 91, 0.4);
-    }
-    .btn-secondary:hover {
-      background: rgba(198, 166, 91, 0.15);
-      color: #FFFFFF;
-      border-color: #C6A65B;
-    }
-    .meta-box {
-      background: #070D18;
-      border: 1px solid rgba(198, 166, 91, 0.2);
-      border-radius: 8px;
-      padding: 16px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      color: #DFCA95;
-      text-align: left;
-    }
-    .meta-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 4px 0;
-      border-bottom: 1px solid rgba(198, 166, 91, 0.1);
-    }
-    .meta-row:last-child { border-bottom: none; }
-    .meta-label { color: rgba(223, 202, 149, 0.6); }
-    .meta-value { color: #FFFFFF; font-weight: 600; }
+    @media (max-width:640px){.hero-band .dotfield{display:none}.meta{padding:28px 0}}
   </style>
 </head>
 <body>
-  <div class="gold-glow"></div>
-  <div class="card">
-    <div class="badge">
-      <span class="dot"></span>
-      Cloudflare Global Edge Active
+  <header class="panel header">
+    <a class="brand" href="/">
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 4l9 5.5"/><path d="M4.5 10h15"/><path d="M6.5 10v7.5M10 10v7.5M14 10v7.5M17.5 10v7.5"/><path d="M4 20h16"/></svg></span>
+      <span class="brand-name"><b>Parliament of Ghana</b><span>Event &amp; Protocol Platform · Version 3.0</span></span>
+    </a>
+    <div class="header-cta">
+      <a class="btn btn-b" href="https://increases-medicare-multiple-aspect.trycloudflare.com/">Launch platform <span class="arr">&rarr;</span></a>
     </div>
-    <h1>Parliament of Ghana</h1>
-    <div class="sub">Event & Protocol Platform &bull; Version 3.0</div>
-    <p class="desc">
-      Official State Protocol platform for the <strong>2026 Festival of Nine Lessons and Carols</strong>.
-      Protected by Cloudflare Edge with Full (Strict) SSL, WAF protection, and real-time integration routing.
-    </p>
+  </header>
 
-    <div class="redirect-note">
-      Connecting to live platform in 3 seconds... or select a destination below:
-    </div>
+  <main class="hero">
+    <section class="panel hero-copy">
+      <span class="chip"><span class="pip"></span>Cloudflare global edge active</span>
+      <h1>Parliament of Ghana. <span class="muted">Event &amp; Protocol Platform.</span></h1>
+      <p class="lead">Official State Protocol platform for the <b style="color:var(--ink);font-weight:500">2026 Festival of Nine Lessons and Carols</b>. Protected by Cloudflare Edge with Full (Strict) SSL, WAF protection, and real-time integration routing.</p>
+      <div class="handoff" role="status">
+        <p><b>Connecting to the live platform in <span id="secs">3</span> seconds</b> — or choose a destination.</p>
+        <div class="bar" aria-hidden="true"><i></i></div>
+      </div>
+      <div class="actions">
+        <a class="btn btn-b" href="https://increases-medicare-multiple-aspect.trycloudflare.com/">Launch Executive Protocol Platform <span class="arr">&rarr;</span></a>
+      </div>
+    </section>
 
-    <div class="grid">
-      <a href="https://opportunity-boolean-mambo-prefers.trycloudflare.com/" class="btn btn-primary">
-        🚀 Launch Executive Protocol Platform &rarr;
-      </a>
-      <a href="https://opportunity-boolean-mambo-prefers.trycloudflare.com/super-admin" class="btn btn-secondary">
-        ⚙️ Super Admin Console
-      </a>
-      <a href="https://opportunity-boolean-mambo-prefers.trycloudflare.com/super-admin/ai" class="btn btn-secondary">
-        🧠 AI Provider Routing
-      </a>
-      <a href="https://opportunity-boolean-mambo-prefers.trycloudflare.com/usher" class="btn btn-secondary">
-        📱 Mobile Usher Scanner
-      </a>
-      <a href="https://opportunity-boolean-mambo-prefers.trycloudflare.com/seating" class="btn btn-secondary">
-        💺 VIP Seating Engine
-      </a>
-    </div>
+    <section class="band hero-band" aria-label="Destinations">
+      <div class="dotfield" aria-hidden="true"></div>
+      <span class="cap">Destinations</span>
+      <nav class="dest">
+        <a href="https://increases-medicare-multiple-aspect.trycloudflare.com/super-admin">
+          <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z"/><path d="m9 12 2 2 4-4"/></svg></span>
+          <span class="grow"><b>Super Admin Console</b><span class="t">Users, providers and settings</span></span><span class="arr">&rarr;</span>
+        </a>
+        <a href="https://increases-medicare-multiple-aspect.trycloudflare.com/super-admin/ai">
+          <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9z"/><path d="M19 14l.9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9z" opacity=".75"/></svg></span>
+          <span class="grow"><b>AI Provider Routing</b><span class="t">Which AI model answers which job</span></span><span class="arr">&rarr;</span>
+        </a>
+        <a href="https://increases-medicare-multiple-aspect.trycloudflare.com/usher">
+          <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M10 6h4M11 18h2"/></svg></span>
+          <span class="grow"><b>Mobile Usher Scanner</b><span class="t">Check guests in at the door</span></span><span class="arr">&rarr;</span>
+        </a>
+        <a href="https://increases-medicare-multiple-aspect.trycloudflare.com/seating">
+          <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 11V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v5"/><path d="M4 11h16v4H4z"/><path d="M6 15v5M18 15v5"/></svg></span>
+          <span class="grow"><b>VIP Seating Engine</b><span class="t">The seating plan for dignitaries</span></span><span class="arr">&rarr;</span>
+        </a>
+      </nav>
+    </section>
+  </main>
 
-    <div class="meta-box">
-      <div class="meta-row">
-        <span class="meta-label">Cloudflare Edge:</span>
-        <span class="meta-value">TLS 1.3 &bull; DDoS Mitigation &bull; WAF Active</span>
+  <section class="panel soft meta" aria-label="Infrastructure">
+    <div class="wrap">
+      <div>
+        <span class="cap">Infrastructure</span>
+        <h2 class="h3">Where the platform runs</h2>
       </div>
-      <div class="meta-row">
-        <span class="meta-label">Email Gateway:</span>
-        <span class="meta-value">Resend Production (marketing.dakyworld.com)</span>
-      </div>
-      <div class="meta-row">
-        <span class="meta-label">SMS Gateway:</span>
-        <span class="meta-value">Vynfy SMS (Sender ID: PARLIAMENT)</span>
-      </div>
-      <div class="meta-row">
-        <span class="meta-label">Object Storage:</span>
-        <span class="meta-value">Cloudflare R2 (dakyxtech-private)</span>
-      </div>
-      <div class="meta-row">
-        <span class="meta-label">Live Tunnel Endpoint:</span>
-        <span class="meta-value" style="color: #C6A65B;">opportunity-boolean-mambo-prefers.trycloudflare.com</span>
-      </div>
+      <ul class="ruled">
+        <li><span>Cloudflare Edge</span><span>TLS 1.3 · DDoS Mitigation · WAF Active</span></li>
+        <li><span>Email Gateway</span><span>Resend Production (marketing.dakyworld.com)</span></li>
+        <li><span>SMS Gateway</span><span>Vynfy SMS (Sender ID: PARLIAMENT)</span></li>
+        <li><span>Object Storage</span><span>Cloudflare R2 (dakyxtech-private)</span></li>
+        <li><span>Live Tunnel Endpoint</span><span class="tunnel">increases-medicare-multiple-aspect.trycloudflare.com</span></li>
+      </ul>
     </div>
-  </div>
+  </section>
+
+  <footer class="panel foot">
+    <span>© 2026 Parliament of Ghana · Festival of Nine Lessons and Carols</span>
+  </footer>
+
+  <script>
+    // Cosmetic countdown only; the redirect itself is the meta refresh above.
+    (function () {
+      var el = document.getElementById('secs'), n = 3;
+      var t = setInterval(function () { n -= 1; if (n <= 0) { clearInterval(t); n = 0; } el.textContent = n; }, 1000);
+    })();
+  </script>
 </body>
 </html>

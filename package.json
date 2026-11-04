@@ -10,7 +10,9 @@
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "prisma:seed": "node --loader ts-node/esm prisma/seed.ts || tsx prisma/seed.ts",
-    "test": "node --test tests/**/*.test.js || echo 'Tests passing'"
+    "test": "node --test tests/**/*.test.js || echo 'Tests passing'",
+    "pages:dev": "wrangler pages dev cloudflare-pages-portal",
+    "pages:deploy": "wrangler pages deploy cloudflare-pages-portal --project-name parliament-protocol-platform --branch main"
   },
   "dependencies": {
     "@prisma/client": "^6.4.1",
@@ -37,6 +39,7 @@
     "prisma": "^6.4.1",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.19.3",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "wrangler": "^4.157.0"
   }
 }
