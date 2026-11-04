@@ -64,7 +64,7 @@ export function calculateSmsSegments(text: string): number {
 export async function sendVynfySms(params: SendSmsParams): Promise<SmsDispatchResult> {
   const normalizedPhone = normalizeGhanaPhone(params.recipientPhone);
   const segments = calculateSmsSegments(params.messageText);
-  const senderId = params.senderId || "PARLIAMENT";
+  const senderId = params.senderId || process.env.VYNFY_SENDER_ID || "PARLIAMENT";
   const idempotencyKey = `vynfy_${crypto.randomUUID()}`;
 
   // 1. Check Emergency Kill Switch
@@ -141,3 +141,4 @@ export async function sendVynfySms(params: SendSmsParams): Promise<SmsDispatchRe
     status: "submitted",
   };
 }
+

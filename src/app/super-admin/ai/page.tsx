@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { Cpu, AlertTriangle, ShieldCheck, ArrowRight, CheckCircle2, RefreshCw } from "lucide-react";
+import { Cpu, ShieldCheck } from "lucide-react";
 import { AiProvidersClientView } from "./AiProvidersClientView";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +12,11 @@ export default async function SuperAdminAiPage() {
   const usageLogs = await prisma.aiUsageLog.findMany({
     orderBy: { createdAt: "desc" },
     take: 10,
+  });
+
+  const aiIntegrations = await prisma.platformIntegration.findMany({
+    where: { providerKey: { in: ["openai", "anthropic"] } },
+    include: { credentials: { where: { status: "active" }, take: 1 } },
   });
 
   return (
@@ -38,7 +43,11 @@ export default async function SuperAdminAiPage() {
         </p>
       </div>
 
-      <AiProvidersClientView initialConfigs={configs} initialLogs={usageLogs} />
+      <AiProvidersClientView
+        initialConfigs={configs}
+        initialLogs={usageLogs}
+        initialIntegrations={aiIntegrations}
+      />
     </div>
   );
 }

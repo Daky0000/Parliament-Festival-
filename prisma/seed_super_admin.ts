@@ -247,3 +247,4 @@ seedSuperAdminIntegrations()
   .finally(async () => {
     await prisma.$disconnect();
   });
+

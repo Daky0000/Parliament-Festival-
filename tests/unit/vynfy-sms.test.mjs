@@ -45,3 +45,4 @@ test("Vynfy SMS Gateway: dispatches message and records communication message in
   assert.strictEqual(record.provider, "vynfy");
   assert.strictEqual(record.channel, "sms");
 });
+

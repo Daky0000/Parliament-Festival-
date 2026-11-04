@@ -1,57 +1,142 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, CheckCircle2, Send, RefreshCw, ShieldCheck, Terminal } from "lucide-react";
+import { Mail, CheckCircle2, Send, RefreshCw, ShieldCheck, Terminal, Key, AlertTriangle } from "lucide-react";
+import { EditKeyModal } from "@/components/super-admin/EditKeyModal";
 
 export function ResendEmailClientView({
-  integration,
+  integration: initialIntegration,
   initialAttempts,
 }: {
   integration: any;
   initialAttempts: any[];
 }) {
+  const [integration, setIntegration] = useState(initialIntegration);
   const [attempts, setAttempts] = useState<any[]>(initialAttempts);
   const [testEmail, setTestEmail] = useState("protocol-test@parliament.gh");
   const [isSending, setIsSending] = useState(false);
   const [testResult, setTestResult] = useState<any | null>(null);
+  const [testError, setTestError] = useState<string | null>(null);
+  const [isEditingKey, setIsEditingKey] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verifyStatus, setVerifyStatus] = useState<string | null>(null);
+
+  const meta = (() => {
+    try {
+      return JSON.parse(integration?.metadata || "{}");
+    } catch (e) {
+      return {};
+    }
+  })();
+
+  const handleVerifyConnection = async () => {
+    setIsVerifying(true);
+    setVerifyStatus(null);
+    try {
+      const res = await fetch("/api/v1/super-admin/integrations/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ providerKey: "resend" }),
+      });
+      const data = await res.json();
+      if (data.data?.result === "success") {
+        setVerifyStatus(data.data.details || "Resend connection verified live.");
+      } else {
+        setVerifyStatus(`Verification failed: ${data.data?.error || data.error}`);
+      }
+    } catch (err: any) {
+      setVerifyStatus(`Verification error: ${err.message}`);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   const handleTestEmailSend = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSending(true);
     setTestResult(null);
+    setTestError(null);
 
-    // Simulate Resend API test call
-    setTimeout(() => {
-      setTestResult({
-        status: "DELIVERED",
-        providerMessageId: `msg_resend_${Date.now()}`,
-        recipient: testEmail,
-        timestamp: new Date().toLocaleTimeString(),
+    try {
+      const res = await fetch("/api/v1/super-admin/email/test-send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipientEmail: testEmail }),
       });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "Failed to dispatch test email.");
+      }
+
+      setTestResult(data.data);
+      setAttempts([
+        {
+          id: Date.now().toString(),
+          recipientEmail: testEmail,
+          provider: "resend",
+          providerMessageId: data.data.providerMessageId,
+          status: "delivered",
+          createdAt: new Date().toISOString(),
+        },
+        ...attempts,
+      ]);
+    } catch (err: any) {
+      setTestError(err.message);
+    } finally {
       setIsSending(false);
-    }, 700);
+    }
+  };
+
+  const handleKeyUpdated = (providerKey: string, newHint: string, updatedMetadata?: string) => {
+    const nextCreds = [{ maskedHint: newHint, status: "active" }];
+    setIntegration({
+      ...integration,
+      credentials: nextCreds,
+      metadata: updatedMetadata || integration.metadata,
+    });
+    handleVerifyConnection();
   };
 
   return (
     <div className="space-y-6">
       {/* Resend Configuration Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-[#0D1C38] border border-[#C6A65B]/30 rounded-xl p-5 space-y-2 shadow-lg">
-          <div className="text-[10px] text-[#DFCA95]/60 uppercase font-mono">Resend API Secret</div>
-          <div className="text-sm font-bold text-white">
-            {integration?.credentials[0]?.maskedHint || "re_...9018"}
+        <div className="bg-[#0D1C38] border border-[#C6A65B]/30 rounded-xl p-5 space-y-3 shadow-lg">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-[#DFCA95]/60 uppercase font-mono">Resend API Secret</span>
+            <button
+              onClick={() => setIsEditingKey(true)}
+              className="bg-[#C6A65B] hover:bg-[#DFCA95] text-[#0A1830] font-bold text-[11px] px-2.5 py-1 rounded transition-colors flex items-center gap-1 shadow"
+            >
+              <Key className="w-3 h-3" />
+              <span>Edit Key</span>
+            </button>
           </div>
-          <div className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            Active & Authenticated
+          <div className="text-sm font-bold text-white font-mono">
+            {integration?.credentials?.[0]?.maskedHint || "re_...9018"}
+          </div>
+          <div className="flex items-center justify-between pt-1">
+            <div className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Active in Environment
+            </div>
+            <button
+              onClick={handleVerifyConnection}
+              disabled={isVerifying}
+              className="text-[11px] text-[#DFCA95] hover:text-white underline flex items-center gap-1"
+            >
+              {isVerifying ? <RefreshCw className="w-3 h-3 animate-spin" /> : "Verify Now"}
+            </button>
           </div>
         </div>
 
         <div className="bg-[#0D1C38] border border-[#C6A65B]/30 rounded-xl p-5 space-y-2 shadow-lg">
           <div className="text-[10px] text-[#DFCA95]/60 uppercase font-mono">Verified Sending Domain</div>
-          <div className="text-base font-bold text-white font-mono">parliament.gh</div>
+          <div className="text-base font-bold text-white font-mono">
+            {meta.verifiedDomain || "marketing.dakyworld.com"}
+          </div>
           <div className="text-[11px] text-[#DFCA95]/80">
-            DKIM & SPF Records: <span className="text-emerald-400 font-bold">100% Verified</span>
+            Sender: <span className="text-white font-mono">{meta.senderEmail || "onboarding@resend.dev"}</span>
           </div>
         </div>
 
@@ -61,10 +146,17 @@ export function ResendEmailClientView({
             /api/v1/webhooks/email
           </div>
           <div className="text-[11px] text-[#DFCA95]/80">
-            Signature Verification: <span className="text-[#C6A65B] font-bold">Enforced</span>
+            DKIM / SPF: <span className="text-emerald-400 font-bold">Resend Live</span>
           </div>
         </div>
       </div>
+
+      {verifyStatus && (
+        <div className="p-3 bg-[#102343] border border-[#C6A65B]/40 rounded-lg text-xs text-[#DFCA95] flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-[#C6A65B] shrink-0" />
+          <span>{verifyStatus}</span>
+        </div>
+      )}
 
       {/* Test Email Dispatcher */}
       <div className="bg-[#0D1C38] border border-[#C6A65B]/30 rounded-xl p-6 shadow-lg space-y-4">
@@ -74,11 +166,11 @@ export function ResendEmailClientView({
               Resend Delivery Verification Test
             </h3>
             <p className="text-xs text-[#DFCA95]/70">
-              Dispatches a test state invitation using the approved institutional layout.
+              Dispatches a live state invitation test email using the official Parliamentary header & protocol seal.
             </p>
           </div>
           <span className="text-[10px] bg-[#102343] text-[#C6A65B] px-2.5 py-1 rounded border border-[#C6A65B]/30 font-mono">
-            Provider: Resend
+            Provider: Resend Live
           </span>
         </div>
 
@@ -105,9 +197,12 @@ export function ResendEmailClientView({
                 ) : (
                   <Send className="w-3.5 h-3.5" />
                 )}
-                Send Test Email
+                <span>Send Live Test Email</span>
               </button>
             </div>
+            <p className="text-[10px] text-[#DFCA95]/60 mt-1">
+              Sends an institutional test invitation to the specified inbox using Resend credentials.
+            </p>
           </div>
         </form>
 
@@ -119,6 +214,17 @@ export function ResendEmailClientView({
             </div>
             <div>&bull; Recipient: <strong>{testResult.recipient}</strong></div>
             <div>&bull; Provider Message ID: <code className="text-white">{testResult.providerMessageId}</code></div>
+            <div>&bull; Gateway Latency: <span className="font-mono text-emerald-400">{testResult.latencyMs}ms</span></div>
+          </div>
+        )}
+
+        {testError && (
+          <div className="p-4 bg-rose-950/80 border border-rose-500/50 rounded-lg text-xs text-rose-300 space-y-1">
+            <div className="font-bold text-rose-400 flex items-center gap-1.5">
+              <AlertTriangle className="w-4 h-4" />
+              Resend Delivery Notice
+            </div>
+            <div>{testError}</div>
           </div>
         )}
       </div>
@@ -165,6 +271,19 @@ export function ResendEmailClientView({
           </table>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {isEditingKey && (
+        <EditKeyModal
+          isOpen={true}
+          onClose={() => setIsEditingKey(false)}
+          providerKey="resend"
+          displayName="Resend API Key"
+          currentMaskedHint={integration?.credentials?.[0]?.maskedHint}
+          metadata={meta}
+          onKeyUpdated={handleKeyUpdated}
+        />
+      )}
     </div>
   );
 }

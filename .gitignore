@@ -1,8 +1,11 @@
 node_modules
 /.next/
 /out/
-.env*.local
+.env*
 *.log
 dev.db
 dev.db-journal
-
+cloudflared.exe
+*.mjs.tmp
+configure_tunnel.mjs
+create_tunnel.mjs

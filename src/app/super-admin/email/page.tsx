@@ -48,3 +48,4 @@ export default async function SuperAdminEmailPage() {
     </div>
   );
 }
+

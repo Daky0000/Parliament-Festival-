@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Cpu, Mail, MessageSquare, Cloud, CheckCircle, RefreshCw, AlertTriangle, ShieldCheck, Power, Terminal } from "lucide-react";
+import { Cpu, Mail, MessageSquare, Cloud, CheckCircle, RefreshCw, AlertTriangle, ShieldCheck, Power, Terminal, Key } from "lucide-react";
+import { EditKeyModal } from "@/components/super-admin/EditKeyModal";
 
 export function SuperAdminOverviewClient({
   initialIntegrations,
@@ -15,6 +16,8 @@ export function SuperAdminOverviewClient({
   const [integrations, setIntegrations] = useState<any[]>(initialIntegrations);
   const [testLogs, setTestLogs] = useState<any[]>(initialLogs);
   const [testingKey, setTestingKey] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<any | null>(null);
+  const [lastTestFeedback, setLastTestFeedback] = useState<{ [key: string]: { status: string; text: string } }>({});
 
   const handleTestConnection = async (providerKey: string) => {
     setTestingKey(providerKey);
@@ -26,8 +29,15 @@ export function SuperAdminOverviewClient({
       });
       const data = await res.json();
       if (data.data) {
-        // Add to logs
-        setTestLogs([
+        setLastTestFeedback((prev) => ({
+          ...prev,
+          [providerKey]: {
+            status: data.data.result,
+            text: data.data.details || data.data.error || "Verification completed.",
+          },
+        }));
+
+        setTestLogs((prev) => [
           {
             id: Date.now().toString(),
             integration: { displayName: providerKey.toUpperCase() },
@@ -35,12 +45,21 @@ export function SuperAdminOverviewClient({
             result: data.data.result,
             latencyMs: data.data.latencyMs,
             testedAt: data.data.testedAt,
+            testedBy: "Super Admin",
+            sanitisedError: data.data.details || data.data.error,
           },
-          ...testLogs.slice(0, 7),
+          ...prev.slice(0, 9),
         ]);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Test error:", err);
+      setLastTestFeedback((prev) => ({
+        ...prev,
+        [providerKey]: {
+          status: "failed",
+          text: err.message || "Network error occurred.",
+        },
+      }));
     } finally {
       setTestingKey(null);
     }
@@ -66,6 +85,26 @@ export function SuperAdminOverviewClient({
     }
   };
 
+  const handleKeyUpdated = (providerKey: string, newHint: string, newMetadata?: string) => {
+    setIntegrations((prev) =>
+      prev.map((item) => {
+        if (item.providerKey === providerKey) {
+          const updatedCreds = item.credentials?.length
+            ? [{ ...item.credentials[0], maskedHint: newHint }, ...item.credentials.slice(1)]
+            : [{ id: "new", maskedHint: newHint, status: "active" }];
+          return {
+            ...item,
+            credentials: updatedCreds,
+            metadata: newMetadata || item.metadata,
+          };
+        }
+        return item;
+      })
+    );
+    // Auto-trigger test connection to verify immediately
+    handleTestConnection(providerKey);
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Banner */}
@@ -75,14 +114,14 @@ export function SuperAdminOverviewClient({
             <div className="flex items-center gap-2 mb-1">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
               <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-400 font-bold">
-                Control Plane &bull; Master Telemetry
+                Control Plane &bull; Master Telemetry & API Key Vault
               </span>
             </div>
             <h1 className="font-editorial text-2xl font-bold text-white">
               Platform Integration & Provider Management
             </h1>
             <p className="text-xs text-[#DFCA95]/80 mt-1 max-w-2xl">
-              Centralized credential management, failover routing, and telemetry for OpenAI, Anthropic Claude, Resend, Vynfy SMS, and Cloudflare.
+              Centralized credential management, live failover routing, and telemetry for OpenAI, Anthropic Claude, Resend, Vynfy SMS, and Cloudflare.
             </p>
           </div>
 
@@ -102,12 +141,15 @@ export function SuperAdminOverviewClient({
       {/* Provider Integration Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {integrations.map((item) => {
-          const cred = item.credentials[0];
+          const cred = item.credentials?.[0];
           const isTesting = testingKey === item.providerKey;
-          let meta = {};
+          const feedback = lastTestFeedback[item.providerKey];
+          let meta: any = {};
           try {
             meta = JSON.parse(item.metadata || "{}");
           } catch (e) {}
+
+          const isKeyPending = !cred?.maskedHint || cred.maskedHint.includes("Pending");
 
           return (
             <div
@@ -146,8 +188,15 @@ export function SuperAdminOverviewClient({
 
                 {/* Secret Reference Box (Masked) */}
                 <div className="bg-[#070D18] border border-[#C6A65B]/20 rounded p-2.5 space-y-1 text-xs font-mono">
-                  <div className="text-[10px] text-[#DFCA95]/60 uppercase">Masked Secret Hint</div>
-                  <div className="text-[#C6A65B] font-bold">
+                  <div className="flex items-center justify-between text-[10px] text-[#DFCA95]/60 uppercase">
+                    <span>Masked Secret Hint</span>
+                    {isKeyPending ? (
+                      <span className="text-amber-400 font-bold">Key Needed</span>
+                    ) : (
+                      <span className="text-emerald-400 font-bold">Configured</span>
+                    )}
+                  </div>
+                  <div className="text-[#C6A65B] font-bold font-mono">
                     {cred?.maskedHint || "••••••••••••••••"}
                   </div>
                   <div className="text-[9px] text-[#DFCA95]/40 truncate">
@@ -164,31 +213,62 @@ export function SuperAdminOverviewClient({
                     <div>Role: <strong className="text-white">Standby Fallback</strong> (claude-3-5)</div>
                   )}
                   {item.providerKey === "resend" && (
-                    <div>Sending Domain: <strong className="text-white">parliament.gh</strong></div>
+                    <div>Sending Domain: <strong className="text-white">{meta.verifiedDomain || "marketing.dakyworld.com"}</strong></div>
                   )}
                   {item.providerKey === "vynfy" && (
-                    <div>Sender ID: <strong className="text-white">PARLIAMENT</strong> (+233 Ghana)</div>
+                    <div>Sender ID: <strong className="text-white">{meta.senderId || "PARLIAMENT"}</strong> (+233 Ghana)</div>
                   )}
                   {item.providerKey === "cloudflare" && (
-                    <div>Security Mode: <strong className="text-white">WAF + Full Strict SSL</strong></div>
+                    <div>R2 Bucket: <strong className="text-white">{meta.r2Bucket || "dakyxtech-private"}</strong></div>
                   )}
                 </div>
+
+                {/* Live Test Feedback Banner */}
+                {feedback && (
+                  <div
+                    className={`mt-2.5 p-2 rounded text-[11px] border leading-snug ${
+                      feedback.status === "success"
+                        ? "bg-emerald-950/70 border-emerald-500/40 text-emerald-300"
+                        : "bg-rose-950/70 border-rose-500/40 text-rose-300"
+                    }`}
+                  >
+                    <div className="font-bold flex items-center gap-1 uppercase text-[10px]">
+                      {feedback.status === "success" ? (
+                        <CheckCircle className="w-3 h-3 text-emerald-400" />
+                      ) : (
+                        <AlertTriangle className="w-3 h-3 text-rose-400" />
+                      )}
+                      <span>{feedback.status === "success" ? "Verified Online" : "Verification Notice"}</span>
+                    </div>
+                    <div className="mt-0.5">{feedback.text}</div>
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-3 border-t border-[#C6A65B]/20 flex items-center justify-between gap-2">
-                <button
-                  onClick={() => handleTestConnection(item.providerKey)}
-                  disabled={isTesting}
-                  className="bg-[#102343] hover:bg-[#C6A65B] hover:text-[#0A1830] text-[#DFCA95] border border-[#C6A65B]/30 text-xs font-semibold px-3 py-1.5 rounded transition-colors flex items-center gap-1.5"
-                >
-                  {isTesting ? (
-                    <RefreshCw className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <CheckCircle className="w-3 h-3 text-emerald-400" />
-                  )}
-                  <span>Test Connection</span>
-                </button>
+              <div className="pt-3 border-t border-[#C6A65B]/20 flex items-center justify-between gap-1.5 flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => handleTestConnection(item.providerKey)}
+                    disabled={isTesting}
+                    className="bg-[#102343] hover:bg-[#C6A65B] hover:text-[#0A1830] text-[#DFCA95] border border-[#C6A65B]/30 text-xs font-semibold px-2.5 py-1.5 rounded transition-colors flex items-center gap-1"
+                  >
+                    {isTesting ? (
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <CheckCircle className="w-3 h-3 text-emerald-400" />
+                    )}
+                    <span>Test</span>
+                  </button>
+
+                  <button
+                    onClick={() => setEditingItem(item)}
+                    className="bg-[#C6A65B] hover:bg-[#DFCA95] text-[#0A1830] text-xs font-bold px-2.5 py-1.5 rounded transition-colors flex items-center gap-1 shadow"
+                  >
+                    <Key className="w-3 h-3" />
+                    <span>{isKeyPending ? "Add Key" : "Edit Key"}</span>
+                  </button>
+                </div>
 
                 <button
                   onClick={() => handleToggleKillSwitch(item.providerKey, item.isEnabled)}
@@ -217,7 +297,7 @@ export function SuperAdminOverviewClient({
             </h3>
           </div>
           <span className="text-[10px] text-[#DFCA95]/60 font-mono">
-            Immutable Test Audit Stream
+            Live Verification Stream
           </span>
         </div>
 
@@ -229,6 +309,7 @@ export function SuperAdminOverviewClient({
                 <th className="p-3">Test Type</th>
                 <th className="p-3">Result</th>
                 <th className="p-3">Latency</th>
+                <th className="p-3">Details / Response</th>
                 <th className="p-3">Tested By</th>
                 <th className="p-3">Timestamp</th>
               </tr>
@@ -239,11 +320,20 @@ export function SuperAdminOverviewClient({
                   <td className="p-3 font-bold text-white">{log.integration?.displayName}</td>
                   <td className="p-3 font-mono text-[11px]">{log.testType}</td>
                   <td className="p-3">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-500/30">
-                      SUCCESS
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                        log.result === "success"
+                          ? "bg-emerald-950 text-emerald-400 border-emerald-500/30"
+                          : "bg-rose-950 text-rose-400 border-rose-500/30"
+                      }`}
+                    >
+                      {log.result === "success" ? "SUCCESS" : "FAILED"}
                     </span>
                   </td>
                   <td className="p-3 font-mono text-emerald-400">{log.latencyMs}ms</td>
+                  <td className="p-3 text-[11px] text-[#DFCA95]/80 max-w-xs truncate">
+                    {log.sanitisedError || "Verified operational."}
+                  </td>
                   <td className="p-3 text-[#DFCA95]/70">{log.testedBy || "Super Admin"}</td>
                   <td className="p-3 font-mono text-[11px] text-[#DFCA95]/60">
                     {log.testedAt ? new Date(log.testedAt).toLocaleTimeString() : "Just now"}
@@ -254,6 +344,25 @@ export function SuperAdminOverviewClient({
           </table>
         </div>
       </div>
+
+      {/* Edit Key Modal */}
+      {editingItem && (
+        <EditKeyModal
+          isOpen={true}
+          onClose={() => setEditingItem(null)}
+          providerKey={editingItem.providerKey}
+          displayName={editingItem.displayName}
+          currentMaskedHint={editingItem.credentials?.[0]?.maskedHint}
+          metadata={(() => {
+            try {
+              return JSON.parse(editingItem.metadata || "{}");
+            } catch (e) {
+              return {};
+            }
+          })()}
+          onKeyUpdated={handleKeyUpdated}
+        />
+      )}
     </div>
   );
 }

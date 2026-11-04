@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { MessageSquare, Power, Send, CheckCircle, AlertTriangle, ExternalLink, RefreshCw } from "lucide-react";
+import { MessageSquare, Power, Send, CheckCircle, AlertTriangle, ExternalLink, RefreshCw, Key, ShieldCheck } from "lucide-react";
 import { normalizeGhanaPhone, calculateSmsSegments } from "@/lib/sms/vynfy";
+import { EditKeyModal } from "@/components/super-admin/EditKeyModal";
 
 export function VynfySmsClientView({
-  integration,
+  integration: initialIntegration,
   initialMessages,
   totalCount,
 }: {
@@ -13,6 +14,7 @@ export function VynfySmsClientView({
   initialMessages: any[];
   totalCount: number;
 }) {
+  const [integration, setIntegration] = useState(initialIntegration);
   const [messages, setMessages] = useState<any[]>(initialMessages);
   const [testPhone, setTestPhone] = useState("0244123456");
   const [testMessage, setTestMessage] = useState(
@@ -20,10 +22,53 @@ export function VynfySmsClientView({
   );
   const [isSending, setIsSending] = useState(false);
   const [testResult, setTestResult] = useState<any | null>(null);
-  const [isEnabled, setIsEnabled] = useState(integration?.isEnabled ?? true);
+  const [isEnabled, setIsEnabled] = useState(initialIntegration?.isEnabled ?? true);
+  const [isEditingKey, setIsEditingKey] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verifyStatus, setVerifyStatus] = useState<string | null>(null);
 
   const normalizedPreview = normalizeGhanaPhone(testPhone);
   const segments = calculateSmsSegments(testMessage);
+
+  const meta = (() => {
+    try {
+      return JSON.parse(integration?.metadata || "{}");
+    } catch (e) {
+      return {};
+    }
+  })();
+
+  const handleVerifyGateway = async () => {
+    setIsVerifying(true);
+    setVerifyStatus(null);
+    try {
+      const res = await fetch("/api/v1/super-admin/integrations/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ providerKey: "vynfy" }),
+      });
+      const data = await res.json();
+      if (data.data?.result === "success") {
+        setVerifyStatus(data.data.details || "Vynfy SMS Gateway operational.");
+      } else {
+        setVerifyStatus(`Verification notice: ${data.data?.error || data.error}`);
+      }
+    } catch (err: any) {
+      setVerifyStatus(`Verification error: ${err.message}`);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleKeyUpdated = (providerKey: string, newHint: string, updatedMetadata?: string) => {
+    const nextCreds = [{ maskedHint: newHint, status: "active" }];
+    setIntegration({
+      ...integration,
+      credentials: nextCreds,
+      metadata: updatedMetadata || integration.metadata,
+    });
+    handleVerifyGateway();
+  };
 
   const handleSendTestSms = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,14 +76,13 @@ export function VynfySmsClientView({
     setTestResult(null);
 
     try {
-      // Call test endpoint
       const res = await fetch("/api/v1/super-admin/sms/test-send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           phone: testPhone,
           message: testMessage,
-          senderId: "PARLIAMENT",
+          senderId: meta.senderId || "PARLIAMENT",
         }),
       });
 
@@ -88,13 +132,31 @@ export function VynfySmsClientView({
     <div className="space-y-6">
       {/* Top Configuration & Kill Switch Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-[#0D1C38] border border-[#C6A65B]/30 rounded-xl p-5 space-y-2 shadow-lg">
-          <div className="text-[10px] text-[#DFCA95]/60 uppercase font-mono">Gateway Credential</div>
-          <div className="text-sm font-bold text-white">
-            {integration?.credentials[0]?.maskedHint || "vyn_live_...3321"}
+        <div className="bg-[#0D1C38] border border-[#C6A65B]/30 rounded-xl p-5 space-y-3 shadow-lg">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-[#DFCA95]/60 uppercase font-mono">Gateway Credential</span>
+            <button
+              onClick={() => setIsEditingKey(true)}
+              className="bg-[#C6A65B] hover:bg-[#DFCA95] text-[#0A1830] font-bold text-[11px] px-2.5 py-1 rounded transition-colors flex items-center gap-1 shadow"
+            >
+              <Key className="w-3 h-3" />
+              <span>Edit Key</span>
+            </button>
           </div>
-          <div className="text-[11px] text-[#DFCA95]/80">
-            Registered Sender ID: <strong className="text-[#C6A65B]">PARLIAMENT</strong>
+          <div className="text-sm font-bold text-white font-mono">
+            {integration?.credentials?.[0]?.maskedHint || "df4b...1109"}
+          </div>
+          <div className="flex items-center justify-between pt-1 text-[11px] text-[#DFCA95]/80">
+            <div>
+              Sender ID: <strong className="text-[#C6A65B]">{meta.senderId || "PARLIAMENT"}</strong>
+            </div>
+            <button
+              onClick={handleVerifyGateway}
+              disabled={isVerifying}
+              className="text-[#DFCA95] hover:text-white underline flex items-center gap-1"
+            >
+              {isVerifying ? <RefreshCw className="w-3 h-3 animate-spin" /> : "Verify"}
+            </button>
           </div>
         </div>
 
@@ -139,102 +201,97 @@ export function VynfySmsClientView({
         </div>
       </div>
 
-      {/* Live Test SMS Runner */}
+      {verifyStatus && (
+        <div className="p-3 bg-[#102343] border border-[#C6A65B]/40 rounded-lg text-xs text-[#DFCA95] flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-[#C6A65B] shrink-0" />
+          <span>{verifyStatus}</span>
+        </div>
+      )}
+
+      {/* Test Dispatcher Form */}
       <div className="bg-[#0D1C38] border border-[#C6A65B]/30 rounded-xl p-6 shadow-lg space-y-4">
         <div className="border-b border-[#C6A65B]/20 pb-3 flex items-center justify-between">
           <div>
             <h3 className="font-editorial text-sm font-bold text-white uppercase tracking-wider">
-              Vynfy Live Test Dispatcher
+              Vynfy Gateway Delivery Verification Test
             </h3>
             <p className="text-xs text-[#DFCA95]/70">
-              Verify Ghanaian phone number normalization (E.164) and GSM segment calculations.
+              Dispatches a test state notification over the Vynfy SMS Gateway with automatic Ghana E.164 normalization.
             </p>
           </div>
           <span className="text-[10px] bg-[#102343] text-[#C6A65B] px-2.5 py-1 rounded border border-[#C6A65B]/30 font-mono">
-            Provider: Vynfy SMS
+            Provider: Vynfy
           </span>
         </div>
 
         <form onSubmit={handleSendTestSms} className="space-y-4 text-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="font-semibold text-white block mb-1">
-                Recipient Mobile Number (Local or International)
+                Recipient Phone Number (Ghana / International)
               </label>
               <input
                 type="text"
+                required
                 value={testPhone}
                 onChange={(e) => setTestPhone(e.target.value)}
-                placeholder="e.g. 0244123456"
                 className="w-full bg-[#070D18] border border-[#C6A65B]/30 rounded p-2.5 text-white font-mono focus:outline-none focus:border-[#C6A65B]"
               />
-              <div className="mt-1 text-[11px] text-[#DFCA95]/70 font-mono">
-                E.164 Normalized Output: <strong className="text-emerald-400">{normalizedPreview}</strong>
+              <div className="mt-1 text-[11px] text-[#DFCA95]/70 flex items-center justify-between">
+                <span>Normalized E.164: <code className="text-[#C6A65B] font-bold">{normalizedPreview}</code></span>
+                <span>Sender: <strong className="text-white">{meta.senderId || "PARLIAMENT"}</strong></span>
               </div>
             </div>
 
             <div>
-              <label className="font-semibold text-white block mb-1">Sender ID Header</label>
-              <input
-                type="text"
-                disabled
-                value="PARLIAMENT"
-                className="w-full bg-[#070D18]/60 border border-[#C6A65B]/20 rounded p-2.5 text-[#DFCA95] font-bold"
+              <label className="font-semibold text-white block mb-1">
+                Message Content ({testMessage.length} chars, {segments} segment{segments > 1 ? "s" : ""})
+              </label>
+              <textarea
+                rows={3}
+                required
+                value={testMessage}
+                onChange={(e) => setTestMessage(e.target.value)}
+                className="w-full bg-[#070D18] border border-[#C6A65B]/30 rounded p-2.5 text-white font-mono focus:outline-none focus:border-[#C6A65B]"
               />
-              <div className="mt-1 text-[11px] text-[#DFCA95]/60">
-                Official approved institutional SMS sender header.
-              </div>
             </div>
           </div>
 
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <label className="font-semibold text-white block">Message Content</label>
-              <span className="text-[11px] text-[#DFCA95]/70 font-mono">
-                {testMessage.length} Characters &bull; <strong>{segments} Segment{segments > 1 ? "s" : ""}</strong>
-              </span>
-            </div>
-            <textarea
-              rows={3}
-              value={testMessage}
-              onChange={(e) => setTestMessage(e.target.value)}
-              className="w-full bg-[#070D18] border border-[#C6A65B]/30 rounded p-2.5 text-white font-sans focus:outline-none focus:border-[#C6A65B]"
-            />
-          </div>
-
-          <div className="flex items-center justify-between pt-2">
-            <span className="text-[11px] text-[#DFCA95]/60 italic">
-              Dispatching requires live account credit or uses local test stub if offline.
-            </span>
+          <div className="flex justify-end pt-2 border-t border-[#C6A65B]/20">
             <button
               type="submit"
               disabled={isSending || !isEnabled}
               className="bg-[#C6A65B] hover:bg-[#DFCA95] text-[#0A1830] font-bold px-5 py-2.5 rounded text-xs transition-colors flex items-center gap-2 shadow disabled:opacity-50"
             >
-              {isSending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-              Send Test SMS
+              {isSending ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Send className="w-3.5 h-3.5" />
+              )}
+              <span>Send Test SMS via Vynfy</span>
             </button>
           </div>
         </form>
 
         {testResult && (
-          <div className="mt-4 p-4 bg-[#070D18] border border-emerald-500/40 rounded-lg text-xs text-emerald-300 space-y-1">
+          <div className="p-4 bg-[#070D18] border border-emerald-500/40 rounded-lg text-xs text-emerald-300 space-y-1">
             <div className="font-bold text-emerald-400 flex items-center gap-1.5">
               <CheckCircle className="w-4 h-4" />
-              SMS Successfully Submitted to Vynfy Gateway!
+              SMS Accepted by Vynfy Gateway!
             </div>
-            <div>&bull; Destination: <strong>{testResult.normalizedPhone}</strong></div>
+            <div>&bull; Recipient: <strong>{testResult.normalizedPhone}</strong></div>
             <div>&bull; Provider Message ID: <code className="text-white">{testResult.providerMessageId}</code></div>
-            <div>&bull; Segments Billed: {testResult.segments}</div>
+            <div>&bull; Calculated GSM Segments: <strong>{testResult.segments}</strong></div>
+            <div>&bull; Status: <strong className="uppercase">{testResult.status}</strong></div>
           </div>
         )}
       </div>
 
-      {/* Recent Dispatches Stream */}
+      {/* Recent Dispatches Ledger */}
       <div className="bg-[#0D1C38] border border-[#C6A65B]/30 rounded-xl overflow-hidden shadow-lg">
         <div className="p-4 border-b border-[#C6A65B]/20 flex items-center justify-between">
           <h3 className="font-editorial text-sm font-bold text-white uppercase tracking-wider">
-            Vynfy Dispatched Messages Ledger
+            Recent SMS Dispatches Ledger
           </h3>
           <span className="text-[10px] text-[#DFCA95]/70 font-mono">
             {messages.length} SMS Logged
@@ -280,6 +337,19 @@ export function VynfySmsClientView({
           </table>
         </div>
       </div>
+
+      {/* Edit Key Modal */}
+      {isEditingKey && (
+        <EditKeyModal
+          isOpen={true}
+          onClose={() => setIsEditingKey(false)}
+          providerKey="vynfy"
+          displayName="Vynfy SMS Gateway"
+          currentMaskedHint={integration?.credentials?.[0]?.maskedHint}
+          metadata={meta}
+          onKeyUpdated={handleKeyUpdated}
+        />
+      )}
     </div>
   );
 }

@@ -32,7 +32,42 @@ export async function sendInvitationEmail(payload: SendEmailPayload) {
   });
 
   const provider = process.env.EMAIL_PROVIDER || "mock";
-  const providerMessageId = `msg_${provider}_${crypto.randomBytes(12).toString("hex")}`;
+  let providerMessageId = `msg_${provider}_${crypto.randomBytes(12).toString("hex")}`;
+
+  // Execute live Resend dispatch if provider is resend and key is present
+  if (provider === "resend") {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (apiKey) {
+      try {
+        const fromEmail = process.env.RESEND_FROM_EMAIL || "Parliament Protocol <onboarding@resend.dev>";
+        const response = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: fromEmail,
+            to: [payload.recipientEmail],
+            subject: payload.subject,
+            html: payload.htmlContent,
+            text: payload.textContent,
+          }),
+        });
+        if (response.ok) {
+          const resData = await response.json();
+          if (resData.id) {
+            providerMessageId = resData.id;
+          }
+        } else {
+          const errBody = await response.text();
+          console.warn("[Resend Email Notice]", response.status, errBody);
+        }
+      } catch (err: any) {
+        console.warn("[Resend Dispatch Notice]", err.message);
+      }
+    }
+  }
 
   // Create EmailAttempt record
   const attempt = await prisma.emailAttempt.create({
@@ -124,8 +159,15 @@ export async function processIncomingWebhook(webhook: WebhookEventPayload) {
 
   const attempt = await prisma.emailAttempt.findFirst({
     where: {
-      provider: webhook.provider,
-      providerMessageId: webhook.providerMessageId,
+      OR: [
+        {
+          provider: webhook.provider,
+          providerMessageId: webhook.providerMessageId,
+        },
+        {
+          providerMessageId: webhook.providerMessageId,
+        },
+      ],
     },
     include: { invitation: true },
   });

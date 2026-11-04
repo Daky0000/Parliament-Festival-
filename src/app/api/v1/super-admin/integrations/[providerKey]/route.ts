@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit";
+import { updateEnvVariables } from "@/lib/env-manager";
 
 export async function PATCH(
   request: NextRequest,
@@ -10,7 +11,7 @@ export async function PATCH(
   const { providerKey } = await context.params;
   const user = await getCurrentUser();
   const body = await request.json();
-  const { action, isEnabled, metadata, newSecretPlain } = body;
+  const { action, isEnabled, metadata, newSecretPlain, extraCredentials } = body;
 
   const integration = await prisma.platformIntegration.findUnique({
     where: { providerKey },
@@ -21,8 +22,8 @@ export async function PATCH(
     return NextResponse.json({ error: "Integration not found" }, { status: 404 });
   }
 
-  // 1. ROTATE SECRET
-  if (action === "rotate_secret" && newSecretPlain) {
+  // 1. ROTATE OR UPDATE SECRET
+  if ((action === "rotate_secret" || action === "update_key") && newSecretPlain) {
     const hint =
       newSecretPlain.length > 8
         ? `${newSecretPlain.slice(0, 4)}...${newSecretPlain.slice(-4)}`
@@ -45,6 +46,43 @@ export async function PATCH(
       },
     });
 
+    // Sync to .env and process.env
+    const envUpdates: Record<string, string> = {};
+    if (providerKey === "openai") envUpdates["OPENAI_API_KEY"] = newSecretPlain;
+    if (providerKey === "anthropic") envUpdates["ANTHROPIC_API_KEY"] = newSecretPlain;
+    if (providerKey === "resend") envUpdates["RESEND_API_KEY"] = newSecretPlain;
+    if (providerKey === "vynfy") envUpdates["VYNFY_API_KEY"] = newSecretPlain;
+    if (providerKey === "cloudflare") envUpdates["CLOUDFLARE_API_TOKEN"] = newSecretPlain;
+
+    // Handle extra credentials if provided (e.g. for Cloudflare R2 or custom configs)
+    if (extraCredentials && typeof extraCredentials === "object") {
+      if (extraCredentials.accountId) envUpdates["CLOUDFLARE_ACCOUNT_ID"] = extraCredentials.accountId;
+      if (extraCredentials.r2AccessKeyId) envUpdates["CLOUDFLARE_R2_ACCESS_KEY_ID"] = extraCredentials.r2AccessKeyId;
+      if (extraCredentials.r2SecretAccessKey) envUpdates["CLOUDFLARE_R2_SECRET_ACCESS_KEY"] = extraCredentials.r2SecretAccessKey;
+      if (extraCredentials.r2Endpoint) envUpdates["CLOUDFLARE_R2_ENDPOINT"] = extraCredentials.r2Endpoint;
+      if (extraCredentials.r2Bucket) envUpdates["CLOUDFLARE_R2_BUCKET"] = extraCredentials.r2Bucket;
+      if (extraCredentials.senderId) envUpdates["VYNFY_SENDER_ID"] = extraCredentials.senderId;
+      if (extraCredentials.fromEmail) envUpdates["RESEND_FROM_EMAIL"] = extraCredentials.fromEmail;
+    }
+
+    if (Object.keys(envUpdates).length > 0) {
+      updateEnvVariables(envUpdates);
+    }
+
+    // If metadata provided or updated with extra credentials
+    let mergedMetadata = integration.metadata;
+    if (extraCredentials || metadata) {
+      try {
+        const currentMeta = JSON.parse(integration.metadata || "{}");
+        const nextMeta = { ...currentMeta, ...(metadata || {}), ...(extraCredentials || {}) };
+        mergedMetadata = JSON.stringify(nextMeta);
+        await prisma.platformIntegration.update({
+          where: { id: integration.id },
+          data: { metadata: mergedMetadata },
+        });
+      } catch (e) {}
+    }
+
     if (user) {
       await logAuditEvent({
         organizationId: user.organizationId,
@@ -62,6 +100,7 @@ export async function PATCH(
         providerKey,
         maskedHint: newCred.maskedHint,
         credentialVersion: newCred.credentialVersion,
+        metadata: mergedMetadata,
       },
     });
   }
@@ -73,6 +112,7 @@ export async function PATCH(
       ...(typeof isEnabled === "boolean" ? { isEnabled } : {}),
       ...(metadata ? { metadata: JSON.stringify(metadata) } : {}),
     },
+    include: { credentials: { where: { status: "active" }, take: 1 } },
   });
 
   return NextResponse.json({ data: updated });

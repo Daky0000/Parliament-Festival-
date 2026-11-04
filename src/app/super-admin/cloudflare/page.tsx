@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
-import { Cloud, ShieldCheck, CheckCircle2, Lock, HardDrive, Globe, ExternalLink } from "lucide-react";
+import { ExternalLink, ShieldCheck } from "lucide-react";
+import { CloudflareClientView } from "./CloudflareClientView";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +9,7 @@ export default async function SuperAdminCloudflarePage() {
     where: { providerKey: "cloudflare" },
     include: {
       credentials: { where: { status: "active" }, take: 1 },
-      testLogs: { orderBy: { testedAt: "desc" }, take: 3 },
+      testLogs: { orderBy: { testedAt: "desc" }, take: 5 },
     },
   });
 
@@ -45,52 +46,7 @@ export default async function SuperAdminCloudflarePage() {
         </p>
       </div>
 
-      {/* Cloudflare Service Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-[#0D1C38] border border-[#C6A65B]/30 rounded-xl p-5 space-y-2 shadow-lg">
-          <div className="flex items-center gap-2 text-white font-bold text-sm">
-            <Lock className="w-4 h-4 text-[#C6A65B]" />
-            <span>SSL / TLS Encryption</span>
-          </div>
-          <div className="text-lg font-bold text-emerald-400">Full (Strict)</div>
-          <p className="text-[11px] text-[#DFCA95]/70">
-            End-to-end TLS 1.3 enforced across all parliament.gh subdomains.
-          </p>
-        </div>
-
-        <div className="bg-[#0D1C38] border border-[#C6A65B]/30 rounded-xl p-5 space-y-2 shadow-lg">
-          <div className="flex items-center gap-2 text-white font-bold text-sm">
-            <ShieldCheck className="w-4 h-4 text-[#C6A65B]" />
-            <span>Managed WAF Rules</span>
-          </div>
-          <div className="text-lg font-bold text-emerald-400">Active (Blocking)</div>
-          <p className="text-[11px] text-[#DFCA95]/70">
-            Protects against SQL injection, XSS, and unauthorized token scraping.
-          </p>
-        </div>
-
-        <div className="bg-[#0D1C38] border border-[#C6A65B]/30 rounded-xl p-5 space-y-2 shadow-lg">
-          <div className="flex items-center gap-2 text-white font-bold text-sm">
-            <Globe className="w-4 h-4 text-[#C6A65B]" />
-            <span>Turnstile Anti-Bot</span>
-          </div>
-          <div className="text-lg font-bold text-emerald-400">Armed</div>
-          <p className="text-[11px] text-[#DFCA95]/70">
-            Privacy-preserving challenge protection on public RSVP endpoints.
-          </p>
-        </div>
-
-        <div className="bg-[#0D1C38] border border-[#C6A65B]/30 rounded-xl p-5 space-y-2 shadow-lg">
-          <div className="flex items-center gap-2 text-white font-bold text-sm">
-            <HardDrive className="w-4 h-4 text-[#C6A65B]" />
-            <span>R2 Object Storage</span>
-          </div>
-          <div className="text-lg font-bold text-emerald-400">Connected</div>
-          <p className="text-[11px] text-[#DFCA95]/70">
-            Private bucket holding approved crests, venue layouts, and archives.
-          </p>
-        </div>
-      </div>
+      <CloudflareClientView integration={cloudflare} />
     </div>
   );
 }

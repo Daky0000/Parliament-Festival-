@@ -19,3 +19,4 @@ test("AI Provider Routing: respects primary OpenAI and fallback Anthropic Claude
   });
   assert.ok(usageLog, "AI usage must be audited in ai_usage_logs");
 });
+
