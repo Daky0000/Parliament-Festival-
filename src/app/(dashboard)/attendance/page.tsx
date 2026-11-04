@@ -57,7 +57,7 @@ export default async function AttendancePage() {
         <Link
           href="/usher"
           target="_blank"
-          className="bg-white/[0.06] border border-white/20 text-white hover:bg-white/[0.12] hover:text-white transition-colors px-4 py-2 rounded-md text-xs font-semibold flex items-center gap-2 "
+          className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 shadow-sm transition-colors"
         >
           <QrCode className="w-4 h-4" />
           <span>Launch Usher Scanner App</span>

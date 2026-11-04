@@ -194,7 +194,7 @@ export default function ImportWizardPage() {
               Upload standard CSV or XLSX with headers: <code>fullName, title, designation, institution, email, categoryKey</code>
             </p>
 
-            <label className="bg-white/[0.06] border border-white/20 text-white hover:bg-white/[0.12] hover:text-white transition-colors px-4 py-2 rounded-md text-xs font-semibold cursor-pointer inline-flex items-center gap-2">
+            <label className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white transition-colors px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer inline-flex items-center gap-2 shadow-sm">
               <FileSpreadsheet className="w-4 h-4" />
               Choose File
               <input
@@ -315,7 +315,7 @@ export default function ImportWizardPage() {
             <button
               onClick={handleCommit}
               disabled={isLoading}
-              className="bg-white/[0.06] border border-white/20 text-white hover:bg-white/[0.12] hover:text-white transition-colors px-5 py-2 rounded text-xs font-semibold flex items-center gap-2 "
+              className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white transition-colors px-5 py-2.5 rounded-lg text-xs font-semibold flex items-center gap-2 shadow-sm"
             >
               {isLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
               Commit Import Batch ({parsedRows.length} Dignitaries)
@@ -340,7 +340,7 @@ export default function ImportWizardPage() {
           <div className="pt-4 flex justify-center gap-3">
             <Link
               href="/guests"
-              className="bg-white/[0.06] border border-white/20 text-white hover:bg-white/[0.12] hover:text-white transition-colors text-xs font-semibold px-4 py-2 rounded-md "
+              className="bg-white border border-[#E3E6EB] hover:border-[#2563EB] text-[#091833] transition-colors text-xs font-semibold px-4 py-2 rounded-lg shadow-sm"
             >
               View Dignitary Register
             </Link>

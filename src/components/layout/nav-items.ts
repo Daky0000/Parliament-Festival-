@@ -8,6 +8,7 @@ import {
   Armchair,
   CalendarDays,
   Sparkles,
+  QrCode,
   type LucideIcon,
 } from "lucide-react";
 
@@ -18,6 +19,7 @@ export const navigationItems: NavItem[] = [
   { name: "Guest Directory", href: "/guests", icon: Users },
   { name: "Import Wizard", href: "/guests/import", icon: FileSpreadsheet },
   { name: "Protocol Precedence", href: "/protocol", icon: Award },
+  { name: "Invitation Templates", href: "/invitations/templates", icon: QrCode },
   { name: "Invitation Campaigns", href: "/invitations/campaigns", icon: Mail },
   { name: "RSVP Dashboard", href: "/rsvps", icon: CheckCircle2 },
   { name: "Seating Planner", href: "/seating", icon: Armchair },

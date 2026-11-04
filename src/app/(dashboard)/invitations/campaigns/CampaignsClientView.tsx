@@ -93,7 +93,7 @@ export function CampaignsClientView({
         </div>
         <button
           onClick={() => setIsCreateOpen(true)}
-          className="bg-white/[0.06] border border-white/20 text-white hover:bg-white/[0.12] hover:text-white transition-colors px-3.5 py-2 rounded-md text-xs font-semibold flex items-center gap-2 "
+          className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 shadow-sm transition-colors"
         >
           <Plus className="w-4 h-4" />
           Create Invitation Campaign
@@ -166,7 +166,7 @@ export function CampaignsClientView({
                   {camp.status === "completed" && (
                     <button
                       onClick={() => setSelectedCampaign(camp)}
-                      className="bg-white/[0.06] border border-white/20 text-white hover:bg-white/[0.12] hover:text-white text-xs font-semibold px-3 py-1.5 rounded transition-colors"
+                      className="bg-white border border-[#E3E6EB] hover:border-[#2563EB] text-[#091833] text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors shadow-sm"
                     >
                       Inspect Recipient Activity ({camp.invitations?.length || 0})
                     </button>
@@ -378,7 +378,7 @@ export function CampaignsClientView({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-white/[0.06] border border-white/20 text-white font-semibold rounded hover:bg-white/[0.12] hover:text-white transition-colors"
+                  className="px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold rounded-lg text-xs shadow-sm transition-colors"
                 >
                   Submit for Approval
                 </button>

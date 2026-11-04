@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit";
 import { generateSecureToken, generateReferenceCode } from "@/lib/tokens";
 import { sendInvitationEmail, interpolateInvitationTemplate } from "@/lib/email/provider";
+import { rankTheme } from "@/lib/email/rank-theme";
 
 export async function GET(
   request: NextRequest,
@@ -160,6 +161,12 @@ export async function PATCH(
         "guest.institution_name": guest.institution?.name || "",
         "invitation.rsvp_url": rsvpUrl,
         "invitation.reference": invitationReference,
+        // Header band colours follow the guest's protocol rank
+        ...rankTheme(
+          guest.protocolCategory?.colourHex,
+          guest.protocolCategory?.name,
+          guest.protocolCategory?.rankOrder
+        ),
       };
 
       const renderedHtml = interpolateInvitationTemplate(

@@ -224,7 +224,7 @@ export function AiCentreClientView({ eventId }: { eventId: string }) {
             <button
               type="submit"
               disabled={isLoading || !inputQuery.trim()}
-              className="bg-white/[0.06] border border-white/20 text-white hover:bg-white/[0.12] hover:text-white transition-colors p-2.5 rounded-md text-xs font-semibold disabled:opacity-50"
+              className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white p-2.5 rounded-lg text-xs font-semibold disabled:opacity-50 transition-colors shadow-sm"
             >
               <Send className="w-4 h-4" />
             </button>

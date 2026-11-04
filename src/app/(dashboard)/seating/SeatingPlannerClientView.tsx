@@ -112,7 +112,7 @@ export function SeatingPlannerClientView({
           <button
             onClick={handleRunSeatingEngine}
             disabled={isAllocating}
-            className="bg-white/[0.06] border border-white/20 text-white hover:bg-white/[0.12] hover:text-white transition-colors text-xs font-semibold px-4 py-2 rounded-md flex items-center gap-2"
+            className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm transition-colors"
           >
             {isAllocating ? (
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
