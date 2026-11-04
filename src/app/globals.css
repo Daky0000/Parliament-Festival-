@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --navy: #102343;
+  --deep-navy: #0A1830;
+  --gold: #C6A65B;
+  --gold-light: #DFCA95;
+  --ivory: #F7F5F0;
+  --ivory-dark: #EFECE4;
+  --surface: #FFFFFF;
+  --text-primary: #202A38;
+  --text-secondary: #667085;
+  --border: #E4E7EC;
+  --success: #18794E;
+  --warning: #A66A12;
+  --danger: #B42318;
+}
+
+body {
+  background-color: var(--ivory);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Luxury Editorial Serif Typography */
+.font-editorial {
+  font-family: "Georgia", "Cambria", "Times New Roman", serif;
+}
+
+/* Responsive Table Wrapper with Sticky Headers */
+.table-responsive-container {
+  overflow: auto;
+  max-inline-size: 100%;
+  max-block-size: min(650px, 80vh);
+  container-type: inline-size;
+}
+
+.table-responsive-container thead {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 10;
+}
+
+/* Gold Gradient Accents */
+.gold-gradient-border {
+  border-image: linear-gradient(to right, #C6A65B, #DFCA95, #C6A65B) 1;
+}
+
+.gold-badge {
+  background: linear-gradient(135deg, #102343 0%, #0A1830 100%);
+  border: 1px solid #C6A65B;
+  color: #DFCA95;
+}

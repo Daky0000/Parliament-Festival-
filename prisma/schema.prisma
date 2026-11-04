@@ -1,0 +1,832 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 7.3.1 Organizations and users
+model Organization {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  status      String   @default("active") // active, suspended, archived
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+  roles       Role[]
+  events      Event[]
+  institutions Institution[]
+  people      Person[]
+  auditLogs   AuditLog[]
+  aiSessions  AiSession[]
+
+  @@map("organizations")
+}
+
+model User {
+  id              String    @id @default(uuid())
+  organizationId  String
+  email           String
+  fullName        String
+  passwordHash    String?
+  authProvider    String    @default("local")
+  externalSubject String?
+  status          String    @default("active") // invited, active, suspended, deactivated
+  mfaRequired     Boolean   @default(false)
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  roleAssignments UserRoleAssignment[]
+  eventAccess     EventUserAccess[]
+  auditLogs       AuditLog[]
+  aiSessions      AiSession[]
+  aiInteractions  AiInteraction[]
+  tasksAssigned   Task[]     @relation("TaskAssignedTo")
+  tasksCreated    Task[]     @relation("TaskCreatedBy")
+  notifications   Notification[]
+
+  // Approval relations
+  campaignsApproved   InvitationCampaign[] @relation("CampaignApprover")
+  campaignsCreated    InvitationCampaign[] @relation("CampaignCreator")
+  seatAssignmentsDone SeatAssignment[]     @relation("SeatAssignedBy")
+  seatApprovalsDone   SeatAssignment[]     @relation("SeatApprovedBy")
+  checkinsRecorded    AttendanceRecord[]   @relation("AttendanceRecordedBy")
+
+  @@unique([organizationId, email])
+  @@map("users")
+}
+
+model Role {
+  id             String   @id @default(uuid())
+  organizationId String
+  key            String
+  name           String
+  description    String?
+  isSystemRole   Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  permissions    RolePermission[]
+  userAssignments UserRoleAssignment[]
+
+  @@unique([organizationId, key])
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  description String
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRoleAssignment {
+  id         String    @id @default(uuid())
+  userId     String
+  roleId     String
+  eventId    String?
+  assignedBy String?
+  assignedAt DateTime  @default(now())
+  revokedAt  DateTime?
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  event      Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("user_role_assignments")
+}
+
+// 7.3.2 Events and access
+model Event {
+  id               String    @id @default(uuid())
+  organizationId   String
+  eventCode        String
+  name             String
+  description      String?
+  status           String    @default("draft") // draft, setup, active, completed, archived
+  venueName        String?
+  venueAddress     String?
+  timezone         String    @default("Africa/Accra")
+  startsAt         DateTime?
+  endsAt           DateTime?
+  rsvpDeadline     DateTime?
+  brandConfig      String    @default("{}") // JSON string: colors, logos, badges
+  attendancePolicy String    @default("{}") // JSON string
+  createdBy        String?
+  activatedAt      DateTime?
+  completedAt      DateTime?
+  archivedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userAccess       EventUserAccess[]
+  roleAssignments  UserRoleAssignment[]
+  categories       ProtocolCategory[]
+  guests           EventGuest[]
+  guestGroups      GuestGroup[]
+  importBatches    ImportBatch[]
+  templates        InvitationTemplate[]
+  campaigns        InvitationCampaign[]
+  invitations      Invitation[]
+  seatingPlans     SeatingPlan[]
+  qrCredentials    QrCredential[]
+  attendanceRecords AttendanceRecord[]
+  auditLogs        AuditLog[]
+  aiSessions       AiSession[]
+  tasks            Task[]
+  notifications    Notification[]
+
+  @@unique([organizationId, eventCode])
+  @@map("events")
+}
+
+model EventUserAccess {
+  eventId   String
+  userId    String
+  grantedBy String?
+  grantedAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  event     Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, userId])
+  @@map("event_user_access")
+}
+
+// 7.3.3 Institutions and people
+model Institution {
+  id             String   @id @default(uuid())
+  organizationId String
+  name           String
+  institutionType String?
+  officialDomain String?
+  contactEmail   String?
+  contactPhone   String?
+  status         String   @default("active") // active, inactive, archived
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  aliases        InstitutionAlias[]
+  people         Person[]
+  eventGuests    EventGuest[]
+  guestGroups    GuestGroup[]
+
+  @@unique([organizationId, name])
+  @@map("institutions")
+}
+
+model InstitutionAlias {
+  id            String   @id @default(uuid())
+  institutionId String
+  alias         String
+
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  @@unique([institutionId, alias])
+  @@map("institution_aliases")
+}
+
+model Person {
+  id                   String    @id @default(uuid())
+  organizationId       String
+  institutionId        String?
+  title                String?
+  firstName            String?
+  middleName           String?
+  lastName             String?
+  fullName             String
+  preferredDisplayName String?
+  designation          String?
+  email                String?
+  phone                String?
+  recordStatus         String    @default("active") // active, archived, merged
+  mergedIntoPersonId   String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  archivedAt           DateTime?
+
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  institution          Institution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+  eventGuests          EventGuest[]
+
+  @@map("people")
+}
+
+// 7.3.4 Protocol categories and event guests
+model ProtocolCategory {
+  id               String   @id @default(uuid())
+  eventId          String
+  categoryKey      String
+  name             String
+  rankOrder        Int
+  colourHex        String
+  description      String?
+  eligibilityRules String   @default("{}")
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  event            Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventGuests      EventGuest[]
+  seatingSections  SeatingSection[]
+
+  @@unique([eventId, categoryKey])
+  @@unique([eventId, rankOrder])
+  @@map("protocol_categories")
+}
+
+model GuestGroup {
+  id            String   @id @default(uuid())
+  eventId       String
+  name          String
+  groupType     String?
+  institutionId String?
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  event         Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  institution   Institution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+  members       GuestGroupMember[]
+  guests        EventGuest[]
+
+  @@unique([eventId, name])
+  @@map("guest_groups")
+}
+
+model EventGuest {
+  id                        String    @id @default(uuid())
+  eventId                   String
+  personId                  String
+  institutionId             String?
+  protocolCategoryId        String?
+  guestGroupId              String?
+  guestReference            String?   @unique
+  invitationRequired        Boolean   @default(true)
+  companionAllowance        Int       @default(0)
+  accessibilityRequirements String?
+  operationalNotes          String?
+  guestStatus               String    @default("active") // active, withdrawn, cancelled, archived
+  categoryOverrideReason    String?
+  categoryUpdatedBy         String?
+  categoryUpdatedAt         DateTime?
+  createdBy                 String?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  event                     Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  person                    Person            @relation(fields: [personId], references: [id], onDelete: Cascade)
+  institution               Institution?      @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+  protocolCategory          ProtocolCategory? @relation(fields: [protocolCategoryId], references: [id], onDelete: SetNull)
+  guestGroup                GuestGroup?       @relation(fields: [guestGroupId], references: [id], onDelete: SetNull)
+  groupMemberships          GuestGroupMember[]
+  invitations               Invitation[]
+  seatAssignments           SeatAssignment[]
+  attendanceRecords         AttendanceRecord[]
+
+  @@unique([eventId, personId])
+  @@map("event_guests")
+}
+
+model GuestGroupMember {
+  guestGroupId   String
+  eventGuestId   String
+  membershipRole String?
+
+  guestGroup     GuestGroup @relation(fields: [guestGroupId], references: [id], onDelete: Cascade)
+  eventGuest     EventGuest @relation(fields: [eventGuestId], references: [id], onDelete: Cascade)
+
+  @@id([guestGroupId, eventGuestId])
+  @@map("guest_group_members")
+}
+
+// 7.3.5 Import batches
+model ImportBatch {
+  id               String    @id @default(uuid())
+  eventId          String
+  uploadedBy       String
+  originalFilename String
+  storageKey       String
+  fileSha256       String?
+  status           String    @default("uploaded") // uploaded, mapping, validated, importing, completed, completed_with_errors, failed, cancelled
+  totalRows        Int       @default(0)
+  validRows        Int       @default(0)
+  warningRows      Int       @default(0)
+  errorRows        Int       @default(0)
+  importedRows     Int       @default(0)
+  mappingConfig    String    @default("{}") // JSON
+  startedAt        DateTime?
+  completedAt      DateTime?
+  createdAt        DateTime  @default(now())
+
+  event            Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  rowResults       ImportRowResult[]
+
+  @@map("import_batches")
+}
+
+model ImportRowResult {
+  id             String   @id @default(uuid())
+  importBatchId  String
+  rowNumber      Int
+  sourceData     String   // JSON
+  normalizedData String?  // JSON
+  outcome        String   // valid, warning, error, created, updated, skipped
+  errors         String   @default("[]") // JSON array
+  warnings       String   @default("[]") // JSON array
+  personId       String?
+  eventGuestId   String?
+  createdAt      DateTime @default(now())
+
+  importBatch    ImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+
+  @@unique([importBatchId, rowNumber])
+  @@map("import_row_results")
+}
+
+// 7.3.6 Templates and versions
+model InvitationTemplate {
+  id        String   @id @default(uuid())
+  eventId   String
+  name      String
+  channel   String   @default("email") // email, pdf
+  status    String   @default("draft") // draft, active, archived
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  versions  InvitationTemplateVersion[]
+
+  @@map("invitation_templates")
+}
+
+model InvitationTemplateVersion {
+  id              String    @id @default(uuid())
+  templateId      String
+  versionNumber   Int
+  subjectTemplate String?
+  htmlContent     String?
+  textContent     String?
+  pdfConfig       String    @default("{}")
+  variableSchema  String    @default("{}")
+  status          String    @default("draft") // draft, pending_approval, approved, rejected, retired
+  createdBy       String?
+  approvedBy      String?
+  approvedAt      DateTime?
+  approvalNote    String?
+  contentSha256   String?
+  createdAt       DateTime  @default(now())
+
+  template        InvitationTemplate   @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  campaigns       InvitationCampaign[]
+  invitations     Invitation[]
+
+  @@unique([templateId, versionNumber])
+  @@map("invitation_template_versions")
+}
+
+// 7.3.7 Campaigns and invitations
+model InvitationCampaign {
+  id                 String    @id @default(uuid())
+  eventId            String
+  templateVersionId  String
+  name               String
+  campaignType       String    @default("initial") // initial, reminder, correction, replacement
+  status             String    @default("draft") // draft, validating, pending_approval, approved, scheduled, queued, sending, paused, completed, cancelled, rejected, failed
+  senderName         String
+  senderEmail        String
+  replyToEmail       String?
+  subjectSnapshot    String
+  audienceFilter     String    @default("{}")
+  audienceCount      Int       @default(0)
+  approvedBy         String?
+  approvedAt         DateTime?
+  approvalNote       String?
+  scheduledAt        DateTime?
+  startedAt          DateTime?
+  completedAt        DateTime?
+  createdBy          String
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  event              Event                     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  templateVersion    InvitationTemplateVersion @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
+  creator            User                      @relation("CampaignCreator", fields: [createdBy], references: [id])
+  approver           User?                     @relation("CampaignApprover", fields: [approvedBy], references: [id])
+  invitations        Invitation[]
+  emailAttempts      EmailAttempt[]
+
+  @@map("invitation_campaigns")
+}
+
+model Invitation {
+  id                     String    @id @default(uuid())
+  eventId                String
+  eventGuestId           String
+  campaignId             String?
+  templateVersionId      String
+  invitationReference    String
+  tokenHash              String    @unique
+  tokenExpiresAt         DateTime?
+  tokenRevokedAt         DateTime?
+  recipientEmailSnapshot String
+  recipientNameSnapshot  String
+  designationSnapshot    String?
+  institutionSnapshot    String?
+  categorySnapshot       String    @default("{}")
+  invitationStatus       String    @default("prepared") // prepared, queued, sent, failed, revoked, superseded
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  event                  Event                     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventGuest             EventGuest                @relation(fields: [eventGuestId], references: [id], onDelete: Cascade)
+  campaign               InvitationCampaign?       @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  templateVersion        InvitationTemplateVersion @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
+  emailAttempts          EmailAttempt[]
+  invitationEvents       InvitationEvent[]
+  rsvps                  Rsvp[]
+  qrCredentials          QrCredential[]
+
+  @@unique([eventId, invitationReference])
+  @@map("invitations")
+}
+
+model EmailAttempt {
+  id                String    @id @default(uuid())
+  invitationId      String
+  campaignId        String?
+  attemptNumber     Int
+  provider          String
+  providerMessageId String?
+  recipientEmail    String
+  status            String    @default("queued") // queued, submitted, delivered, bounced, rejected, failed, deferred
+  errorCode         String?
+  errorMessage      String?
+  submittedAt       DateTime?
+  deliveredAt       DateTime?
+  createdAt         DateTime  @default(now())
+
+  invitation        Invitation          @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  campaign          InvitationCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  events            InvitationEvent[]
+
+  @@unique([invitationId, attemptNumber])
+  @@map("email_attempts")
+}
+
+model ProviderWebhookEvent {
+  id                String    @id @default(uuid())
+  provider          String
+  providerEventId   String
+  providerMessageId String?
+  eventType         String
+  occurredAt        DateTime?
+  receivedAt        DateTime  @default(now())
+  signatureValid    Boolean
+  processingStatus  String    @default("received") // received, processed, ignored, failed
+  payload           String    // JSON
+  processingError   String?
+
+  invitationEvents  InvitationEvent[]
+
+  @@unique([provider, providerEventId])
+  @@map("provider_webhook_events")
+}
+
+model InvitationEvent {
+  id                     String    @id @default(uuid())
+  invitationId           String
+  emailAttemptId         String?
+  eventType              String    // queued, submitted, delivered, bounced, failed, open_signal, link_access, token_revoked, resent
+  occurredAt             DateTime  @default(now())
+  source                 String?
+  userAgent              String?
+  ipHash                 String?
+  metadata               String    @default("{}") // JSON
+  providerWebhookEventId String?
+  createdAt              DateTime  @default(now())
+
+  invitation             Invitation            @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  emailAttempt           EmailAttempt?         @relation(fields: [emailAttemptId], references: [id], onDelete: SetNull)
+  webhookEvent           ProviderWebhookEvent? @relation(fields: [providerWebhookEventId], references: [id], onDelete: SetNull)
+
+  @@map("invitation_events")
+}
+
+// 7.3.9 RSVP and companions
+model Rsvp {
+  id                    String   @id @default(uuid())
+  invitationId          String
+  response              String   // accepted, declined, pending_clarification
+  companionCount        Int      @default(0)
+  submittedAt           DateTime @default(now())
+  submittedVia          String   @default("invitation_page")
+  confirmationReference String   @unique
+  notes                 String?
+  supersedesRsvpId      String?
+  createdAt             DateTime @default(now())
+
+  invitation            Invitation  @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  companions            Companion[]
+
+  @@map("rsvps")
+}
+
+model Companion {
+  id                String   @id @default(uuid())
+  rsvpId            String
+  displayName       String?
+  title             String?
+  accessibilityNote String?
+  createdAt         DateTime @default(now())
+
+  rsvp              Rsvp     @relation(fields: [rsvpId], references: [id], onDelete: Cascade)
+
+  @@map("companions")
+}
+
+// 7.3.10 Seating
+model SeatingPlan {
+  id               String   @id @default(uuid())
+  eventId          String
+  versionNumber    Int
+  name             String
+  status           String   @default("draft") // draft, proposed, pending_approval, approved, superseded
+  layoutStorageKey String?
+  rulesSnapshot    String   @default("{}") // JSON
+  createdBy        String?
+  approvedBy       String?
+  approvedAt       DateTime?
+  createdAt        DateTime @default(now())
+
+  event            Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  sections         SeatingSection[]
+  seatAssignments  SeatAssignment[]
+
+  @@unique([eventId, versionNumber])
+  @@map("seating_plans")
+}
+
+model SeatingSection {
+  id                 String   @id @default(uuid())
+  seatingPlanId      String
+  sectionCode        String
+  name               String
+  protocolCategoryId String?
+  capacity           Int
+  displayOrder       Int      @default(0)
+  colourHex          String?
+  sectionType        String   @default("general") // general, vip, choir, media
+  isActive           Boolean  @default(true)
+
+  seatingPlan        SeatingPlan       @relation(fields: [seatingPlanId], references: [id], onDelete: Cascade)
+  protocolCategory   ProtocolCategory? @relation(fields: [protocolCategoryId], references: [id], onDelete: SetNull)
+  seats              Seat[]
+  seatAssignments    SeatAssignment[]
+
+  @@unique([seatingPlanId, sectionCode])
+  @@map("seating_sections")
+}
+
+model Seat {
+  id                       String   @id @default(uuid())
+  sectionId                String
+  seatCode                 String
+  rowLabel                 String?
+  seatNumber               Int?
+  seatStatus               String   @default("available") // available, blocked, reserved, inactive
+  accessibilityDesignation String?
+  coordinates              String?  // JSON {x, y}
+
+  section                  SeatingSection   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  seatAssignments          SeatAssignment[]
+
+  @@unique([sectionId, seatCode])
+  @@map("seats")
+}
+
+model SeatAssignment {
+  id             String    @id @default(uuid())
+  seatingPlanId  String
+  eventGuestId   String
+  seatId         String?
+  sectionId      String
+  assignmentType String    @default("principal") // principal, companion, group_block
+  status         String    @default("proposed")  // proposed, approved, released, cancelled
+  assignedBy     String?
+  approvedBy     String?
+  reason         String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  seatingPlan    SeatingPlan    @relation(fields: [seatingPlanId], references: [id], onDelete: Cascade)
+  eventGuest     EventGuest     @relation(fields: [eventGuestId], references: [id], onDelete: Cascade)
+  seat           Seat?          @relation(fields: [seatId], references: [id], onDelete: SetNull)
+  section        SeatingSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  assigner       User?          @relation("SeatAssignedBy", fields: [assignedBy], references: [id])
+  approver       User?          @relation("SeatApprovedBy", fields: [approvedBy], references: [id])
+
+  @@map("seat_assignments")
+}
+
+// 7.3.11 QR credentials and attendance
+model QrCredential {
+  id             String    @id @default(uuid())
+  eventId        String
+  invitationId   String
+  credentialHash String    @unique
+  status         String    @default("active") // active, revoked, expired
+  expiresAt      DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  event          Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  invitation     Invitation         @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  attendance     AttendanceRecord[]
+
+  @@map("qr_credentials")
+}
+
+model AttendanceRecord {
+  id             String    @id @default(uuid())
+  eventId        String
+  eventGuestId   String
+  qrCredentialId String?
+  checkinStatus  String    @default("checked_in") // checked_in, reversed, exception
+  checkedInAt    DateTime  @default(now())
+  checkedInBy    String?
+  checkinMethod  String    // qr, manual, offline_sync, supervisor_override
+  overrideReason String?
+  deviceReference String?
+  createdAt      DateTime  @default(now())
+
+  event          Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventGuest     EventGuest    @relation(fields: [eventGuestId], references: [id], onDelete: Cascade)
+  qrCredential   QrCredential? @relation(fields: [qrCredentialId], references: [id], onDelete: SetNull)
+  recorder       User?         @relation("AttendanceRecordedBy", fields: [checkedInBy], references: [id])
+
+  @@map("attendance_records")
+}
+
+// 7.3.12 Audit logs
+model AuditLog {
+  id             String   @id @default(uuid())
+  organizationId String
+  eventId        String?
+  actorUserId    String?
+  actorType      String   @default("user") // user, system, ai, integration
+  action         String
+  entityType     String
+  entityId       String?
+  outcome        String   @default("success") // success, denied, failed
+  reason         String?
+  beforeData     String?  // JSON
+  afterData      String?  // JSON
+  correlationId  String?
+  ipHash         String?
+  createdAt      DateTime @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event          Event?       @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  user           User?        @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
+
+// 7.3.13 AI interactions and tool executions
+model AiSession {
+  id             String   @id @default(uuid())
+  organizationId String
+  eventId        String?
+  userId         String
+  title          String?
+  status         String   @default("active") // active, archived, closed
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event          Event?          @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interactions   AiInteraction[]
+
+  @@map("ai_sessions")
+}
+
+model AiInteraction {
+  id              String   @id @default(uuid())
+  sessionId       String
+  userId          String
+  provider        String
+  model           String
+  interactionType String   // question, generation, tool_plan, tool_result
+  promptRedacted  String?
+  responseRedacted String?
+  inputTokens     Int?
+  outputTokens    Int?
+  estimatedCost   Float?
+  latencyMs       Int?
+  status          String
+  createdAt       DateTime @default(now())
+
+  session         AiSession          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  toolExecutions  AiToolExecution[]
+
+  @@map("ai_interactions")
+}
+
+model AiToolExecution {
+  id            String    @id @default(uuid())
+  interactionId String
+  toolName      String
+  permissionKey String
+  inputSummary  String    @default("{}") // JSON
+  outputSummary String?   // JSON
+  status        String    // proposed, awaiting_approval, approved, executing, completed, denied, failed, cancelled
+  approvedBy    String?
+  approvedAt    DateTime?
+  executedAt    DateTime?
+  errorSummary  String?
+  createdAt     DateTime  @default(now())
+
+  interaction   AiInteraction @relation(fields: [interactionId], references: [id], onDelete: Cascade)
+
+  @@map("ai_tool_executions")
+}
+
+// 7.3.14 Notifications, tasks, outbox
+model Notification {
+  id               String    @id @default(uuid())
+  userId           String
+  eventId          String?
+  notificationType String
+  title            String
+  body             String
+  targetType       String?
+  targetId         String?
+  readAt           DateTime?
+  createdAt        DateTime  @default(now())
+
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event            Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model Task {
+  id          String    @id @default(uuid())
+  eventId     String
+  title       String
+  description String?
+  assignedTo  String?
+  createdBy   String?
+  priority    String    @default("normal") // low, normal, high, urgent
+  status      String    @default("open")   // open, in_progress, blocked, completed, cancelled
+  dueAt       DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  assignee    User?     @relation("TaskAssignedTo", fields: [assignedTo], references: [id], onDelete: SetNull)
+  creator     User?     @relation("TaskCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@map("tasks")
+}
+
+model OutboxEvent {
+  id            String    @id @default(uuid())
+  aggregateType String
+  aggregateId   String
+  eventType     String
+  payload       String    // JSON
+  status        String    @default("pending") // pending, processing, published, failed
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  publishedAt   DateTime?
+
+  @@map("outbox_events")
+}
