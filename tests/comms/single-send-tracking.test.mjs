@@ -13,6 +13,7 @@ const guests = await import("../../src/app/api/v1/guests/route.ts");
 const sendOne = await import("../../src/app/api/v1/guests/[eventGuestId]/send-invitation/route.ts");
 const pixel = await import("../../src/app/api/v1/public/track/open/[token]/route.ts");
 const tracking = await import("../../src/app/api/v1/email-tracking/route.ts");
+const detail = await import("../../src/app/api/v1/guests/[eventGuestId]/route.ts");
 
 const uniq = () => `${Date.now()}${Math.random().toString(36).slice(2, 6)}`;
 
@@ -125,6 +126,18 @@ test("one-click send uses the approved template; opening the email is tracked fo
   assert.strictEqual(live.json.data[guestId].status, "opened");
   assert.ok(live.json.data[guestId].firstOpenedAt);
   assert.strictEqual(live.json.data[bystander].status, "sent", "another dignitary is not marked opened by this open");
+
+  // The detail panel shows the send history with its opens.
+  const d = await call(detail.GET, request(`/api/v1/guests/${guestId}`, { cookie: admin }), { eventGuestId: guestId });
+  assert.strictEqual(d.status, 200, JSON.stringify(d.json));
+  assert.strictEqual(d.json.data.sends.length, 1);
+  assert.strictEqual(d.json.data.sends[0].via, "direct");
+  assert.strictEqual(d.json.data.sends[0].opens, 1);
+  assert.strictEqual(d.json.data.tracking.sendCount, 1);
+  assert.ok(d.json.data.activity.some((a) => a.type === "open_signal"));
+  assert.ok(d.json.data.seat?.seatCode, "seat shown");
+  const usherDetail = await call(detail.GET, request(`/api/v1/guests/${guestId}`, { cookie: await cookieFor("usher@parliament.gh") }), { eventGuestId: guestId });
+  assert.ok([403, 404].includes(usherDetail.status), "ushers cannot read guest details");
 });
 
 

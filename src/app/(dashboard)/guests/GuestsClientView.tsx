@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { TemplatePreviewModal } from "@/components/templates/TemplatePreviewModal";
 import { TemplateData } from "@/components/templates/PassTemplate";
+import { GuestDetailDrawer } from "./GuestDetailDrawer";
 import { DESIGNATION_GROUPS, OTHER_DESIGNATION } from "@/lib/designations";
 import type { EmailTracking } from "@/lib/email/tracking-summary";
 
@@ -209,6 +210,8 @@ export function GuestsClientView({
   const [confirmGuest, setConfirmGuest] = useState<GuestItem | null>(null);
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [detailGuestId, setDetailGuestId] = useState<string | null>(null);
+  const [detailReload, setDetailReload] = useState(0);
 
   // Template Preview Modal
   const [previewGuestId, setPreviewGuestId] = useState<string | undefined>(undefined);
@@ -265,6 +268,7 @@ export function GuestsClientView({
         const t = (body.data?.tracking ?? body.tracking) as EmailTracking;
         setGuests((prev) => prev.map((g) => (g.id === guest.id ? { ...g, emailTracking: t } : g)));
       }
+      setDetailReload((n) => n + 1);
       if (res.ok) {
         setNotice({ kind: "ok", text: `Invitation sent to ${guest.person.fullName} (${body.data.sentTo}). You will see here when it is opened.` });
       } else {
@@ -593,10 +597,15 @@ export function GuestsClientView({
                   return (
                     <tr key={guest.id} className="hover:bg-[#F6F7F9]/70 transition-colors">
                       <td className="p-3">
-                        <div className="font-semibold text-[#091833]">
-                          {guest.person.title ? `${guest.person.title} ` : ""}
+                        <button
+                          type="button"
+                          onClick={() => setDetailGuestId(guest.id)}
+                          className="font-semibold text-[#091833] text-left hover:text-brand-blue hover:underline underline-offset-2"
+                          title="See this dignitary's details and email history"
+                        >
+                          {guest.person.title && !guest.person.fullName.startsWith(guest.person.title) ? `${guest.person.title} ` : ""}
                           {guest.person.fullName}
-                        </div>
+                        </button>
                         <div className="text-[11px] text-[#5B6374] mt-0.5">
                           {guest.person.designation && <span>{guest.person.designation} &bull; </span>}
                           <strong className="text-[#091833]">{guest.institution?.name || "General Dignitary"}</strong>
@@ -962,7 +971,7 @@ export function GuestsClientView({
       {/* SEND INVITATION CONFIRMATION — the email is the approved template, not editable */}
       {confirmGuest && (
         <div
-          className="fixed inset-0 bg-brand-navy/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-brand-navy/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
           role="dialog"
           aria-modal="true"
           aria-label="Send invitation email"
@@ -1005,6 +1014,22 @@ export function GuestsClientView({
           </div>
         </div>
       )}
+
+      {/* DIGNITARY DETAIL PANEL */}
+      {detailGuestId && (() => {
+        const g = guests.find((x) => x.id === detailGuestId);
+        return (
+          <GuestDetailDrawer
+            guestId={detailGuestId}
+            reloadKey={detailReload}
+            canSendEmail={canSendEmail}
+            sending={sendingId === detailGuestId}
+            onClose={() => setDetailGuestId(null)}
+            onSend={() => g && setConfirmGuest(g)}
+            onViewPass={() => g && handleOpenPreview(g)}
+          />
+        );
+      })()}
 
       {/* TEMPLATE PREVIEW MODAL */}
       {previewData && (
