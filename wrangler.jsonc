@@ -1,24 +1,28 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "parliament-festival",
-  "main": ".open-next/worker.js",
+  "main": "worker.ts",
   "compatibility_date": "2026-11-04",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
   // Version preview URLs would be extra hostnames outside Cloudflare Access.
   "preview_urls": false,
   "observability": { "enabled": true },
+  // Background work (campaign queue). See worker.ts and /api/internal/tick.
+  "triggers": { "crons": ["* * * * *"] },
   "vars": { "APP_ENV": "local" },
   "env": {
     "staging": {
       "name": "parliament-festival-staging",
       "preview_urls": false,
+      "triggers": { "crons": ["* * * * *"] },
       "vars": { "APP_ENV": "staging", "EMAIL_PROVIDER": "mock", "SMS_PROVIDER": "mock" }
     },
     "production": {
       "name": "parliament-festival-production",
       "preview_urls": false,
-      "vars": { "APP_ENV": "production" }
+      "triggers": { "crons": ["* * * * *"] },
+      "vars": { "APP_ENV": "production", "EMAIL_PROVIDER": "resend", "SMS_PROVIDER": "vynfy" }
     }
   }
 }

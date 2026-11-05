@@ -3,46 +3,63 @@ import assert from "node:assert";
 import { normalizeGhanaPhone, calculateSmsSegments, sendVynfySms } from "../../src/lib/sms/vynfy.ts";
 import { prisma } from "../../src/lib/db.ts";
 
-test("Vynfy SMS Gateway: correctly formats Ghanaian phone numbers to E.164 (+233)", () => {
+async function setVynfy(data) {
+  await prisma.platformIntegration.upsert({
+    where: { providerKey: "vynfy" },
+    update: data,
+    create: { providerKey: "vynfy", displayName: "Vynfy", integrationType: "sms", ...data },
+  });
+}
+
+test("Vynfy: Ghana numbers normalise to E.164 and invalid ones are rejected", () => {
   assert.strictEqual(normalizeGhanaPhone("0241234567"), "+233241234567");
   assert.strictEqual(normalizeGhanaPhone("241234567"), "+233241234567");
   assert.strictEqual(normalizeGhanaPhone("+233241234567"), "+233241234567");
   assert.strictEqual(normalizeGhanaPhone("233241234567"), "+233241234567");
   assert.strictEqual(normalizeGhanaPhone("050 987 6543"), "+233509876543");
+  for (const bad of ["12345", "+44 7700 900123", "02412345678", "0941234567", "abc"]) {
+    assert.strictEqual(normalizeGhanaPhone(bad), null, bad);
+  }
 });
 
-test("Vynfy SMS Gateway: calculates GSM 03.38 message segments accurately", () => {
-  const shortMsg = "Short invitation message";
-  assert.strictEqual(calculateSmsSegments(shortMsg), 1, "Short SMS must be 1 segment");
-
-  const longMsg = "A".repeat(170);
-  assert.strictEqual(calculateSmsSegments(longMsg), 2, "170 character SMS must be 2 segments");
-
-  const multiMsg = "A".repeat(320);
-  assert.strictEqual(calculateSmsSegments(multiMsg), 3, "320 character SMS must be 3 segments");
+test("Vynfy: GSM 03.38 segments, including extension characters and Unicode", () => {
+  assert.strictEqual(calculateSmsSegments("Short invitation message"), 1);
+  assert.strictEqual(calculateSmsSegments("A".repeat(160)), 1);
+  assert.strictEqual(calculateSmsSegments("A".repeat(170)), 2);
+  assert.strictEqual(calculateSmsSegments("A".repeat(320)), 3);
+  assert.strictEqual(calculateSmsSegments("€".repeat(80)), 1, "80 extension chars = 160 septets");
+  assert.strictEqual(calculateSmsSegments("€".repeat(81)), 2);
+  assert.strictEqual(calculateSmsSegments("Akwaaba ✓"), 1, "non-GSM switches to UCS-2");
+  assert.strictEqual(calculateSmsSegments("✓".repeat(71)), 2);
 });
 
-test("Vynfy SMS Gateway: dispatches message and records communication message in database", async () => {
-  const event = await prisma.event.findFirst({ where: { eventCode: "CAROLS-2026" } });
-  assert.ok(event, "Active event must exist");
+test("Vynfy: kill switch fails closed and records the refusal", async () => {
+  const event = await prisma.event.findFirstOrThrow({ where: { eventCode: "CAROLS-2026" } });
+  await prisma.platformIntegration.deleteMany({ where: { providerKey: "vynfy" } });
+  const missing = await sendVynfySms({ eventId: event.id, recipientPhone: "0244112233", messageText: "x" });
+  assert.strictEqual(missing.status, "killed", "no integration row => blocked");
 
-  const result = await sendVynfySms({
-    eventId: event.id,
-    recipientPhone: "0244112233",
-    messageText: "Test parliamentary dispatch via Vynfy gateway",
-    senderId: "PARLIAMENT",
-  });
+  await setVynfy({ isEnabled: true, metadata: JSON.stringify({ emergencyKillSwitchActive: true }) });
+  const killed = await sendVynfySms({ eventId: event.id, recipientPhone: "0244112233", messageText: "x" });
+  assert.strictEqual(killed.status, "killed");
+  const row = await prisma.communicationMessage.findUniqueOrThrow({ where: { id: killed.messageId } });
+  assert.strictEqual(row.failureCode, "KILL_SWITCH_ACTIVE");
+});
 
+test("Vynfy (mock in tests): records a submission, is idempotent, and never fabricates a provider id", async () => {
+  const event = await prisma.event.findFirstOrThrow({ where: { eventCode: "CAROLS-2026" } });
+  await setVynfy({ isEnabled: true, metadata: "{}" });
+  const key = `test-sms-${Date.now()}`;
+  const result = await sendVynfySms({ eventId: event.id, recipientPhone: "0244112233", messageText: "Test", senderId: "PARLIAMENT", idempotencyKey: key });
   assert.strictEqual(result.success, true);
   assert.strictEqual(result.normalizedPhone, "+233244112233");
-  assert.strictEqual(result.segments, 1);
-  assert.ok(result.messageId, "Message record must be created in DB");
+  const record = await prisma.communicationMessage.findUniqueOrThrow({ where: { id: result.messageId } });
+  assert.strictEqual(record.status, "submitted");
+  assert.strictEqual(record.providerMessageId, null);
+  const again = await sendVynfySms({ eventId: event.id, recipientPhone: "0244112233", messageText: "Test", idempotencyKey: key });
+  assert.strictEqual(again.status, "duplicate");
+  assert.strictEqual(await prisma.communicationMessage.count({ where: { idempotencyKey: key } }), 1);
 
-  const record = await prisma.communicationMessage.findUnique({
-    where: { id: result.messageId },
-  });
-  assert.ok(record);
-  assert.strictEqual(record.provider, "vynfy");
-  assert.strictEqual(record.channel, "sms");
+  const invalid = await sendVynfySms({ eventId: event.id, recipientPhone: "12345", messageText: "Test" });
+  assert.strictEqual(invalid.status, "invalid_number");
 });
-

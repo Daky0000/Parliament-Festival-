@@ -85,7 +85,16 @@ Set each of these per GitHub Environment (`staging` and `production`):
 
 Set each of these per Worker with `wrangler secret put <NAME> --env <env>`:
 
-- `DATABASE_URL`
-- provider keys
+- `DATABASE_URL` (Neon pooled)
+- `APP_URL` (public https origin, used for links, the CSRF check and the cron)
+- `APP_ENCRYPTION_KEY` (32 random bytes, base64; keep an offline backup)
+- `CRON_SECRET` (32+ random characters; authenticates the background tick)
+- `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `RESEND_WEBHOOK_SECRET`
+- `VYNFY_API_KEY`, `VYNFY_SENDER_ID`
+- `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` (optional)
+
+Background work (the campaign queue) runs from a Cron Trigger every minute; see `worker.ts`.
+
+To create the first administrator in a new environment, run `scripts/create-admin.ts` (instructions are at the top of the file).
 
 **Never commit secrets.**

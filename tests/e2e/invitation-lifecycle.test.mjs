@@ -1,197 +1,77 @@
+// End-to-end invitation journey through the real route handlers:
+// create campaign -> approve (different person) -> dispatch -> queue sends ->
+// verified "delivered" webhook -> guest opens link and accepts -> pass issued
+// -> usher checks the guest in -> a second check-in is refused.
 import test from "node:test";
 import assert from "node:assert";
+import { Webhook } from "svix";
 import { prisma } from "../../src/lib/db.ts";
-import { generateSecureToken, generateReferenceCode } from "../../src/lib/tokens.ts";
-import { sendInvitationEmail, processIncomingWebhook } from "../../src/lib/email/provider.ts";
-import { runDeterministicSeatingEngine } from "../../src/lib/seating/engine.ts";
+import { processQueue } from "../../src/lib/campaigns/engine.ts";
+import { invitationRawToken } from "../../src/lib/guest-tokens.ts";
+import { request, call, cookieFor, seededFixtures } from "../helpers.mjs";
 
-test("Full End-to-End Parliamentary Lifecycle Test (PRD 20.3 Scenario 1)", async () => {
-  // 1. Verify Event
-  const event = await prisma.event.findFirst({
-    where: { eventCode: "CAROLS-2026" },
-    include: {
-      categories: true,
-      templates: { include: { versions: true } },
-      seatingPlans: true,
-    },
+const SECRET = "whsec_" + Buffer.from("e2e-webhook-secret-0123456789abc").toString("base64");
+process.env.RESEND_WEBHOOK_SECRET = SECRET;
+
+const campaigns = await import("../../src/app/api/v1/campaigns/route.ts");
+const campaignOne = await import("../../src/app/api/v1/campaigns/[campaignId]/route.ts");
+const webhook = await import("../../src/app/api/v1/webhooks/email/route.ts");
+const publicInv = await import("../../src/app/api/v1/public/invitations/[token]/route.ts");
+const checkin = await import("../../src/app/api/v1/check-in/route.ts");
+
+test("full invitation lifecycle", async () => {
+  const f = await seededFixtures();
+  const admin = await cookieFor("admin@parliament.gh");
+  const approver = await cookieFor("approver@parliament.gh");
+  const usher = await cookieFor("usher@parliament.gh");
+  const version = await prisma.invitationTemplateVersion.findFirstOrThrow({ where: { template: { eventId: f.event.id }, status: "approved" } });
+  const category = await prisma.protocolCategory.findFirstOrThrow({ where: { eventId: f.event.id, eventGuests: { some: { person: { email: { not: null } } } } } });
+
+  // 1. Create (admin) and approve (approver — a different person)
+  const created = await call(campaigns.POST, request("/api/v1/campaigns", {
+    method: "POST", cookie: admin,
+    body: { eventId: f.event.id, name: `E2E ${Date.now()}`, templateVersionId: version.id, senderName: "Office", senderEmail: "office@example.org", categoryKey: category.categoryKey },
+  }));
+  assert.strictEqual(created.status, 201, JSON.stringify(created.json));
+  const campaignId = created.json.data.id;
+  const selfApprove = await call(campaignOne.PATCH, request(`/api/v1/campaigns/${campaignId}`, { method: "PATCH", cookie: admin, body: { action: "approve" } }), { campaignId });
+  assert.strictEqual(selfApprove.status, 403, "creator cannot approve");
+  const approved = await call(campaignOne.PATCH, request(`/api/v1/campaigns/${campaignId}`, { method: "PATCH", cookie: approver, body: { action: "approve" } }), { campaignId });
+  assert.strictEqual(approved.status, 200, JSON.stringify(approved.json));
+
+  // 2. Dispatch returns immediately; the queue does the sending
+  const dispatched = await call(campaignOne.PATCH, request(`/api/v1/campaigns/${campaignId}`, { method: "PATCH", cookie: admin, body: { action: "dispatch" } }), { campaignId });
+  assert.strictEqual(dispatched.status, 202, JSON.stringify(dispatched.json));
+  assert.ok(dispatched.json.data.queued > 0);
+  while ((await processQueue(10)).processed > 0) { /* drain */ }
+
+  const recipient = await prisma.campaignRecipient.findFirstOrThrow({ where: { campaignId, status: "accepted" } });
+  const invitation = await prisma.invitation.findUniqueOrThrow({ where: { id: recipient.invitationId } });
+  assert.strictEqual(invitation.invitationStatus, "sent");
+
+  // 3. Verified delivery webhook
+  const payload = JSON.stringify({ type: "email.delivered", created_at: new Date().toISOString(), data: { email_id: recipient.providerMessageId } });
+  const id = `msg_e2e_${Date.now()}`;
+  const ts = new Date();
+  const hook = new Request("http://localhost:3000/api/v1/webhooks/email", {
+    method: "POST",
+    headers: { "svix-id": id, "svix-timestamp": String(Math.floor(ts.getTime() / 1000)), "svix-signature": new Webhook(SECRET).sign(id, ts, payload) },
+    body: payload,
   });
-  assert.ok(event, "Active event must exist");
+  assert.strictEqual((await call(webhook.POST, hook)).json.outcome, "processed");
+  assert.strictEqual((await prisma.campaignRecipient.findUniqueOrThrow({ where: { id: recipient.id } })).status, "delivered");
 
-  // 2. Create New Dignitary
-  const testPerson = await prisma.person.create({
-    data: {
-      organizationId: event.organizationId,
-      title: "Hon.",
-      fullName: `Test Dignitary ${Date.now()}`,
-      designation: "Ambassador-at-Large",
-      email: `dignitary_${Date.now()}@test.parliament.gh`,
-    },
-  });
+  // 4. Guest opens the link and accepts
+  const token = await invitationRawToken(invitation);
+  const view = await call(publicInv.GET, request(`/api/v1/public/invitations/${token}`), { token });
+  assert.strictEqual(view.status, 200);
+  const rsvp = await call(publicInv.POST, request(`/api/v1/public/invitations/${token}`, { method: "POST", body: { action: "rsvp", response: "accepted", companionCount: 0 } }), { token });
+  assert.strictEqual(rsvp.status, 200, JSON.stringify(rsvp.json));
+  assert.match(rsvp.json.data.qrCodeDataUrl, /^data:image\/png/);
 
-  const category = event.categories.find((c) => c.rankOrder === 2) || event.categories[0];
-  const testGuest = await prisma.eventGuest.create({
-    data: {
-      eventId: event.id,
-      personId: testPerson.id,
-      protocolCategoryId: category.id,
-      guestReference: generateReferenceCode("GH-GST"),
-      companionAllowance: 1,
-      guestStatus: "active",
-    },
-  });
-  assert.ok(testGuest.id, "Guest participation record created");
-
-  // 3. Campaign & Dispatch
-  const templateVersion = event.templates[0].versions[0];
-  const adminUser = await prisma.user.findFirst();
-  assert.ok(adminUser, "Admin user must exist");
-
-  const campaign = await prisma.invitationCampaign.create({
-    data: {
-      eventId: event.id,
-      templateVersionId: templateVersion.id,
-      name: `E2E Test Campaign ${Date.now()}`,
-      senderName: "Office of the Speaker",
-      senderEmail: "speaker@parliament.gh",
-      subjectSnapshot: "Official State Invitation Test",
-      status: "approved", // Pre-approved for test dispatch
-      createdBy: adminUser.id,
-      audienceCount: 1,
-    },
-  });
-
-  const { rawToken, tokenHash } = generateSecureToken();
-  const invitation = await prisma.invitation.create({
-    data: {
-      eventId: event.id,
-      eventGuestId: testGuest.id,
-      campaignId: campaign.id,
-      templateVersionId: templateVersion.id,
-      invitationReference: generateReferenceCode("INV-GH"),
-      tokenHash,
-      recipientEmailSnapshot: testPerson.email,
-      recipientNameSnapshot: testPerson.fullName,
-      invitationStatus: "queued",
-    },
-  });
-
-  // Dispatch Email
-  const sendRes = await sendInvitationEmail({
-    invitationId: invitation.id,
-    campaignId: campaign.id,
-    recipientEmail: testPerson.email,
-    recipientName: testPerson.fullName,
-    subject: campaign.subjectSnapshot,
-    htmlContent: "<p>Official Test Invitation</p>",
-    textContent: "Official Test Invitation",
-  });
-  assert.strictEqual(sendRes.success, true);
-
-  // 4. Provider Delivery Webhook Simulation
-  const webhookDelivered = await processIncomingWebhook({
-    provider: "mock",
-    providerEventId: `evt_dlv_${Date.now()}`,
-    providerMessageId: sendRes.providerMessageId,
-    eventType: "delivered",
-    rawPayload: { status: "delivered" },
-  });
-  assert.strictEqual(webhookDelivered.status, "success");
-
-  // Verify Attempt updated
-  const attempt = await prisma.emailAttempt.findUnique({
-    where: { id: sendRes.attemptId },
-  });
-  assert.strictEqual(attempt.status, "delivered");
-
-  // 5. Open Signal Webhook Simulation
-  const webhookOpen = await processIncomingWebhook({
-    provider: "mock",
-    providerEventId: `evt_open_${Date.now()}`,
-    providerMessageId: sendRes.providerMessageId,
-    eventType: "open",
-    rawPayload: { userAgent: "Apple Mail Proxy" },
-  });
-  assert.strictEqual(webhookOpen.status, "success");
-
-  // 6. Recipient Public Link Access & RSVP Submission
-  const invitationAfterOpen = await prisma.invitation.findUnique({
-    where: { tokenHash },
-    include: { invitationEvents: true },
-  });
-  assert.ok(
-    invitationAfterOpen.invitationEvents.some((e) => e.eventType === "open_signal"),
-    "Open signal event must be recorded"
-  );
-
-  // Record link access
-  await prisma.invitationEvent.create({
-    data: {
-      invitationId: invitation.id,
-      eventType: "link_access",
-      source: "public_web",
-    },
-  });
-
-  // Submit RSVP (Accept with 1 companion)
-  const confirmationRef = generateReferenceCode("CONF");
-  const rsvp = await prisma.rsvp.create({
-    data: {
-      invitationId: invitation.id,
-      response: "accepted",
-      companionCount: 1,
-      confirmationReference: confirmationRef,
-      submittedVia: "invitation_page",
-    },
-  });
-  assert.strictEqual(rsvp.response, "accepted");
-  assert.strictEqual(rsvp.companionCount, 1);
-
-  // Generate QR Credential for event day
-  const { rawToken: rawQr, tokenHash: qrCredHash } = generateSecureToken();
-  const qrCredential = await prisma.qrCredential.create({
-    data: {
-      eventId: event.id,
-      invitationId: invitation.id,
-      credentialHash: qrCredHash,
-      status: "active",
-    },
-  });
-  assert.ok(qrCredential.id, "QR Credential issued");
-
-  // 7. Seating Allocation Engine Execution
-  const planId = event.seatingPlans[0].id;
-  const seatingRes = await runDeterministicSeatingEngine(event.id, planId);
-  assert.ok(seatingRes.assignedCount > 0, "Guest must be seated");
-
-  const guestSeat = await prisma.seatAssignment.findFirst({
-    where: {
-      seatingPlanId: planId,
-      eventGuestId: testGuest.id,
-      status: { in: ["proposed", "approved"] },
-    },
-    include: { section: true },
-  });
-  assert.ok(guestSeat, "Dignitary must have active seat allocation");
-
-  // 8. Event-Day Usher Check-In Validation
-  const checkinRecord = await prisma.attendanceRecord.create({
-    data: {
-      eventId: event.id,
-      eventGuestId: testGuest.id,
-      qrCredentialId: qrCredential.id,
-      checkinStatus: "checked_in",
-      checkinMethod: "qr",
-    },
-  });
-  assert.strictEqual(checkinRecord.checkinStatus, "checked_in");
-
-  // 9. Verify Duplicate Scan Protection
-  const duplicateCheck = await prisma.attendanceRecord.findFirst({
-    where: {
-      eventId: event.id,
-      eventGuestId: testGuest.id,
-      checkinStatus: "checked_in",
-    },
-  });
-  assert.ok(duplicateCheck, "Existing check-in detected - duplicate prevention works!");
+  // 5. Usher checks in; a second attempt is refused
+  const first = await call(checkin.POST, request("/api/v1/check-in", { method: "POST", cookie: usher, body: { eventId: f.event.id, eventGuestId: invitation.eventGuestId, checkinMethod: "manual" } }));
+  assert.strictEqual(first.status, 200, JSON.stringify(first.json));
+  const second = await call(checkin.POST, request("/api/v1/check-in", { method: "POST", cookie: usher, body: { eventId: f.event.id, eventGuestId: invitation.eventGuestId, checkinMethod: "manual" } }));
+  assert.strictEqual(second.status, 409);
 });

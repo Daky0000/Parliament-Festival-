@@ -10,44 +10,44 @@ generator client {
 
 // 7.3.1 Organizations and users
 model Organization {
-  id          String   @id @default(uuid())
-  name        String
-  slug        String   @unique
-  status      String   @default("active") // active, suspended, archived
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  status    String   @default("active") // active, suspended, archived
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  users       User[]
-  roles       Role[]
-  events      Event[]
+  users        User[]
+  roles        Role[]
+  events       Event[]
   institutions Institution[]
-  people      Person[]
-  auditLogs   AuditLog[]
-  aiSessions  AiSession[]
+  people       Person[]
+  auditLogs    AuditLog[]
+  aiSessions   AiSession[]
 
   @@map("organizations")
 }
 
 model User {
-  id              String    @id @default(uuid())
-  organizationId  String
-  email           String
-  fullName        String
-  passwordHash    String?
-  authProvider    String    @default("local")
-  externalSubject String?
-  status          String    @default("active") // invited, active, suspended, deactivated
-  mfaRequired     Boolean   @default(false)
-  mfaSecretEnc    String?   // AES-GCM, see src/lib/crypto.ts
+  id                  String    @id @default(uuid())
+  organizationId      String
+  email               String
+  fullName            String
+  passwordHash        String?
+  authProvider        String    @default("local")
+  externalSubject     String?
+  status              String    @default("active") // invited, active, suspended, deactivated
+  mfaRequired         Boolean   @default(false)
+  mfaSecretEnc        String? // AES-GCM, see src/lib/crypto.ts
   mfaPendingSecretEnc String? // set during enrolment, promoted on first valid code
-  mfaEnabledAt    DateTime?
-  mfaLastStep     Int?      // last accepted TOTP step (replay protection)
-  passwordChangedAt DateTime?
-  lastLoginAt     DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  mfaEnabledAt        DateTime?
+  mfaLastStep         Int? // last accepted TOTP step (replay protection)
+  passwordChangedAt   DateTime?
+  lastLoginAt         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization    Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   roleAssignments UserRoleAssignment[]
   eventAccess     EventUserAccess[]
   sessions        Session[]
@@ -55,8 +55,8 @@ model User {
   auditLogs       AuditLog[]
   aiSessions      AiSession[]
   aiInteractions  AiInteraction[]
-  tasksAssigned   Task[]     @relation("TaskAssignedTo")
-  tasksCreated    Task[]     @relation("TaskCreatedBy")
+  tasksAssigned   Task[]               @relation("TaskAssignedTo")
+  tasksCreated    Task[]               @relation("TaskCreatedBy")
   notifications   Notification[]
 
   // Approval relations
@@ -79,8 +79,8 @@ model Role {
   isSystemRole   Boolean  @default(false)
   createdAt      DateTime @default(now())
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  permissions    RolePermission[]
+  organization    Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  permissions     RolePermission[]
   userAssignments UserRoleAssignment[]
 
   @@unique([organizationId, key])
@@ -88,8 +88,8 @@ model Role {
 }
 
 model Permission {
-  id          String   @id @default(uuid())
-  key         String   @unique
+  id          String @id @default(uuid())
+  key         String @unique
   description String
 
   rolePermissions RolePermission[]
@@ -101,8 +101,8 @@ model RolePermission {
   roleId       String
   permissionId String
 
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
   @@map("role_permissions")
@@ -117,9 +117,9 @@ model UserRoleAssignment {
   assignedAt DateTime  @default(now())
   revokedAt  DateTime?
 
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role       Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  event      Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role  Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  event Event? @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@map("user_role_assignments")
 }
@@ -136,7 +136,7 @@ model Session {
   userAgent  String?
   ipHash     String?
 
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("sessions")
@@ -146,7 +146,7 @@ model Session {
 model AuthAttempt {
   id        String   @id @default(uuid())
   keyHash   String
-  kind      String   // login_email, login_ip, mfa
+  kind      String // login_email, login_ip, mfa
   succeeded Boolean  @default(false)
   createdAt DateTime @default(now())
 
@@ -164,7 +164,7 @@ model UserInvite {
   createdBy String?
   createdAt DateTime  @default(now())
 
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("user_invites")
@@ -193,23 +193,23 @@ model Event {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  userAccess       EventUserAccess[]
-  roleAssignments  UserRoleAssignment[]
-  categories       ProtocolCategory[]
-  guests           EventGuest[]
-  guestGroups      GuestGroup[]
-  importBatches    ImportBatch[]
-  templates        InvitationTemplate[]
-  campaigns        InvitationCampaign[]
-  invitations      Invitation[]
-  seatingPlans     SeatingPlan[]
-  qrCredentials    QrCredential[]
-  attendanceRecords AttendanceRecord[]
-  auditLogs        AuditLog[]
-  aiSessions       AiSession[]
-  tasks            Task[]
-  notifications    Notification[]
+  organization          Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userAccess            EventUserAccess[]
+  roleAssignments       UserRoleAssignment[]
+  categories            ProtocolCategory[]
+  guests                EventGuest[]
+  guestGroups           GuestGroup[]
+  importBatches         ImportBatch[]
+  templates             InvitationTemplate[]
+  campaigns             InvitationCampaign[]
+  invitations           Invitation[]
+  seatingPlans          SeatingPlan[]
+  qrCredentials         QrCredential[]
+  attendanceRecords     AttendanceRecord[]
+  auditLogs             AuditLog[]
+  aiSessions            AiSession[]
+  tasks                 Task[]
+  notifications         Notification[]
   communicationMessages CommunicationMessage[]
 
   @@unique([organizationId, eventCode])
@@ -223,8 +223,8 @@ model EventUserAccess {
   grantedAt DateTime  @default(now())
   revokedAt DateTime?
 
-  event     Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user      User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([eventId, userId])
   @@map("event_user_access")
@@ -232,33 +232,33 @@ model EventUserAccess {
 
 // 7.3.3 Institutions and people
 model Institution {
-  id             String   @id @default(uuid())
-  organizationId String
-  name           String
+  id              String   @id @default(uuid())
+  organizationId  String
+  name            String
   institutionType String?
-  officialDomain String?
-  contactEmail   String?
-  contactPhone   String?
-  status         String   @default("active") // active, inactive, archived
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  officialDomain  String?
+  contactEmail    String?
+  contactPhone    String?
+  status          String   @default("active") // active, inactive, archived
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  aliases        InstitutionAlias[]
-  people         Person[]
-  eventGuests    EventGuest[]
-  guestGroups    GuestGroup[]
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  aliases      InstitutionAlias[]
+  people       Person[]
+  eventGuests  EventGuest[]
+  guestGroups  GuestGroup[]
 
   @@unique([organizationId, name])
   @@map("institutions")
 }
 
 model InstitutionAlias {
-  id            String   @id @default(uuid())
+  id            String @id @default(uuid())
   institutionId String
   alias         String
 
-  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  institution Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
 
   @@unique([institutionId, alias])
   @@map("institution_aliases")
@@ -283,9 +283,9 @@ model Person {
   updatedAt            DateTime  @updatedAt
   archivedAt           DateTime?
 
-  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  institution          Institution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
-  eventGuests          EventGuest[]
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  institution  Institution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+  eventGuests  EventGuest[]
 
   @@map("people")
 }
@@ -304,9 +304,9 @@ model ProtocolCategory {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  event            Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  eventGuests      EventGuest[]
-  seatingSections  SeatingSection[]
+  event           Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventGuests     EventGuest[]
+  seatingSections SeatingSection[]
 
   @@unique([eventId, categoryKey])
   @@unique([eventId, rankOrder])
@@ -322,10 +322,10 @@ model GuestGroup {
   notes         String?
   createdAt     DateTime @default(now())
 
-  event         Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  institution   Institution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
-  members       GuestGroupMember[]
-  guests        EventGuest[]
+  event       Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  institution Institution?       @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+  members     GuestGroupMember[]
+  guests      EventGuest[]
 
   @@unique([eventId, name])
   @@map("guest_groups")
@@ -351,15 +351,15 @@ model EventGuest {
   createdAt                 DateTime  @default(now())
   updatedAt                 DateTime  @updatedAt
 
-  event                     Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  person                    Person            @relation(fields: [personId], references: [id], onDelete: Cascade)
-  institution               Institution?      @relation(fields: [institutionId], references: [id], onDelete: SetNull)
-  protocolCategory          ProtocolCategory? @relation(fields: [protocolCategoryId], references: [id], onDelete: SetNull)
-  guestGroup                GuestGroup?       @relation(fields: [guestGroupId], references: [id], onDelete: SetNull)
-  groupMemberships          GuestGroupMember[]
-  invitations               Invitation[]
-  seatAssignments           SeatAssignment[]
-  attendanceRecords         AttendanceRecord[]
+  event             Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  person            Person             @relation(fields: [personId], references: [id], onDelete: Cascade)
+  institution       Institution?       @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+  protocolCategory  ProtocolCategory?  @relation(fields: [protocolCategoryId], references: [id], onDelete: SetNull)
+  guestGroup        GuestGroup?        @relation(fields: [guestGroupId], references: [id], onDelete: SetNull)
+  groupMemberships  GuestGroupMember[]
+  invitations       Invitation[]
+  seatAssignments   SeatAssignment[]
+  attendanceRecords AttendanceRecord[]
 
   @@unique([eventId, personId])
   @@map("event_guests")
@@ -370,8 +370,8 @@ model GuestGroupMember {
   eventGuestId   String
   membershipRole String?
 
-  guestGroup     GuestGroup @relation(fields: [guestGroupId], references: [id], onDelete: Cascade)
-  eventGuest     EventGuest @relation(fields: [eventGuestId], references: [id], onDelete: Cascade)
+  guestGroup GuestGroup @relation(fields: [guestGroupId], references: [id], onDelete: Cascade)
+  eventGuest EventGuest @relation(fields: [eventGuestId], references: [id], onDelete: Cascade)
 
   @@id([guestGroupId, eventGuestId])
   @@map("guest_group_members")
@@ -396,8 +396,8 @@ model ImportBatch {
   completedAt      DateTime?
   createdAt        DateTime  @default(now())
 
-  event            Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  rowResults       ImportRowResult[]
+  event      Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  rowResults ImportRowResult[]
 
   @@map("import_batches")
 }
@@ -406,16 +406,16 @@ model ImportRowResult {
   id             String   @id @default(uuid())
   importBatchId  String
   rowNumber      Int
-  sourceData     String   // JSON
-  normalizedData String?  // JSON
-  outcome        String   // valid, warning, error, created, updated, skipped
+  sourceData     String // JSON
+  normalizedData String? // JSON
+  outcome        String // valid, warning, error, created, updated, skipped
   errors         String   @default("[]") // JSON array
   warnings       String   @default("[]") // JSON array
   personId       String?
   eventGuestId   String?
   createdAt      DateTime @default(now())
 
-  importBatch    ImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  importBatch ImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
 
   @@unique([importBatchId, rowNumber])
   @@map("import_row_results")
@@ -432,8 +432,8 @@ model InvitationTemplate {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  versions  InvitationTemplateVersion[]
+  event    Event                       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  versions InvitationTemplateVersion[]
 
   @@map("invitation_templates")
 }
@@ -455,9 +455,9 @@ model InvitationTemplateVersion {
   contentSha256   String?
   createdAt       DateTime  @default(now())
 
-  template        InvitationTemplate   @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  campaigns       InvitationCampaign[]
-  invitations     Invitation[]
+  template    InvitationTemplate   @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  campaigns   InvitationCampaign[]
+  invitations Invitation[]
 
   @@unique([templateId, versionNumber])
   @@map("invitation_template_versions")
@@ -465,34 +465,36 @@ model InvitationTemplateVersion {
 
 // 7.3.7 Campaigns and invitations
 model InvitationCampaign {
-  id                 String    @id @default(uuid())
-  eventId            String
-  templateVersionId  String
-  name               String
-  campaignType       String    @default("initial") // initial, reminder, correction, replacement
-  status             String    @default("draft") // draft, validating, pending_approval, approved, scheduled, queued, sending, paused, completed, cancelled, rejected, failed
-  senderName         String
-  senderEmail        String
-  replyToEmail       String?
-  subjectSnapshot    String
-  audienceFilter     String    @default("{}")
-  audienceCount      Int       @default(0)
-  approvedBy         String?
-  approvedAt         DateTime?
-  approvalNote       String?
-  scheduledAt        DateTime?
-  startedAt          DateTime?
-  completedAt        DateTime?
-  createdBy          String
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  id                String    @id @default(uuid())
+  eventId           String
+  templateVersionId String
+  name              String
+  campaignType      String    @default("initial") // initial, reminder, correction, replacement
+  status            String    @default("draft") // draft, validating, pending_approval, approved, scheduled, queued, sending, paused, completed, cancelled, rejected, failed
+  senderName        String
+  senderEmail       String
+  replyToEmail      String?
+  subjectSnapshot   String
+  audienceFilter    String    @default("{}")
+  audienceCount     Int       @default(0)
+  approvedBy        String?
+  approvedAt        DateTime?
+  approvalNote      String?
+  scheduledAt       DateTime?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  createdBy         String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  event              Event                     @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  templateVersion    InvitationTemplateVersion @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
-  creator            User                      @relation("CampaignCreator", fields: [createdBy], references: [id])
-  approver           User?                     @relation("CampaignApprover", fields: [approvedBy], references: [id])
-  invitations        Invitation[]
-  emailAttempts      EmailAttempt[]
+  event           Event                     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  templateVersion InvitationTemplateVersion @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
+  creator         User                      @relation("CampaignCreator", fields: [createdBy], references: [id])
+  approver        User?                     @relation("CampaignApprover", fields: [approvedBy], references: [id])
+  invitations     Invitation[]
+  emailAttempts   EmailAttempt[]
+
+  recipients CampaignRecipient[]
 
   @@map("invitation_campaigns")
 }
@@ -505,7 +507,7 @@ model Invitation {
   templateVersionId      String
   invitationReference    String
   tokenHash              String    @unique
-  tokenEnc               String?   // AES-GCM raw token, so the same link can be re-sent
+  tokenEnc               String? // AES-GCM raw token, so the same link can be re-sent
   tokenExpiresAt         DateTime?
   tokenRevokedAt         DateTime?
   recipientEmailSnapshot String
@@ -517,18 +519,57 @@ model Invitation {
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 
-  event                  Event                     @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  eventGuest             EventGuest                @relation(fields: [eventGuestId], references: [id], onDelete: Cascade)
-  campaign               InvitationCampaign?       @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-  templateVersion        InvitationTemplateVersion @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
-  emailAttempts          EmailAttempt[]
-  invitationEvents       InvitationEvent[]
-  rsvps                  Rsvp[]
-  qrCredentials          QrCredential[]
+  event            Event                     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventGuest       EventGuest                @relation(fields: [eventGuestId], references: [id], onDelete: Cascade)
+  campaign         InvitationCampaign?       @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  templateVersion  InvitationTemplateVersion @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
+  emailAttempts    EmailAttempt[]
+  invitationEvents InvitationEvent[]
+  rsvps            Rsvp[]
+  qrCredentials    QrCredential[]
 
   @@unique([eventId, invitationReference])
   @@index([eventId, eventGuestId])
   @@map("invitations")
+}
+
+// Durable send queue: one row per campaign recipient and channel. Workers
+// claim rows with a lease (lockedUntil), so a crash or redeploy never loses
+// or duplicates a send; the row id is the provider idempotency key.
+model CampaignRecipient {
+  id                String    @id @default(uuid())
+  campaignId        String
+  eventGuestId      String
+  channel           String    @default("email") // email, sms
+  status            String    @default("queued") // queued, processing, accepted, delivered, bounced, failed, suppressed, cancelled
+  attempts          Int       @default(0)
+  nextAttemptAt     DateTime  @default(now())
+  lockedUntil       DateTime?
+  invitationId      String?
+  providerMessageId String?
+  lastErrorCode     String?
+  lastError         String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  campaign InvitationCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, eventGuestId, channel])
+  @@index([status, nextAttemptAt])
+  @@map("campaign_recipients")
+}
+
+// Addresses we must not send to (permanent bounce, complaint, opt-out).
+model Suppression {
+  id        String   @id @default(uuid())
+  channel   String // email, sms
+  address   String // lower-case email or E.164 phone
+  reason    String // hard_bounce, complaint, opt_out, manual
+  source    String? // provider event id or user id
+  createdAt DateTime @default(now())
+
+  @@unique([channel, address])
+  @@map("suppressions")
 }
 
 model EmailAttempt {
@@ -546,9 +587,9 @@ model EmailAttempt {
   deliveredAt       DateTime?
   createdAt         DateTime  @default(now())
 
-  invitation        Invitation          @relation(fields: [invitationId], references: [id], onDelete: Cascade)
-  campaign          InvitationCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-  events            InvitationEvent[]
+  invitation Invitation          @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  campaign   InvitationCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  events     InvitationEvent[]
 
   @@unique([invitationId, attemptNumber])
   @@map("email_attempts")
@@ -564,31 +605,31 @@ model ProviderWebhookEvent {
   receivedAt        DateTime  @default(now())
   signatureValid    Boolean
   processingStatus  String    @default("received") // received, processed, ignored, failed
-  payload           String    // JSON
+  payload           String // JSON
   processingError   String?
 
-  invitationEvents  InvitationEvent[]
+  invitationEvents InvitationEvent[]
 
   @@unique([provider, providerEventId])
   @@map("provider_webhook_events")
 }
 
 model InvitationEvent {
-  id                     String    @id @default(uuid())
+  id                     String   @id @default(uuid())
   invitationId           String
   emailAttemptId         String?
-  eventType              String    // queued, submitted, delivered, bounced, failed, open_signal, link_access, token_revoked, resent
-  occurredAt             DateTime  @default(now())
+  eventType              String // queued, submitted, delivered, bounced, failed, open_signal, link_access, token_revoked, resent
+  occurredAt             DateTime @default(now())
   source                 String?
   userAgent              String?
   ipHash                 String?
-  metadata               String    @default("{}") // JSON
+  metadata               String   @default("{}") // JSON
   providerWebhookEventId String?
-  createdAt              DateTime  @default(now())
+  createdAt              DateTime @default(now())
 
-  invitation             Invitation            @relation(fields: [invitationId], references: [id], onDelete: Cascade)
-  emailAttempt           EmailAttempt?         @relation(fields: [emailAttemptId], references: [id], onDelete: SetNull)
-  webhookEvent           ProviderWebhookEvent? @relation(fields: [providerWebhookEventId], references: [id], onDelete: SetNull)
+  invitation   Invitation            @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  emailAttempt EmailAttempt?         @relation(fields: [emailAttemptId], references: [id], onDelete: SetNull)
+  webhookEvent ProviderWebhookEvent? @relation(fields: [providerWebhookEventId], references: [id], onDelete: SetNull)
 
   @@map("invitation_events")
 }
@@ -597,7 +638,7 @@ model InvitationEvent {
 model Rsvp {
   id                    String   @id @default(uuid())
   invitationId          String
-  response              String   // accepted, declined, pending_clarification
+  response              String // accepted, declined, pending_clarification
   companionCount        Int      @default(0)
   submittedAt           DateTime @default(now())
   submittedVia          String   @default("invitation_page")
@@ -606,8 +647,8 @@ model Rsvp {
   supersedesRsvpId      String?
   createdAt             DateTime @default(now())
 
-  invitation            Invitation  @relation(fields: [invitationId], references: [id], onDelete: Cascade)
-  companions            Companion[]
+  invitation Invitation  @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  companions Companion[]
 
   @@index([invitationId, submittedAt])
   @@map("rsvps")
@@ -621,91 +662,91 @@ model Companion {
   accessibilityNote String?
   createdAt         DateTime @default(now())
 
-  rsvp              Rsvp     @relation(fields: [rsvpId], references: [id], onDelete: Cascade)
+  rsvp Rsvp @relation(fields: [rsvpId], references: [id], onDelete: Cascade)
 
   @@map("companions")
 }
 
 // 7.3.10 Seating
 model SeatingPlan {
-  id               String   @id @default(uuid())
+  id               String    @id @default(uuid())
   eventId          String
   versionNumber    Int
   name             String
-  status           String   @default("draft") // draft, proposed, pending_approval, approved, superseded
+  status           String    @default("draft") // draft, proposed, pending_approval, approved, superseded
   layoutStorageKey String?
-  rulesSnapshot    String   @default("{}") // JSON
+  rulesSnapshot    String    @default("{}") // JSON
   createdBy        String?
   approvedBy       String?
   approvedAt       DateTime?
-  createdAt        DateTime @default(now())
+  createdAt        DateTime  @default(now())
 
-  event            Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  sections         SeatingSection[]
-  seatAssignments  SeatAssignment[]
+  event           Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  sections        SeatingSection[]
+  seatAssignments SeatAssignment[]
 
   @@unique([eventId, versionNumber])
   @@map("seating_plans")
 }
 
 model SeatingSection {
-  id                 String   @id @default(uuid())
+  id                 String  @id @default(uuid())
   seatingPlanId      String
   sectionCode        String
   name               String
   protocolCategoryId String?
   capacity           Int
-  displayOrder       Int      @default(0)
+  displayOrder       Int     @default(0)
   colourHex          String?
-  sectionType        String   @default("general") // general, vip, choir, media
-  isActive           Boolean  @default(true)
+  sectionType        String  @default("general") // general, vip, choir, media
+  isActive           Boolean @default(true)
 
-  seatingPlan        SeatingPlan       @relation(fields: [seatingPlanId], references: [id], onDelete: Cascade)
-  protocolCategory   ProtocolCategory? @relation(fields: [protocolCategoryId], references: [id], onDelete: SetNull)
-  seats              Seat[]
-  seatAssignments    SeatAssignment[]
+  seatingPlan      SeatingPlan       @relation(fields: [seatingPlanId], references: [id], onDelete: Cascade)
+  protocolCategory ProtocolCategory? @relation(fields: [protocolCategoryId], references: [id], onDelete: SetNull)
+  seats            Seat[]
+  seatAssignments  SeatAssignment[]
 
   @@unique([seatingPlanId, sectionCode])
   @@map("seating_sections")
 }
 
 model Seat {
-  id                       String   @id @default(uuid())
+  id                       String  @id @default(uuid())
   sectionId                String
   seatCode                 String
   rowLabel                 String?
   seatNumber               Int?
-  seatStatus               String   @default("available") // available, blocked, reserved, inactive
+  seatStatus               String  @default("available") // available, blocked, reserved, inactive
   accessibilityDesignation String?
-  coordinates              String?  // JSON {x, y}
+  coordinates              String? // JSON {x, y}
 
-  section                  SeatingSection   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  seatAssignments          SeatAssignment[]
+  section         SeatingSection   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  seatAssignments SeatAssignment[]
 
   @@unique([sectionId, seatCode])
   @@map("seats")
 }
 
 model SeatAssignment {
-  id             String    @id @default(uuid())
+  id             String   @id @default(uuid())
   seatingPlanId  String
   eventGuestId   String
   seatId         String?
   sectionId      String
-  assignmentType String    @default("principal") // principal, companion, group_block
-  status         String    @default("proposed")  // proposed, approved, released, cancelled
+  assignmentType String   @default("principal") // principal, companion, group_block
+  status         String   @default("proposed") // proposed, approved, released, cancelled
   assignedBy     String?
   approvedBy     String?
   reason         String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  seatingPlan    SeatingPlan    @relation(fields: [seatingPlanId], references: [id], onDelete: Cascade)
-  eventGuest     EventGuest     @relation(fields: [eventGuestId], references: [id], onDelete: Cascade)
-  seat           Seat?          @relation(fields: [seatId], references: [id], onDelete: SetNull)
-  section        SeatingSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  assigner       User?          @relation("SeatAssignedBy", fields: [assignedBy], references: [id])
-  approver       User?          @relation("SeatApprovedBy", fields: [approvedBy], references: [id])
+  seatingPlan SeatingPlan    @relation(fields: [seatingPlanId], references: [id], onDelete: Cascade)
+  eventGuest  EventGuest     @relation(fields: [eventGuestId], references: [id], onDelete: Cascade)
+  seat        Seat?          @relation(fields: [seatId], references: [id], onDelete: SetNull)
+  section     SeatingSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  assigner    User?          @relation("SeatAssignedBy", fields: [assignedBy], references: [id])
+  approver    User?          @relation("SeatApprovedBy", fields: [approvedBy], references: [id])
 
   @@map("seat_assignments")
 }
@@ -716,36 +757,36 @@ model QrCredential {
   eventId        String
   invitationId   String
   credentialHash String    @unique
-  tokenEnc       String?   // AES-GCM raw token; the QR encodes <APP_URL>/check-in/scan/<raw>
+  tokenEnc       String? // AES-GCM raw token; the QR encodes <APP_URL>/check-in/scan/<raw>
   status         String    @default("active") // active, revoked, expired
   expiresAt      DateTime?
   revokedAt      DateTime?
   createdAt      DateTime  @default(now())
 
-  event          Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  invitation     Invitation         @relation(fields: [invitationId], references: [id], onDelete: Cascade)
-  attendance     AttendanceRecord[]
+  event      Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  invitation Invitation         @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  attendance AttendanceRecord[]
 
   @@map("qr_credentials")
 }
 
 model AttendanceRecord {
-  id             String    @id @default(uuid())
-  eventId        String
-  eventGuestId   String
-  qrCredentialId String?
-  checkinStatus  String    @default("checked_in") // checked_in, reversed, exception
-  checkedInAt    DateTime  @default(now())
-  checkedInBy    String?
-  checkinMethod  String    // qr, manual, offline_sync, supervisor_override
-  overrideReason String?
+  id              String   @id @default(uuid())
+  eventId         String
+  eventGuestId    String
+  qrCredentialId  String?
+  checkinStatus   String   @default("checked_in") // checked_in, reversed, exception
+  checkedInAt     DateTime @default(now())
+  checkedInBy     String?
+  checkinMethod   String // qr, manual, offline_sync, supervisor_override
+  overrideReason  String?
   deviceReference String?
-  createdAt      DateTime  @default(now())
+  createdAt       DateTime @default(now())
 
-  event          Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  eventGuest     EventGuest    @relation(fields: [eventGuestId], references: [id], onDelete: Cascade)
-  qrCredential   QrCredential? @relation(fields: [qrCredentialId], references: [id], onDelete: SetNull)
-  recorder       User?         @relation("AttendanceRecordedBy", fields: [checkedInBy], references: [id])
+  event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventGuest   EventGuest    @relation(fields: [eventGuestId], references: [id], onDelete: Cascade)
+  qrCredential QrCredential? @relation(fields: [qrCredentialId], references: [id], onDelete: SetNull)
+  recorder     User?         @relation("AttendanceRecordedBy", fields: [checkedInBy], references: [id])
 
   @@map("attendance_records")
 }
@@ -762,15 +803,15 @@ model AuditLog {
   entityId       String?
   outcome        String   @default("success") // success, denied, failed
   reason         String?
-  beforeData     String?  // JSON
-  afterData      String?  // JSON
+  beforeData     String? // JSON
+  afterData      String? // JSON
   correlationId  String?
   ipHash         String?
   createdAt      DateTime @default(now())
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  event          Event?       @relation(fields: [eventId], references: [id], onDelete: SetNull)
-  user           User?        @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event        Event?       @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  user         User?        @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
 
   @@map("audit_logs")
 }
@@ -786,33 +827,33 @@ model AiSession {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  event          Event?          @relation(fields: [eventId], references: [id], onDelete: SetNull)
-  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  interactions   AiInteraction[]
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event        Event?          @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interactions AiInteraction[]
 
   @@map("ai_sessions")
 }
 
 model AiInteraction {
-  id              String   @id @default(uuid())
-  sessionId       String
-  userId          String
-  provider        String
-  model           String
-  interactionType String   // question, generation, tool_plan, tool_result
-  promptRedacted  String?
+  id               String   @id @default(uuid())
+  sessionId        String
+  userId           String
+  provider         String
+  model            String
+  interactionType  String // question, generation, tool_plan, tool_result
+  promptRedacted   String?
   responseRedacted String?
-  inputTokens     Int?
-  outputTokens    Int?
-  estimatedCost   Float?
-  latencyMs       Int?
-  status          String
-  createdAt       DateTime @default(now())
+  inputTokens      Int?
+  outputTokens     Int?
+  estimatedCost    Float?
+  latencyMs        Int?
+  status           String
+  createdAt        DateTime @default(now())
 
-  session         AiSession          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  toolExecutions  AiToolExecution[]
+  session        AiSession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  toolExecutions AiToolExecution[]
 
   @@map("ai_interactions")
 }
@@ -823,15 +864,15 @@ model AiToolExecution {
   toolName      String
   permissionKey String
   inputSummary  String    @default("{}") // JSON
-  outputSummary String?   // JSON
-  status        String    // proposed, awaiting_approval, approved, executing, completed, denied, failed, cancelled
+  outputSummary String? // JSON
+  status        String // proposed, awaiting_approval, approved, executing, completed, denied, failed, cancelled
   approvedBy    String?
   approvedAt    DateTime?
   executedAt    DateTime?
   errorSummary  String?
   createdAt     DateTime  @default(now())
 
-  interaction   AiInteraction @relation(fields: [interactionId], references: [id], onDelete: Cascade)
+  interaction AiInteraction @relation(fields: [interactionId], references: [id], onDelete: Cascade)
 
   @@map("ai_tool_executions")
 }
@@ -849,8 +890,8 @@ model Notification {
   readAt           DateTime?
   createdAt        DateTime  @default(now())
 
-  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  event            Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event? @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
 }
@@ -863,14 +904,14 @@ model Task {
   assignedTo  String?
   createdBy   String?
   priority    String    @default("normal") // low, normal, high, urgent
-  status      String    @default("open")   // open, in_progress, blocked, completed, cancelled
+  status      String    @default("open") // open, in_progress, blocked, completed, cancelled
   dueAt       DateTime?
   completedAt DateTime?
   createdAt   DateTime  @default(now())
 
-  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  assignee    User?     @relation("TaskAssignedTo", fields: [assignedTo], references: [id], onDelete: SetNull)
-  creator     User?     @relation("TaskCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+  event    Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  assignee User? @relation("TaskAssignedTo", fields: [assignedTo], references: [id], onDelete: SetNull)
+  creator  User? @relation("TaskCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
 
   @@map("tasks")
 }
@@ -880,7 +921,7 @@ model OutboxEvent {
   aggregateType String
   aggregateId   String
   eventType     String
-  payload       String    // JSON
+  payload       String // JSON
   status        String    @default("pending") // pending, processing, published, failed
   attempts      Int       @default(0)
   nextAttemptAt DateTime  @default(now())
@@ -890,14 +931,12 @@ model OutboxEvent {
   @@map("outbox_events")
 }
 
-
-
 // 8.8 Platform Integrations & Super Admin Configuration (v3.0)
 model PlatformIntegration {
   id              String   @id @default(uuid())
   providerKey     String   @unique // openai, anthropic, resend, vynfy, cloudflare
   displayName     String
-  integrationType String   // ai, email, sms, infrastructure
+  integrationType String // ai, email, sms, infrastructure
   status          String   @default("healthy") // not_configured, testing, healthy, degraded, disabled, authentication_failed
   environment     String   @default("production") // development, staging, production
   isEnabled       Boolean  @default(true)
@@ -905,9 +944,9 @@ model PlatformIntegration {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  credentials     IntegrationCredential[]
-  settings        IntegrationSetting[]
-  testLogs        IntegrationTestLog[]
+  credentials IntegrationCredential[]
+  settings    IntegrationSetting[]
+  testLogs    IntegrationTestLog[]
 
   @@map("platform_integrations")
 }
@@ -915,10 +954,10 @@ model PlatformIntegration {
 model IntegrationCredential {
   id                String    @id @default(uuid())
   integrationId     String
-  secretReference   String    // KMS reference or vault key identifier
-  secretCiphertext  String?   // AES-GCM blob; never returned by any API
+  secretReference   String // KMS reference or vault key identifier
+  secretCiphertext  String? // AES-GCM blob; never returned by any API
   credentialKey     String    @default("apiKey") // apiKey, r2AccessKeyId, r2SecretAccessKey
-  maskedHint        String    // e.g. "re_...4829", "sk-proj-...8831"
+  maskedHint        String // e.g. "re_...4829", "sk-proj-...8831"
   credentialVersion Int       @default(1)
   status            String    @default("active") // active, rotated, revoked
   createdBy         String?
@@ -926,7 +965,7 @@ model IntegrationCredential {
   rotatedAt         DateTime?
   expiresAt         DateTime?
 
-  integration       PlatformIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  integration PlatformIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
 
   @@map("integration_credentials")
 }
@@ -935,12 +974,12 @@ model IntegrationSetting {
   id            String   @id @default(uuid())
   integrationId String
   settingKey    String
-  settingValue  String   // JSON or string
+  settingValue  String // JSON or string
   isSecret      Boolean  @default(false)
   updatedBy     String?
   updatedAt     DateTime @updatedAt
 
-  integration   PlatformIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  integration PlatformIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
 
   @@unique([integrationId, settingKey])
   @@map("integration_settings")
@@ -949,31 +988,31 @@ model IntegrationSetting {
 model IntegrationTestLog {
   id             String   @id @default(uuid())
   integrationId  String
-  testType       String   // ping, api_call, test_send, auth_validation
-  result         String   // success, failed, timeout
+  testType       String // ping, api_call, test_send, auth_validation
+  result         String // success, failed, timeout
   latencyMs      Int?
   sanitisedError String?
   requestId      String?
   testedBy       String?
   testedAt       DateTime @default(now())
 
-  integration    PlatformIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  integration PlatformIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
 
   @@map("integration_test_logs")
 }
 
 model AiProviderConfig {
   id              String   @id @default(uuid())
-  provider        String   // openai, anthropic
-  model           String   // e.g. gpt-4o, gpt-4o-mini, claude-3-5-sonnet-20241022
-  taskKey         String   // invitation_drafting, seating_explanation, general_summary
+  provider        String // openai, anthropic
+  model           String // e.g. gpt-4o, gpt-4o-mini, claude-3-5-sonnet-20241022
+  taskKey         String // invitation_drafting, seating_explanation, general_summary
   priority        Int      @default(1) // 1 = primary, 2 = fallback
   isPrimary       Boolean  @default(false)
   isEnabled       Boolean  @default(true)
   timeoutMs       Int      @default(30000)
   maxInputTokens  Int      @default(4000)
   maxOutputTokens Int      @default(2000)
-  monthlyBudget   Float?   // in USD
+  monthlyBudget   Float? // in USD
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -984,7 +1023,7 @@ model AiProviderConfig {
 model AiUsageLog {
   id               String   @id @default(uuid())
   eventId          String?
-  provider         String   // openai, anthropic
+  provider         String // openai, anthropic
   model            String
   taskKey          String
   inputTokens      Int      @default(0)
@@ -1005,10 +1044,10 @@ model CommunicationMessage {
   eventId                 String
   eventGuestId            String?
   invitationId            String?
-  channel                 String    // email, sms
-  provider                String    // resend, vynfy
-  messageType             String    // invitation, reminder, confirmation, alert
-  recipientSnapshot       String    // email or E.164 phone number (+233...)
+  channel                 String // email, sms
+  provider                String // resend, vynfy
+  messageType             String // invitation, reminder, confirmation, alert
+  recipientSnapshot       String // email or E.164 phone number (+233...)
   subject                 String?
   bodySnippet             String?
   providerMessageId       String?
@@ -1020,18 +1059,19 @@ model CommunicationMessage {
   failedAt                DateTime?
   failureCode             String?
   failureMessageSanitised String?
+  providerResponse        String? // raw provider response (truncated), for reconciliation
   createdBy               String?
   createdAt               DateTime  @default(now())
 
-  event                   Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@map("communication_messages")
 }
 
 model SystemAlert {
   id                   String    @id @default(uuid())
-  severity             String    // info, warning, critical
-  component            String    // openai, resend, vynfy, cloudflare, database
+  severity             String // info, warning, critical
+  component            String // openai, resend, vynfy, cloudflare, database
   title                String
   descriptionSanitised String
   status               String    @default("open") // open, acknowledged, resolved

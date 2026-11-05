@@ -1,17 +1,14 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { withActor, authorizeEvent } from "@/lib/authz";
-import { HttpError, notFound } from "@/lib/http";
+import { HttpError, notFound, readJson } from "@/lib/http";
 import { logAuditEvent } from "@/lib/audit";
-import { issueInvitation, rsvpUrl as buildRsvpUrl } from "@/lib/guest-tokens";
-import { sendInvitationEmail } from "@/lib/email/provider";
-import { buildInvitationVars, fillTemplate } from "@/lib/email/render-invitation";
+import { campaignProgress, controlCampaign, enqueueCampaign, processQueue } from "@/lib/campaigns/engine";
 
 export const GET = withActor<{ campaignId: string }>(async (_request, { actor, params }) => {
-  const { campaignId } = params;
-
   const campaign = await prisma.invitationCampaign.findUnique({
-    where: { id: campaignId },
+    where: { id: params.campaignId },
     include: {
       templateVersion: { include: { template: true } },
       creator: { select: { id: true, fullName: true } },
@@ -26,35 +23,56 @@ export const GET = withActor<{ campaignId: string }>(async (_request, { actor, p
       },
     },
   });
-
   if (!campaign) throw notFound();
   await authorizeEvent(actor, "campaigns.read", campaign.eventId);
-
-  return NextResponse.json({ data: campaign });
+  return NextResponse.json({ data: { ...campaign, progress: await campaignProgress(campaign.id) } });
 });
 
-export const PATCH = withActor<{ campaignId: string }>(async (request, { actor, params }) => {
-  const { campaignId } = params;
-  const user = actor;
-  const body = await request.json();
-  const { action, approvalNote } = body;
+const Body = z.object({
+  action: z.enum(["approve", "dispatch", "pause", "resume", "cancel", "retry_failed"]),
+  approvalNote: z.string().trim().max(500).optional(),
+  reason: z.string().trim().max(500).optional(),
+});
 
-  const campaign = await prisma.invitationCampaign.findUnique({
-    where: { id: campaignId },
-    include: {
-      event: true,
-      templateVersion: true,
-    },
-  });
+const PERMISSION = {
+  approve: "campaigns.approve",
+  dispatch: "campaigns.dispatch",
+  pause: "campaigns.dispatch",
+  resume: "campaigns.dispatch",
+  retry_failed: "campaigns.dispatch",
+  cancel: "campaigns.cancel",
+} as const;
 
-  if (!campaign) throw notFound();
-  if (action !== "approve" && action !== "dispatch") {
-    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+/** Starts sending right away on Workers (the cron trigger is the safety net). */
+function kickQueue() {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getCloudflareContext } = require("@opennextjs/cloudflare") as typeof import("@opennextjs/cloudflare");
+    getCloudflareContext().ctx.waitUntil(processQueue(25).catch((e) => console.error("queue kick failed", e)));
+  } catch {
+    // Not on Workers (local dev / tests): the cron or a manual tick processes the queue.
   }
-  await authorizeEvent(actor, action === "approve" ? "campaigns.approve" : "campaigns.dispatch", campaign.eventId);
+}
 
-  // 1. APPROVE CAMPAIGN (four-eyes: never by its creator, only while pending)
-  if (action === "approve") {
+export const PATCH = withActor<{ campaignId: string }>(async (request, { actor, params }) => {
+  const body = Body.parse(await readJson(request));
+  const campaign = await prisma.invitationCampaign.findUnique({ where: { id: params.campaignId }, include: { event: true } });
+  if (!campaign) throw notFound();
+  await authorizeEvent(actor, PERMISSION[body.action], campaign.eventId);
+  const audit = (action: string, extra: Record<string, unknown> = {}) =>
+    logAuditEvent({
+      organizationId: campaign.event.organizationId,
+      eventId: campaign.eventId,
+      actorUserId: actor.userId,
+      action,
+      entityType: "invitation_campaign",
+      entityId: campaign.id,
+      reason: body.reason,
+      afterData: extra,
+    });
+
+  if (body.action === "approve") {
+    // Four-eyes: never by its creator, only while pending.
     if (campaign.createdBy === actor.userId) {
       throw new HttpError(403, "A campaign cannot be approved by the person who created it.");
     }
@@ -62,155 +80,26 @@ export const PATCH = withActor<{ campaignId: string }>(async (request, { actor, 
       throw new HttpError(409, `Campaign is ${campaign.status}; only pending campaigns can be approved.`);
     }
     const updated = await prisma.invitationCampaign.update({
-      where: { id: campaignId },
-      data: {
-        status: "approved",
-        approvedBy: user?.userId,
-        approvedAt: new Date(),
-        approvalNote: approvalNote || "Approved by Campaign Approver.",
-      },
+      where: { id: campaign.id },
+      data: { status: "approved", approvedBy: actor.userId, approvedAt: new Date(), approvalNote: body.approvalNote || null },
     });
-
-    if (user) {
-      await logAuditEvent({
-        organizationId: campaign.event.organizationId,
-        eventId: campaign.eventId,
-        actorUserId: user.userId,
-        action: "CAMPAIGN_APPROVED",
-        entityType: "invitation_campaign",
-        entityId: campaign.id,
-      });
-    }
-
+    await audit("CAMPAIGN_APPROVED");
     return NextResponse.json({ data: updated });
   }
 
-  // 2. DISPATCH CAMPAIGN
-  if (action === "dispatch") {
+  if (body.action === "dispatch") {
     if (campaign.status !== "approved") {
-      return NextResponse.json(
-        { error: "Campaign must be formally approved before dispatch can begin." },
-        { status: 400 }
-      );
+      throw new HttpError(409, "Campaign must be approved before it can be sent.");
     }
-
-    // Update status to sending
-    await prisma.invitationCampaign.update({
-      where: { id: campaignId },
-      data: { status: "sending", startedAt: new Date() },
-    });
-
-    // Parse audience filter
-    let categoryKey: string | null = null;
-    try {
-      const filter = JSON.parse(campaign.audienceFilter);
-      if (filter.categoryKey && filter.categoryKey !== "all") {
-        categoryKey = filter.categoryKey;
-      }
-    } catch (e) {}
-
-    const eligibleGuests = await prisma.eventGuest.findMany({
-      where: {
-        eventId: campaign.eventId,
-        guestStatus: "active",
-        person: { email: { not: null } },
-        ...(categoryKey ? { protocolCategory: { categoryKey } } : {}),
-      },
-      include: {
-        person: true,
-        protocolCategory: true,
-        institution: true,
-      },
-    });
-
-    let sentCount = 0;
-
-    for (const guest of eligibleGuests) {
-      if (!guest.person.email) continue;
-
-      // Invitation with a fresh link token (hash + encrypted copy stored)
-      const { invitation, rawToken } = await issueInvitation(prisma, {
-          eventId: campaign.eventId,
-          eventGuestId: guest.id,
-          campaignId: campaign.id,
-          templateVersionId: campaign.templateVersionId,
-          tokenExpiresAt: campaign.event.endsAt,
-          recipientEmailSnapshot: guest.person.email,
-          recipientNameSnapshot: guest.person.fullName,
-          designationSnapshot: guest.person.designation,
-          institutionSnapshot: guest.institution?.name,
-          categorySnapshot: JSON.stringify(guest.protocolCategory || {}),
-          invitationStatus: "queued",
-      });
-      const invitationReference = invitation.invitationReference;
-      const rsvpUrl = buildRsvpUrl(rawToken);
-
-      // Interpolate template placeholders
-      // Header colour follows the guest's protocol rank (navy when unranked)
-      const templateVars = buildInvitationVars(
-        {
-          title: guest.person.title,
-          fullName: guest.person.fullName,
-          designation: guest.person.designation,
-          institution: guest.institution?.name,
-          rankColourHex: guest.protocolCategory?.colourHex,
-          rankName: guest.protocolCategory?.name,
-          rankOrder: guest.protocolCategory?.rankOrder,
-        },
-        {
-          eventName: campaign.event.name,
-          venueName: campaign.event.venueName,
-          rsvpUrl,
-          reference: invitationReference,
-        }
-      );
-
-      const renderedHtml = fillTemplate(campaign.templateVersion.htmlContent || "", templateVars, { html: true });
-      const renderedText = fillTemplate(campaign.templateVersion.textContent || "", templateVars, { html: false });
-
-      // Send through provider
-      await sendInvitationEmail({
-        invitationId: invitation.id,
-        campaignId: campaign.id,
-        recipientEmail: guest.person.email,
-        recipientName: guest.person.fullName,
-        subject: campaign.subjectSnapshot,
-        htmlContent: renderedHtml,
-        textContent: renderedText,
-      });
-
-      sentCount++;
-    }
-
-    // Complete campaign
-    const completed = await prisma.invitationCampaign.update({
-      where: { id: campaignId },
-      data: {
-        status: "completed",
-        completedAt: new Date(),
-        audienceCount: sentCount,
-      },
-    });
-
-    if (user) {
-      await logAuditEvent({
-        organizationId: campaign.event.organizationId,
-        eventId: campaign.eventId,
-        actorUserId: user.userId,
-        action: "CAMPAIGN_DISPATCHED",
-        entityType: "invitation_campaign",
-        entityId: campaign.id,
-        afterData: { sentCount },
-      });
-    }
-
-    return NextResponse.json({
-      data: {
-        campaign: completed,
-        sentCount,
-      },
-    });
+    const counts = await enqueueCampaign(campaign.id);
+    await audit("CAMPAIGN_DISPATCHED", counts);
+    kickQueue();
+    return NextResponse.json({ data: { status: "sending", ...counts, progress: await campaignProgress(campaign.id) } }, { status: 202 });
   }
 
-  return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+  const result = await controlCampaign(campaign.id, body.action);
+  if (!result.ok) throw new HttpError(409, result.message);
+  await audit(`CAMPAIGN_${body.action.toUpperCase()}`);
+  if (body.action === "resume" || body.action === "retry_failed") kickQueue();
+  return NextResponse.json({ data: { progress: await campaignProgress(campaign.id) } });
 });

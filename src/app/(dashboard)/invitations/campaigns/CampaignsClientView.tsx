@@ -48,37 +48,56 @@ export function CampaignsClientView({
     }
   };
 
-  const handleApprove = async (campaignId: string) => {
-    try {
-      const res = await fetch(`/api/v1/campaigns/${campaignId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "approve" }),
-      });
-      const data = await res.json();
-      if (data.data) {
-        setCampaigns(campaigns.map((c) => (c.id === campaignId ? { ...c, status: "approved" } : c)));
-      }
-    } catch (err) {
-      console.error("Approve error:", err);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<Record<string, Record<string, number>>>({});
+
+  async function campaignAction(campaignId: string, action: string, confirmText?: string) {
+    if (confirmText && !window.confirm(confirmText)) return null;
+    setActionError(null);
+    const res = await fetch(`/api/v1/campaigns/${campaignId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setActionError(data?.error || "The action failed.");
+      return null;
     }
+    if (data?.data?.progress) setProgress((p) => ({ ...p, [campaignId]: data.data.progress }));
+    return data;
+  }
+
+  async function refreshProgress(campaignId: string) {
+    const res = await fetch(`/api/v1/campaigns/${campaignId}`);
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) {
+      setProgress((p) => ({ ...p, [campaignId]: data.data.progress }));
+      setCampaigns(campaigns.map((c) => (c.id === campaignId ? { ...c, status: data.data.status } : c)));
+    }
+  }
+
+  const handleApprove = async (campaignId: string) => {
+    const data = await campaignAction(campaignId, "approve");
+    if (data?.data) setCampaigns(campaigns.map((c) => (c.id === campaignId ? { ...c, status: "approved" } : c)));
+  };
+
+  const handleControl = async (campaignId: string, action: "pause" | "resume" | "cancel" | "retry_failed") => {
+    const statusAfter = { pause: "paused", resume: "sending", cancel: "cancelled", retry_failed: "sending" }[action];
+    const data = await campaignAction(
+      campaignId,
+      action,
+      action === "cancel" ? "Cancel this campaign? Recipients not yet sent will not receive it." : undefined
+    );
+    if (data) setCampaigns(campaigns.map((c) => (c.id === campaignId ? { ...c, status: statusAfter } : c)));
   };
 
   const handleDispatch = async (campaignId: string) => {
     setIsDispatching(true);
     try {
-      const res = await fetch(`/api/v1/campaigns/${campaignId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "dispatch" }),
-      });
-      const data = await res.json();
-      if (data.data) {
-        // Refresh page to load sent invitations
-        window.location.reload();
-      }
-    } catch (err) {
-      console.error("Dispatch error:", err);
+      // Sending happens in the background queue; this only starts it.
+      const data = await campaignAction(campaignId, "dispatch", "Start sending this campaign now?");
+      if (data) setCampaigns(campaigns.map((c) => (c.id === campaignId ? { ...c, status: "sending" } : c)));
     } finally {
       setIsDispatching(false);
     }
@@ -86,6 +105,9 @@ export function CampaignsClientView({
 
   return (
     <div className="space-y-6">
+      {actionError && (
+        <p role="alert" className="text-[14px] text-[#B42318] bg-[#FEF3F2] border border-[#FECDCA] rounded-[10px] px-3 py-2">{actionError}</p>
+      )}
       {/* Top Bar */}
       <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-[#E3E6EB] ">
         <div className="text-xs text-[#5B6374]">
@@ -163,6 +185,26 @@ export function CampaignsClientView({
                     </button>
                   )}
 
+                  {(camp.status === "sending" || camp.status === "paused" || camp.status === "completed") && (
+                    <button
+                      onClick={() => refreshProgress(camp.id)}
+                      className="bg-white border border-[#E3E6EB] text-[#091833] text-xs font-semibold px-3 py-1.5 rounded"
+                    >
+                      Refresh progress
+                    </button>
+                  )}
+                  {camp.status === "sending" && (
+                    <button onClick={() => handleControl(camp.id, "pause")} className="bg-white border border-[#E3E6EB] text-[#091833] text-xs font-semibold px-3 py-1.5 rounded">Pause</button>
+                  )}
+                  {camp.status === "paused" && (
+                    <button onClick={() => handleControl(camp.id, "resume")} className="bg-[#2563EB] text-white text-xs font-semibold px-3 py-1.5 rounded">Resume</button>
+                  )}
+                  {(camp.status === "sending" || camp.status === "paused" || camp.status === "approved") && (
+                    <button onClick={() => handleControl(camp.id, "cancel")} className="bg-white border border-[#FECDCA] text-[#B42318] text-xs font-semibold px-3 py-1.5 rounded">Cancel</button>
+                  )}
+                  {camp.status === "completed" && (progress[camp.id]?.failed ?? 0) > 0 && (
+                    <button onClick={() => handleControl(camp.id, "retry_failed")} className="bg-white border border-[#E3E6EB] text-[#091833] text-xs font-semibold px-3 py-1.5 rounded">Retry failed</button>
+                  )}
                   {camp.status === "completed" && (
                     <button
                       onClick={() => setSelectedCampaign(camp)}
@@ -173,6 +215,16 @@ export function CampaignsClientView({
                   )}
                 </div>
               </div>
+
+              {progress[camp.id] && (
+                <div className="flex flex-wrap gap-2 text-[11px]" aria-label="Delivery progress">
+                  {Object.entries(progress[camp.id]).filter(([, n]) => n > 0).map(([k, n]) => (
+                    <span key={k} className="bg-[#F6F7F9] border border-[#E3E6EB] rounded px-2 py-1">
+                      {k === "accepted" ? "accepted by provider" : k}: <strong>{n}</strong>
+                    </span>
+                  ))}
+                </div>
+              )}
 
               {/* Campaign Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">

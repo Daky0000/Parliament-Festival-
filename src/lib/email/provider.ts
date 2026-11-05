@@ -1,6 +1,12 @@
 import { prisma } from "../db";
-import { logAuditEvent } from "../audit";
-import crypto from "crypto";
+import { appEnv } from "../config";
+import { getProviderSecret } from "../integrations";
+import { sendViaResend, type SendResult } from "./resend";
+
+// Sends one invitation email and records the truth: an EmailAttempt row per
+// try with the provider's real message id or the real error. The invitation
+// becomes "sent" only when the provider accepted the message. Acceptance is
+// not delivery: delivered/bounced come only from verified webhooks.
 
 export interface SendEmailPayload {
   invitationId: string;
@@ -10,220 +16,76 @@ export interface SendEmailPayload {
   subject: string;
   htmlContent: string;
   textContent: string;
+  fromAddress?: string;
+  replyTo?: string | null;
+  /** Stable per logical send (e.g. campaign recipient id) so retries never duplicate. */
+  idempotencyKey: string;
 }
 
-export interface WebhookEventPayload {
-  provider: string;
-  providerEventId: string;
-  providerMessageId?: string;
-  eventType: "delivered" | "bounced" | "open" | "click" | "failed";
-  timestamp?: string;
-  recipientEmail?: string;
-  signature?: string;
-  rawPayload: any;
+export type EmailProvider = "resend" | "mock";
+
+/** Mock is only possible outside production, and is the default there. */
+export function activeEmailProvider(): EmailProvider {
+  if (appEnv() === "production") return "resend";
+  return process.env.EMAIL_PROVIDER === "resend" ? "resend" : "mock";
 }
 
-/**
- * Dispatches an email through the active provider (Mock sandbox or Postmark/Resend).
- */
-export async function sendInvitationEmail(payload: SendEmailPayload) {
-  const attemptCount = await prisma.emailAttempt.count({
-    where: { invitationId: payload.invitationId },
-  });
+export async function sendInvitationEmail(payload: SendEmailPayload): Promise<SendResult> {
+  const provider = activeEmailProvider();
+  const attemptNumber = (await prisma.emailAttempt.count({ where: { invitationId: payload.invitationId } })) + 1;
 
-  const provider = process.env.EMAIL_PROVIDER || "mock";
-  let providerMessageId = `msg_${provider}_${crypto.randomBytes(12).toString("hex")}`;
-
-  // Execute live Resend dispatch if provider is resend and key is present
-  if (provider === "resend") {
-    const apiKey = process.env.RESEND_API_KEY;
-    if (apiKey) {
-      try {
-        const fromEmail = process.env.RESEND_FROM_EMAIL || "Parliament Protocol <onboarding@resend.dev>";
-        const response = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: fromEmail,
-            to: [payload.recipientEmail],
+  let result: SendResult;
+  if (provider === "mock") {
+    // Development and CI only: nothing leaves the system.
+    result = { ok: true, providerMessageId: `mock_${payload.idempotencyKey}_${attemptNumber}` };
+  } else {
+    const apiKey = await getProviderSecret("resend");
+    const from = payload.fromAddress || process.env.RESEND_FROM_EMAIL;
+    result =
+      !apiKey || !from
+        ? { ok: false, retryable: false, code: "not_configured", message: "Resend API key or from address is not configured." }
+        : await sendViaResend(apiKey, {
+            from,
+            to: payload.recipientEmail,
             subject: payload.subject,
             html: payload.htmlContent,
             text: payload.textContent,
-          }),
-        });
-        if (response.ok) {
-          const resData = await response.json();
-          if (resData.id) {
-            providerMessageId = resData.id;
-          }
-        } else {
-          const errBody = await response.text();
-          console.warn("[Resend Email Notice]", response.status, errBody);
-        }
-      } catch (err: any) {
-        console.warn("[Resend Dispatch Notice]", err.message);
-      }
-    }
+            replyTo: payload.replyTo,
+            idempotencyKey: payload.idempotencyKey,
+            tags: { invitation: payload.invitationId, ...(payload.campaignId ? { campaign: payload.campaignId } : {}) },
+          });
   }
 
-  // Create EmailAttempt record
-  const attempt = await prisma.emailAttempt.create({
-    data: {
-      invitationId: payload.invitationId,
-      campaignId: payload.campaignId,
-      attemptNumber: attemptCount + 1,
-      provider,
-      providerMessageId,
-      recipientEmail: payload.recipientEmail,
-      status: "submitted",
-      submittedAt: new Date(),
-    },
-  });
-
-  // Log invitation event: submitted
-  await prisma.invitationEvent.create({
-    data: {
-      invitationId: payload.invitationId,
-      emailAttemptId: attempt.id,
-      eventType: "submitted",
-      source: provider,
-      metadata: JSON.stringify({ messageId: providerMessageId }),
-    },
-  });
-
-  // Update invitation status
-  await prisma.invitation.update({
-    where: { id: payload.invitationId },
-    data: { invitationStatus: "sent" },
-  });
-
-  // If in mock sandbox mode, automatically simulate successful provider delivery after send
-  if (provider === "mock") {
-    setTimeout(async () => {
-      try {
-        await processIncomingWebhook({
-          provider: "mock",
-          providerEventId: `evt_${crypto.randomBytes(12).toString("hex")}`,
-          providerMessageId,
-          eventType: "delivered",
-          rawPayload: { simulated: true, messageId: providerMessageId },
-        });
-      } catch (err) {
-        console.error("Mock delivery simulation error:", err);
-      }
-    }, 100);
-  }
-
-  return { success: true, attemptId: attempt.id, providerMessageId };
-}
-
-/**
- * Ingests incoming webhooks from email providers with IDEMPOTENCY guarantee.
- * Duplicate providerEventIds are rejected or marked as processed.
- */
-export async function processIncomingWebhook(webhook: WebhookEventPayload) {
-  // 1. Check idempotency
-  const existingEvent = await prisma.providerWebhookEvent.findUnique({
-    where: {
-      provider_providerEventId: {
-        provider: webhook.provider,
-        providerEventId: webhook.providerEventId,
+  const now = new Date();
+  await prisma.$transaction(async (tx) => {
+    const attempt = await tx.emailAttempt.create({
+      data: {
+        invitationId: payload.invitationId,
+        campaignId: payload.campaignId,
+        attemptNumber,
+        provider,
+        providerMessageId: result.ok ? result.providerMessageId : null,
+        recipientEmail: payload.recipientEmail,
+        status: result.ok ? "submitted" : "failed",
+        errorCode: result.ok ? null : result.code,
+        errorMessage: result.ok ? null : result.message,
+        submittedAt: result.ok ? now : null,
       },
-    },
-  });
-
-  if (existingEvent) {
-    return { status: "ignored_duplicate", eventId: existingEvent.id };
-  }
-
-  // 2. Persist raw provider webhook event
-  const webhookRecord = await prisma.providerWebhookEvent.create({
-    data: {
-      provider: webhook.provider,
-      providerEventId: webhook.providerEventId,
-      providerMessageId: webhook.providerMessageId,
-      eventType: webhook.eventType,
-      signatureValid: true, // validated in route handler
-      processingStatus: "processed",
-      payload: JSON.stringify(webhook.rawPayload),
-    },
-  });
-
-  // 3. Resolve attempt by provider message ID
-  if (!webhook.providerMessageId) {
-    return { status: "processed_unlinked", eventId: webhookRecord.id };
-  }
-
-  const attempt = await prisma.emailAttempt.findFirst({
-    where: {
-      OR: [
-        {
-          provider: webhook.provider,
-          providerMessageId: webhook.providerMessageId,
-        },
-        {
-          providerMessageId: webhook.providerMessageId,
-        },
-      ],
-    },
-    include: { invitation: true },
-  });
-
-  if (!attempt) {
-    return { status: "attempt_not_found", eventId: webhookRecord.id };
-  }
-
-  // 4. Map provider event to internal event types
-  let internalEventType: "delivered" | "bounced" | "failed" | "open_signal" | "link_access" = "delivered";
-  if (webhook.eventType === "delivered") internalEventType = "delivered";
-  else if (webhook.eventType === "bounced") internalEventType = "bounced";
-  else if (webhook.eventType === "open") internalEventType = "open_signal";
-  else if (webhook.eventType === "click") internalEventType = "link_access";
-  else if (webhook.eventType === "failed") internalEventType = "failed";
-
-  // 5. Append InvitationEvent
-  await prisma.invitationEvent.create({
-    data: {
-      invitationId: attempt.invitationId,
-      emailAttemptId: attempt.id,
-      eventType: internalEventType,
-      source: webhook.provider,
-      providerWebhookEventId: webhookRecord.id,
-      metadata: JSON.stringify(webhook.rawPayload),
-    },
-  });
-
-  // 6. Update Attempt status if delivery or bounce
-  if (internalEventType === "delivered") {
-    await prisma.emailAttempt.update({
-      where: { id: attempt.id },
-      data: { status: "delivered", deliveredAt: new Date() },
     });
-  } else if (internalEventType === "bounced") {
-    await prisma.emailAttempt.update({
-      where: { id: attempt.id },
-      data: { status: "bounced", errorCode: "BOUNCE_REPORTED" },
+    await tx.invitationEvent.create({
+      data: {
+        invitationId: payload.invitationId,
+        emailAttemptId: attempt.id,
+        eventType: result.ok ? "submitted" : "failed",
+        source: provider,
+        metadata: JSON.stringify(result.ok ? { providerMessageId: result.providerMessageId } : { code: result.code }),
+      },
     });
-  }
+    await tx.invitation.update({
+      where: { id: payload.invitationId },
+      data: { invitationStatus: result.ok ? "sent" : result.retryable ? "queued" : "failed" },
+    });
+  });
 
-  return { status: "success", eventId: webhookRecord.id, invitationId: attempt.invitationId };
+  return result;
 }
-
-/**
- * Replaces template placeholders with validated guest & event fields.
- */
-export function interpolateInvitationTemplate(
-  templateHtml: string,
-  variables: Record<string, string>
-): string {
-  let rendered = templateHtml;
-  for (const [key, value] of Object.entries(variables)) {
-    const regex = new RegExp(`{{\\s*${key}\\s*}}`, "g");
-    rendered = rendered.replace(regex, value || "");
-  }
-  return rendered;
-}
-
