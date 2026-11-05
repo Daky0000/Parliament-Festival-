@@ -78,14 +78,14 @@ test("accepting twice keeps exactly one active pass; declining revokes it", asyn
   const { invitation, rawToken } = await freshInvitation();
   const first = await post(rawToken, { action: "rsvp", response: "accepted", companionCount: 1 });
   assert.strictEqual(first.status, 200, JSON.stringify(first.json));
-  assert.match(first.json.data.qrCodeDataUrl, /^data:image\/png;base64,/);
+  assert.match(first.json.data.qrCodeDataUrl, /^data:image\/svg\+xml;base64,/);
   assert.ok(!("credentialHash" in first.json.data), "the stored hash is never returned");
   await post(rawToken, { action: "rsvp", response: "accepted", companionCount: 2 });
   assert.strictEqual(await prisma.qrCredential.count({ where: { invitationId: invitation.id, status: "active" } }), 1);
 
   // Re-opening the page shows the same pass.
   const again = await get(rawToken);
-  assert.match(again.json.data.qrCodeDataUrl, /^data:image\/png;base64,/);
+  assert.match(again.json.data.qrCodeDataUrl, /^data:image\/svg\+xml;base64,/);
 
   await post(rawToken, { action: "rsvp", response: "declined" });
   assert.strictEqual(await prisma.qrCredential.count({ where: { invitationId: invitation.id, status: "active" } }), 0);

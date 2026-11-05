@@ -173,3 +173,11 @@ body {
     animation: none !important;
   }
 }
+
+/* Printing guest passes: only the pass cards, two per row, no page chrome. */
+@media print {
+  aside, header, footer, nav, .no-print { display: none !important; }
+  body { background: #fff !important; }
+  .passes-grid { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8mm !important; }
+  .pass-card { break-inside: avoid; border: 1px solid #ccc; box-shadow: none !important; }
+}

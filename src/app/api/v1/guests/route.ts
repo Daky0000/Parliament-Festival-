@@ -15,7 +15,7 @@ async function assertBelongsToEvent(eventId: string, ids: { protocolCategoryId?:
   }
 }
 import { logAuditEvent } from "@/lib/audit";
-import { issueInvitation, withUniqueReference } from "@/lib/guest-tokens";
+import { ensureGuestPass, issueInvitation, withUniqueReference } from "@/lib/guest-tokens";
 
 export const GET = withActor(async (request, { actor }) => {
   const { searchParams } = new URL(request.url);
@@ -266,6 +266,11 @@ export const POST = withActor(async (request, { actor }) => {
     });
   }
 
+  // Seated guests get a working QR pass straight away.
+  if (await prisma.seatAssignment.count({ where: { eventGuestId: eventGuest.id, status: { in: ["proposed", "approved"] } } })) {
+    await ensureGuestPass(prisma, eventGuest.id);
+  }
+
   // 6. Fetch complete created guest with all relations
   const fullGuest = await prisma.eventGuest.findUnique({
     where: { id: eventGuest.id },
@@ -381,6 +386,8 @@ export const PATCH = withActor(async (request, { actor }) => {
       }
     }
   }
+
+  if (sectionId) await ensureGuestPass(prisma, eventGuestId);
 
   const updatedGuest = await prisma.eventGuest.findUnique({
     where: { id: eventGuestId },

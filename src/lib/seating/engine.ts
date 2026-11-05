@@ -1,4 +1,5 @@
 import { prisma } from "../db";
+import { ensureGuestPass } from "../guest-tokens";
 
 export interface SeatingAllocationResult {
   planId: string;
@@ -133,6 +134,7 @@ export async function runDeterministicSeatingEngine(
             reason: `Auto-allocated by rank ${rank} (${guest.protocolCategory.name})`,
           },
         });
+        await ensureGuestPass(tx, guest.id);
         assignedGuests.add(guest.id);
         if (seat) takenSeats.add(seat.id);
         counts.set(target.id, (counts.get(target.id) ?? 0) + 1);

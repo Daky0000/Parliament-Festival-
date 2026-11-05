@@ -6,6 +6,7 @@ import { withActor, authorizeEvent } from "@/lib/authz";
 import { HttpError, notFound, readJson } from "@/lib/http";
 import { logAuditEvent } from "@/lib/audit";
 import { runDeterministicSeatingEngine } from "@/lib/seating/engine";
+import { ensureGuestPass } from "@/lib/guest-tokens";
 
 export const GET = withActor(async (request, { actor }) => {
   const eventId = new URL(request.url).searchParams.get("eventId");
@@ -115,6 +116,8 @@ export const POST = withActor(async (request, { actor }) => {
           },
           include: { section: true, seat: true, eventGuest: { include: { person: true, protocolCategory: true } } },
         });
+        // Every seated dignitary gets a working QR pass.
+        await ensureGuestPass(tx, eventGuestId);
         await tx.auditLog.create({
           data: {
             organizationId: event.organizationId,
@@ -149,6 +152,8 @@ export const POST = withActor(async (request, { actor }) => {
       where: { seatingPlanId: plan.id, status: "proposed" },
       data: { status: "approved", approvedBy: actor.userId },
     });
+    const seated = await tx.seatAssignment.findMany({ where: { seatingPlanId: plan.id, status: "approved" }, select: { eventGuestId: true } });
+    for (const s of seated) await ensureGuestPass(tx, s.eventGuestId);
     await tx.auditLog.create({
       data: {
         organizationId: event.organizationId,
@@ -160,6 +165,6 @@ export const POST = withActor(async (request, { actor }) => {
       },
     });
     return p;
-  });
+  }, { timeout: 60_000, maxWait: 10_000 });
   return NextResponse.json({ data: updatedPlan });
 });

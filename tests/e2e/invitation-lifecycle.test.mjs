@@ -77,7 +77,7 @@ test("full invitation lifecycle", async () => {
   assert.strictEqual(view.status, 200);
   const rsvp = await call(publicInv.POST, request(`/api/v1/public/invitations/${token}`, { method: "POST", body: { action: "rsvp", response: "accepted", companionCount: 0 } }), { token });
   assert.strictEqual(rsvp.status, 200, JSON.stringify(rsvp.json));
-  assert.match(rsvp.json.data.qrCodeDataUrl, /^data:image\/png/);
+  assert.match(rsvp.json.data.qrCodeDataUrl, /^data:image\/svg\+xml/);
 
   // 5. Usher scans the pass at their gate; a second scan is refused
   const cred = await prisma.qrCredential.findFirstOrThrow({ where: { invitationId: invitation.id, status: "active" } });

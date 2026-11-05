@@ -35,6 +35,7 @@ export const navigationItems: NavItem[] = [
   { name: "Invitation Campaigns", href: "/invitations/campaigns", icon: Mail, permission: "campaigns.read" },
   { name: "RSVP Dashboard", href: "/rsvps", icon: CheckCircle2, permission: "rsvps.read" },
   { name: "Seating Planner", href: "/seating", icon: Armchair, permission: "seating.read" },
+  { name: "Guest Passes", href: "/passes", icon: QrCode, permission: "guests.update" },
   { name: "Arrival & Attendance", href: "/attendance", icon: CalendarDays, permission: "reports.read" },
   { name: "Reports & Readiness", href: "/reports", icon: FileBarChart, permission: "reports.read" },
   { name: "AI Command Centre", href: "/ai-centre", icon: Sparkles, badge: "AI", permission: "ai.use" },

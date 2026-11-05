@@ -8,7 +8,7 @@ const SESSION_COOKIES = ["__Host-pf_session", "pf_session"];
 
 const PROTECTED_PREFIXES = [
   "/guests", "/protocol", "/invitations", "/rsvps", "/seating", "/attendance",
-  "/ai-centre", "/reports", "/super-admin", "/usher", "/account", "/check-in",
+  "/ai-centre", "/reports", "/passes", "/super-admin", "/usher", "/account", "/check-in",
 ];
 
 function isProtected(pathname: string): boolean {

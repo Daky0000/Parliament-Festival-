@@ -1,5 +1,5 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
-import QRCode from "qrcode";
+import { passQrSvg, svgDataUrl } from "./pass-qr";
 import { decryptSecret, encryptSecret, randomToken, sha256Hex } from "./crypto";
 import { appOrigin } from "./config";
 
@@ -100,12 +100,69 @@ export async function revokeCredentials(tx: Tx, invitationId: string): Promise<n
 
 /** QR image of the scan URL. Encodes no personal data. */
 export async function passQrDataUrl(rawToken: string): Promise<string> {
-  return QRCode.toDataURL(scanUrl(rawToken), {
-    errorCorrectionLevel: "M",
-    margin: 2,
-    color: { dark: "#0A1830", light: "#FFFFFF" },
-    width: 320,
+  return svgDataUrl(passQrSvg(scanUrl(rawToken)));
+}
+
+/**
+ * Makes sure a seated guest has a working pass: an invitation (created if
+ * missing, using the event's approved template) and one active QR
+ * credential. Guests whose latest RSVP is "declined" get none. Safe to call
+ * repeatedly; used by every seat-assignment path.
+ */
+export async function ensureGuestPass(
+  tx: Tx,
+  eventGuestId: string
+): Promise<{ credentialId: string; created: boolean } | { skipped: "declined" | "no_template" | "inactive" }> {
+  const guest = await tx.eventGuest.findUniqueOrThrow({
+    where: { id: eventGuestId },
+    include: {
+      event: true,
+      person: true,
+      institution: true,
+      invitations: {
+        where: { tokenRevokedAt: null, invitationStatus: { notIn: ["revoked", "superseded"] } },
+        orderBy: { createdAt: "desc" },
+        include: { rsvps: { orderBy: { submittedAt: "desc" }, take: 1 } },
+      },
+    },
   });
+  if (guest.guestStatus !== "active") return { skipped: "inactive" };
+  const latest = guest.invitations.flatMap((i) => i.rsvps).sort((a, b) => +b.submittedAt - +a.submittedAt)[0];
+  if (latest?.response === "declined") return { skipped: "declined" };
+
+  let invitationId = guest.invitations[0]?.id;
+  if (!invitationId) {
+    const version = await tx.invitationTemplateVersion.findFirst({
+      where: { template: { eventId: guest.eventId }, status: "approved" },
+      orderBy: { createdAt: "desc" },
+    });
+    if (!version) return { skipped: "no_template" };
+    invitationId = (
+      await issueInvitation(tx, {
+        eventId: guest.eventId,
+        eventGuestId: guest.id,
+        templateVersionId: version.id,
+        tokenExpiresAt: guest.event.endsAt,
+        recipientEmailSnapshot: guest.person.email ?? `${guest.id}@no-email.invalid`,
+        recipientNameSnapshot: [guest.person.title, guest.person.fullName].filter(Boolean).join(" "),
+        designationSnapshot: guest.person.designation,
+        institutionSnapshot: guest.institution?.name,
+        invitationStatus: "prepared",
+      })
+    ).invitation.id;
+  }
+  const before = await tx.qrCredential.count({ where: { invitationId, status: "active" } });
+  const cred = await ensureActiveCredential(tx, { invitationId, eventId: guest.eventId, expiresAt: guest.event.endsAt });
+  return { credentialId: cred.id, created: before === 0 };
+}
+
+/** The pass (raw token) for a guest's active credential, or null. */
+export async function activePassToken(tx: Tx, eventGuestId: string): Promise<string | null> {
+  const cred = await tx.qrCredential.findFirst({
+    where: { status: "active", invitation: { eventGuestId }, OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] },
+    orderBy: { createdAt: "desc" },
+  });
+  return cred?.tokenEnc ? decryptSecret(cred.tokenEnc, `qr_credentials.tokenEnc:${cred.id}`) : null;
 }
 
 /** Looks up a QR credential by the raw token from a scanned URL. */
