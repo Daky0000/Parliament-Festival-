@@ -8,7 +8,9 @@ export async function GET() {
   try {
     await prisma.$queryRaw`SELECT 1`;
     return Response.json({ status: "ok", version }, { headers: { "Cache-Control": "no-store" } });
-  } catch {
+  } catch (err) {
+    // Server-side log only; the response stays generic.
+    console.error("health: database check failed", err);
     return Response.json(
       { status: "error", version },
       { status: 503, headers: { "Cache-Control": "no-store" } }

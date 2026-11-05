@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  // Let OpenNext resolve Prisma with the "workerd" export condition (the
+  // WASM query compiler) instead of bundling the native Node engine.
+  serverExternalPackages: ["@prisma/client", ".prisma/client"],
   // Build-time constants. GIT_SHA is set by CI so /api/health reports the
   // deployed commit.
   env: {

@@ -8,8 +8,10 @@ import { PrismaNeon } from "@prisma/adapter-neon";
 //   the per-request Cloudflare context object. Background tasks (cron) set
 //   their own client with runWithTaskClient().
 
+// WebSocketPair exists only in the Workers runtime.
 const isWorkers =
-  typeof navigator !== "undefined" && navigator.userAgent === "Cloudflare-Workers";
+  typeof (globalThis as { WebSocketPair?: unknown }).WebSocketPair === "function" ||
+  (typeof navigator !== "undefined" && navigator.userAgent === "Cloudflare-Workers");
 
 function databaseUrl(): string {
   const url = process.env.DATABASE_URL;
@@ -18,7 +20,10 @@ function databaseUrl(): string {
 }
 
 export function createWorkerClient(): PrismaClient {
-  return new PrismaClient({ adapter: new PrismaNeon({ connectionString: databaseUrl() }) });
+  // Workers cannot load Prisma's native engine; use the WASM build explicitly.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { PrismaClient: WasmPrismaClient } = require("@prisma/client/wasm") as typeof import("@prisma/client");
+  return new WasmPrismaClient({ adapter: new PrismaNeon({ connectionString: databaseUrl() }) });
 }
 
 const perRequest = new WeakMap<object, PrismaClient>();
