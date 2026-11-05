@@ -22,11 +22,11 @@ export async function GET(request: NextRequest) {
       ...(query
         ? {
             OR: [
-              { person: { fullName: { contains: query } } },
-              { person: { email: { contains: query } } },
-              { person: { phone: { contains: query } } },
-              { institution: { name: { contains: query } } },
-              { guestReference: { contains: query } },
+              { person: { fullName: { contains: query, mode: "insensitive" } } },
+              { person: { email: { contains: query, mode: "insensitive" } } },
+              { person: { phone: { contains: query, mode: "insensitive" } } },
+              { institution: { name: { contains: query, mode: "insensitive" } } },
+              { guestReference: { contains: query, mode: "insensitive" } },
             ],
           }
         : {}),

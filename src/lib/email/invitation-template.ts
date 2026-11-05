@@ -6,7 +6,7 @@
 //
 // Email-safe: tables and inline styles only, 600px wide, no SVG, web font
 // optional. Images are served from the Cloudflare Pages site
-// (cloudflare-pages-portal/assets/email/).
+// (public/assets/email/, served by the app).
 //
 // Placeholders, filled by interpolateInvitationTemplate (provider.ts) in the
 // campaign dispatch route:
@@ -47,7 +47,7 @@ export const INVITATION_HTML = `<!DOCTYPE html>
   <meta name="supported-color-schemes" content="light">
   <title>Invitation · {{event.name}}</title>
   <style>
-    @font-face{font-family:'Outfit';font-style:normal;font-weight:300 700;src:url(https://parliament-protocol-platform.pages.dev/assets/fonts/outfit-latin.woff2) format('woff2')}
+    @font-face{font-family:'Outfit';font-style:normal;font-weight:300 700;src:url({{app.asset_base}}/fonts/outfit-latin.woff2) format('woff2')}
     body{margin:0;padding:0;-webkit-text-size-adjust:100%}
     a{color:#2563EB}
     @media (max-width:620px){
@@ -203,7 +203,7 @@ export const INVITATION_HTML = `<!DOCTYPE html>
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                       <tr>
                         <td style="vertical-align:middle;padding-right:12px;">
-                          <img src="https://parliament-protocol-platform.pages.dev/assets/email/mark-navy.png" width="32" height="32" alt="" style="display:block;border:0;width:32px;height:32px;">
+                          <img src="{{app.asset_base}}/email/mark-navy.png" width="32" height="32" alt="" style="display:block;border:0;width:32px;height:32px;">
                         </td>
                         <td style="vertical-align:middle;font-size:13.5px;line-height:1.4;">
                           <span style="font-weight:500;color:#0D1526;">Protocol Directorate · Parliament of Ghana</span><br>

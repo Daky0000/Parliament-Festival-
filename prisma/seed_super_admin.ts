@@ -1,5 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 
+import { assertSeedAllowed } from "./seed-guard";
+
+assertSeedAllowed("seed");
 const prisma = new PrismaClient();
 
 async function seedSuperAdminIntegrations() {

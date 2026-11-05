@@ -95,8 +95,8 @@ export async function POST(request: NextRequest) {
       where: {
         eventId,
         OR: [
-          { person: { fullName: { contains: manualQuery } } },
-          { guestReference: { contains: manualQuery } },
+          { person: { fullName: { contains: manualQuery, mode: "insensitive" } } },
+          { guestReference: { contains: manualQuery, mode: "insensitive" } },
         ],
       },
       include: {

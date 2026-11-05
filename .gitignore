@@ -12,3 +12,4 @@ cloudflared.exe
 configure_tunnel.mjs
 create_tunnel.mjs
 *.tsbuildinfo
+.open-next/

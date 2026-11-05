@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
   if (message && eventId) {
     const text = message.toLowerCase();
     let proposedTool: string | null = null;
-    let toolArgs: Record<string, any> = { eventId };
+    const toolArgs: Record<string, any> = { eventId };
 
     if (text.includes("pending") || text.includes("unanswered") || text.includes("rsvp")) {
       proposedTool = "list_pending_rsvps";

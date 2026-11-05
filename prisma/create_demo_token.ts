@@ -1,5 +1,8 @@
 import { prisma } from "../src/lib/db";
 import { hashToken } from "../src/lib/tokens";
+import { assertSeedAllowed } from "./seed-guard";
+
+assertSeedAllowed("create_demo_token");
 
 async function main() {
   const event = await prisma.event.findFirst({ where: { eventCode: "CAROLS-2026" } });

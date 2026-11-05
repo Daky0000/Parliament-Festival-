@@ -6,7 +6,9 @@ const INK = "#0D1526";
 const WHITE = "#FFFFFF";
 const FALLBACK = "#091833"; // brand navy when a guest has no rank colour
 
-const ASSET_BASE = "https://parliament-protocol-platform.pages.dev/assets/email";
+import { appBaseUrl } from "../app-url";
+
+const assetBase = () => `${appBaseUrl()}/assets/email`;
 
 function parseHex(hex: string): [number, number, number] | null {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
@@ -55,7 +57,7 @@ export function rankTheme(
     "guest.rank_text": darkText ? INK : WHITE,
     "guest.rank_text_muted": darkText ? "rgba(13,21,38,.72)" : "rgba(255,255,255,.78)",
     "guest.rank_dots": darkText ? "rgba(13,21,38,.16)" : "rgba(255,255,255,.18)",
-    "guest.rank_mark_url": `${ASSET_BASE}/${darkText ? "mark-navy.png" : "mark-on-navy.png"}`,
+    "guest.rank_mark_url": `${assetBase()}/${darkText ? "mark-navy.png" : "mark-on-navy.png"}`,
     "guest.rank_name": name || "Invited guest",
     "guest.rank_order": rankOrder != null ? String(rankOrder) : "",
     "guest.rank_label": name

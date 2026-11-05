@@ -2,6 +2,7 @@
 // so it runs both in the campaign dispatch route and in the browser (the
 // Template Studio preview) and both show exactly the same email.
 import { rankTheme } from "./rank-theme";
+import { appBaseUrl } from "../app-url";
 
 export type InvitationGuest = {
   title?: string | null;
@@ -36,6 +37,7 @@ export function buildInvitationVars(guest: InvitationGuest, ctx: InvitationConte
     "guest.affiliation": [guest.designation, guest.institution].filter((s) => s && s.trim()).join(" · "),
     "invitation.rsvp_url": ctx.rsvpUrl,
     "invitation.reference": ctx.reference,
+    "app.asset_base": `${appBaseUrl()}/assets`,
     // Header band colours follow the protocol rank; navy when the guest has none
     ...rankTheme(guest.rankColourHex, guest.rankName, guest.rankOrder),
   };

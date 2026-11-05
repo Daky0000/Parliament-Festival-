@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     const resendData = await resendResponse.json();
 
     // Log the successful attempt to database
-    let dummyInvitation = await prisma.invitation.findFirst();
+    const dummyInvitation = await prisma.invitation.findFirst();
     if (dummyInvitation) {
       await prisma.emailAttempt.create({
         data: {

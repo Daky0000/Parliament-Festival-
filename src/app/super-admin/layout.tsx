@@ -1,12 +1,11 @@
 import Link from "next/link";
-import { ShieldCheck, Cpu, Mail, MessageSquare, Cloud, ArrowLeft, Server } from "lucide-react";
+import { ShieldCheck, Cpu, Mail, MessageSquare, ArrowLeft, Server } from "lucide-react";
 
 const tabs = [
   { href: "/super-admin", label: "Platform overview", icon: Server },
   { href: "/super-admin/ai", label: "AI providers (OpenAI / Claude)", icon: Cpu },
   { href: "/super-admin/sms", label: "SMS gateway (Vynfy)", icon: MessageSquare },
   { href: "/super-admin/email", label: "Email (Resend)", icon: Mail },
-  { href: "/super-admin/cloudflare", label: "Cloudflare & edge", icon: Cloud },
 ];
 
 export default function SuperAdminLayout({

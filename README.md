@@ -1,55 +1,91 @@
-# Parliament of Ghana — Event & Protocol Platform (v3.0)
+# Parliament of Ghana — Event & Protocol Platform
 
-Platform for the **2026 Festival of Nine Lessons and Carols**.
+Platform for the **2026 Festival of Nine Lessons and Carols**: guest registry, invitations, RSVP, protocol ranks, seating and usher check-in.
 
-This repo holds both parts of the project:
+## Stack
 
-1. **The platform**, a Next.js app: the Executive Protocol Platform, Super Admin console, AI provider routing, Mobile Usher Scanner and VIP Seating Engine.
-2. **The landing page**, a static Cloudflare Pages site at https://parliament-protocol-platform.pages.dev.
-
-## What's in this repo
-
-| Path | Description |
+| Layer | Technology |
 | --- | --- |
-| `src/` | Next.js app (App Router): dashboard, Super Admin console, usher scanner, `/api/v1` routes. |
-| `prisma/` | Database schema, seed scripts. |
-| `tests/` | Unit and end-to-end tests. |
-| `cloudflare-pages-portal/index.html` | Landing page. It sends visitors to the live platform after 3 seconds (meta refresh) and links to its five destinations. |
-| `cloudflare-pages-portal/assets/` | Design system ported from the DakyXTech v21 brand system: white panels on the `#ECEEF1` canvas, self-hosted Outfit font (no Google Fonts request), blue `#2563EB` as the only accent, navy bands with the dot field. |
-| `.github/workflows/deploy.yml` | Deploys the landing page to Cloudflare Pages on every push to `main`. |
-| `wrangler.toml` | Cloudflare Pages config (direct upload, output dir `cloudflare-pages-portal`). |
+| App | Next.js 16 (App Router), deployed to **Cloudflare Workers** with `@opennextjs/cloudflare` |
+| Database | **Neon Postgres** through Prisma 6. The Neon serverless adapter is used on Workers; plain TCP is used on Node |
+| Static assets | `public/` (served by the Worker). Email images and fonts are in `public/assets/` |
+| CI/CD | GitHub Actions: `.github/workflows/ci.yml` and `.github/workflows/deploy.yml` |
 
-## Running the platform
+Design specs for each remediation phase are in `docs/designs/`.
+
+## Local development
+
+1. Install dependencies. This also runs `prisma generate`.
+
+   ```sh
+   npm install
+   ```
+
+2. Start a local Postgres. Use either option:
+   - **Option A:** Prisma's built-in server: `npx prisma dev -n pf -d`. It prints the TCP URL. Append `&pgbouncer=true&connection_limit=1` to that URL.
+   - **Option B:** Docker: `docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:17`
+
+3. Set `DATABASE_URL` and `DIRECT_URL` to that URL in `.env`. Copy the other variable names from `.dev.vars.example`. Set `APP_ENV=local` and `EMAIL_PROVIDER=mock`.
+
+4. Apply migrations, seed, and run:
+
+   ```sh
+   npm run db:migrate         # apply prisma/migrations
+   npm run db:check-indexes   # confirm the partial unique indexes exist
+   SEED_PASSWORD=... npm run db:seed   # demo data; refuses to run when APP_ENV is production
+   npm run dev
+   ```
+
+## Checks
 
 ```sh
-npm install
-npm run prisma:generate
-npm run dev
+npm run lint
+npm run typecheck
+npm test          # needs a migrated and seeded database; real providers are always mocked
 ```
 
-## The live platform
+`npm run build:worker` produces the Cloudflare bundle. It needs Linux or WSL: OpenNext creates symlinks that Windows refuses without Developer Mode. CI builds it on Linux.
 
-The platform is served from the development machine through a Cloudflare quick tunnel
-(`*.trycloudflare.com`). **A quick tunnel gets a new address every time it restarts.** When the address changes,
-replace the old host everywhere in `cloudflare-pages-portal/index.html` (eight places,
-including the meta refresh) and redeploy.
+## Database migrations
 
-An earlier version of the landing site had a role-based sign-in (Super Admin, Admin, Usher)
-served by Pages Functions. It was taken off the live site. The code is in commit `c6bec53` if you need it again.
+- Create a migration with `npx prisma migrate dev --create-only --name <name>`, then review the SQL before committing.
+- `prisma/migrations/20261105000100_partial_unique_indexes` holds indexes that Prisma cannot model. **Never accept a generated migration that drops `uq_*` indexes.** CI fails if any is missing.
+- Write migrations as expand/contract: add the new column or table first, ship code that uses it, and remove the old one in a later release. This keeps the previous Worker version compatible during rollback.
 
-## Landing page deploy
+## Deploying
 
-Automatic: add the repository secrets `CLOUDFLARE_API_TOKEN` (Pages: Edit permission) and
-`CLOUDFLARE_ACCOUNT_ID` (Settings → Secrets and variables → Actions). After that, every push to `main` deploys.
+| Environment | Trigger | Worker |
+| --- | --- | --- |
+| Staging | Automatic after CI passes on `main` | `parliament-festival-staging` |
+| Production | Manual run of the **Deploy** workflow with a commit SHA. Requires approval in the `production` GitHub Environment | `parliament-festival-production` |
 
-Manual:
+Each deploy follows the same sequence:
 
-```sh
-npm install
-npm run pages:deploy
-```
+1. Run `prisma migrate deploy` against Neon.
+2. Build and deploy with OpenNext.
+3. Smoke-test `/api/health` and check that it reports the deployed SHA.
+4. If the smoke test fails, the Worker rolls back automatically.
 
-Local preview: `npm run pages:dev`.
+Both environments sit behind Cloudflare Access. CI reaches them with an Access service token.
 
-Never commit secrets (API keys, SMS/email credentials). Store them with
-`wrangler pages secret put` or in the Cloudflare dashboard.
+Rollback procedures are in `docs/runbooks/deploy-and-rollback.md`.
+
+### Required configuration
+
+Set each of these per GitHub Environment (`staging` and `production`):
+
+- **Secrets:**
+  - `DATABASE_URL` (Neon pooled)
+  - `DIRECT_URL` (Neon direct)
+  - `CLOUDFLARE_API_TOKEN`
+  - `CLOUDFLARE_ACCOUNT_ID`
+  - `CF_ACCESS_CLIENT_ID`
+  - `CF_ACCESS_CLIENT_SECRET`
+- **Variable:** `APP_URL`
+
+Set each of these per Worker with `wrangler secret put <NAME> --env <env>`:
+
+- `DATABASE_URL`
+- provider keys
+
+**Never commit secrets.**

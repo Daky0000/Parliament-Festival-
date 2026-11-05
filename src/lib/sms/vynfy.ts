@@ -25,7 +25,7 @@ export interface SmsDispatchResult {
  * Specifically converts Ghanaian local formats (e.g. 024XXXXXXX or 24XXXXXXX) to +23324XXXXXXX.
  */
 export function normalizeGhanaPhone(phone: string): string {
-  let cleaned = phone.replace(/[^\d+]/g, "").trim();
+  const cleaned = phone.replace(/[^\d+]/g, "").trim();
 
   // If starts with 0 (e.g. 0241234567) -> +233241234567
   if (cleaned.startsWith("0") && cleaned.length === 10) {

@@ -104,7 +104,7 @@ export function CampaignsClientView({
       <div className="space-y-4">
         {campaigns.length === 0 ? (
           <div className="bg-white border border-[#E3E6EB] rounded-lg p-8 text-center text-[#5B6374]">
-            No campaigns created yet. Click "Create Invitation Campaign" above to begin.
+            No campaigns created yet. Click &ldquo;Create Invitation Campaign&rdquo; above to begin.
           </div>
         ) : (
           campaigns.map((camp) => (

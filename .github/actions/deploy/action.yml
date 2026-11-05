@@ -1,0 +1,65 @@
+name: Deploy to Cloudflare Workers
+description: Migrate Neon, build with OpenNext, deploy, smoke-test, roll back on failure.
+
+inputs:
+  environment: { required: true, description: "staging | production" }
+  sha: { required: true, description: Commit being deployed }
+  app-url: { required: true, description: Public base URL (inlined at build time) }
+  database-url: { required: true, description: Neon pooled connection string }
+  direct-url: { required: true, description: Neon direct connection string (migrations) }
+  cloudflare-api-token: { required: true, description: Workers deploy token }
+  cloudflare-account-id: { required: true, description: Cloudflare account }
+  access-client-id: { required: true, description: Cloudflare Access service token id }
+  access-client-secret: { required: true, description: Cloudflare Access service token secret }
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: npm
+    - run: npm ci
+      shell: bash
+
+    - name: Migrate database
+      shell: bash
+      env:
+        DATABASE_URL: ${{ inputs.direct-url }}
+        DIRECT_URL: ${{ inputs.direct-url }}
+      run: |
+        npm run db:migrate
+        npm run db:check-indexes
+
+    - name: Build and deploy
+      shell: bash
+      env:
+        GIT_SHA: ${{ inputs.sha }}
+        NEXT_PUBLIC_APP_URL: ${{ inputs.app-url }}
+        CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
+      run: npm run deploy:${{ inputs.environment }}
+
+    - name: Smoke test
+      id: smoke
+      shell: bash
+      run: |
+        for i in 1 2 3 4 5 6; do
+          body=$(curl -fsS "${{ inputs.app-url }}/api/health" \
+            -H "CF-Access-Client-Id: ${{ inputs.access-client-id }}" \
+            -H "CF-Access-Client-Secret: ${{ inputs.access-client-secret }}" || true)
+          echo "attempt $i: $body"
+          if echo "$body" | grep -q "\"status\":\"ok\"" && echo "$body" | grep -q "${{ inputs.sha }}"; then
+            exit 0
+          fi
+          sleep 10
+        done
+        exit 1
+
+    - name: Roll back Worker on failed smoke test
+      if: failure() && steps.smoke.outcome == 'failure'
+      shell: bash
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
+      run: npx wrangler rollback --env ${{ inputs.environment }} --message "Smoke test failed for ${{ inputs.sha }}" -y

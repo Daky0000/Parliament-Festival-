@@ -174,7 +174,7 @@ export default function UsherPage() {
             <QrCode className="w-16 h-16 text-[#2563EB] mx-auto animate-pulse" />
             <h3 className="font-semibold text-sm text-white">Scanner Active</h3>
             <p className="text-[11px] text-white/70">
-              Hold camera over attendee's printed or mobile QR credential pass.
+              Hold camera over attendee&rsquo;s printed or mobile QR credential pass.
             </p>
 
             <div className="pt-2">

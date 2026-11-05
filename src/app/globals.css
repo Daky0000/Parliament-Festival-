@@ -4,7 +4,7 @@
 
 /* ==========================================================================
    Parliament of Ghana · Event & Protocol Platform — design system
-   Same tokens as the landing page (cloudflare-pages-portal/assets/brand.css):
+   Same tokens as the landing page (public/assets/brand.css):
    white panels on a cool grey canvas, one blue accent, the dot field as the
    only ornament. Tailwind's `parliament-*` colours in tailwind.config.ts
    point at these values.

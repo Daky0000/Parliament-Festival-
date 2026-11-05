@@ -13,6 +13,9 @@ import {
   INVITATION_TEMPLATE_VERSION_NOTE,
 } from "../src/lib/email/invitation-template";
 
+import { assertSeedAllowed } from "./seed-guard";
+
+assertSeedAllowed("seed");
 const prisma = new PrismaClient();
 
 // Statuses where nothing has gone out yet

@@ -24,6 +24,15 @@ export async function PATCH(
 
   // 1. ROTATE OR UPDATE SECRET
   if ((action === "rotate_secret" || action === "update_key") && newSecretPlain) {
+    // Writing .env only works on a developer machine. Deployed environments
+    // take secrets from `wrangler secret put`; Phase 1 replaces this path
+    // with encrypted credential storage. Refuse before any DB write.
+    if (process.env.APP_ENV !== "local") {
+      return NextResponse.json(
+        { error: "Secret rotation from the UI is disabled in deployed environments." },
+        { status: 501 }
+      );
+    }
     const hint =
       newSecretPlain.length > 8
         ? `${newSecretPlain.slice(0, 4)}...${newSecretPlain.slice(-4)}`

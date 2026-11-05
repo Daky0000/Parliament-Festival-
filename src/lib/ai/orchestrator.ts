@@ -122,8 +122,8 @@ export async function executeAiTool(
           ...(args.query
             ? {
                 OR: [
-                  { person: { fullName: { contains: args.query } } },
-                  { institution: { name: { contains: args.query } } },
+                  { person: { fullName: { contains: args.query, mode: "insensitive" } } },
+                  { institution: { name: { contains: args.query, mode: "insensitive" } } },
                 ],
               }
             : {}),

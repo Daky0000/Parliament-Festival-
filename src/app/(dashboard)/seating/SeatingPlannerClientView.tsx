@@ -229,7 +229,7 @@ export function SeatingPlannerClientView({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {selectedSection.seatAssignments?.length === 0 ? (
               <div className="col-span-3 p-8 text-center text-[#5B6374] text-xs">
-                No dignitaries allocated to this section yet. Click "Run Protocol Seating Engine" above to allocate based on official rank.
+                No dignitaries allocated to this section yet. Click &ldquo;Run Protocol Seating Engine&rdquo; above to allocate based on official rank.
               </div>
             ) : (
               selectedSection.seatAssignments.map((assignment: any) => (

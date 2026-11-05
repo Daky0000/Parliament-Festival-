@@ -31,14 +31,14 @@ for (const s of samples) {
       { title, fullName: name, designation, institution, rankColourHex: s.colour, rankName: s.name, rankOrder: s.order },
       {
         eventName: "2026 Festival of Nine Lessons and Carols",
-        rsvpUrl: "https://parliament-protocol-platform.pages.dev/",
+        rsvpUrl: "http://localhost:3000/",
         reference: `GH-GST-PREVIEW-${s.order ?? 0}`,
       }
     ),
     { html: true }
   );
   // Local copies of the hosted images and font so previews work offline
-  html = html.replace(/https:\/\/parliament-protocol-platform\.pages\.dev\/assets\//g, "../../../cloudflare-pages-portal/assets/");
+  html = html.replace(/http:\/\/localhost:3000\/assets\//g, "../../../public/assets/");
   fs.writeFileSync(path.join(out, `${s.file}.html`), html);
   console.log("wrote", `previews/${s.file}.html`);
 }

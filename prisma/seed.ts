@@ -6,6 +6,9 @@ import {
   INVITATION_TEXT,
 } from "../src/lib/email/invitation-template";
 
+import { assertSeedAllowed, seedPassword } from "./seed-guard";
+
+assertSeedAllowed("seed");
 const prisma = new PrismaClient();
 
 async function main() {
@@ -117,7 +120,7 @@ async function main() {
   }
 
   // 4. Test Users (with hashed passwords)
-  const passwordHash = await bcrypt.hash("Parliament2026!", 10);
+  const passwordHash = await bcrypt.hash(seedPassword(), 10);
 
   const adminUser = await prisma.user.upsert({
     where: { organizationId_email: { organizationId: org.id, email: "admin@parliament.gh" } },
