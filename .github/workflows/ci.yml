@@ -71,7 +71,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build:worker
-      - name: Bundle size (Workers Paid limit: 10 MiB compressed)
+      - name: "Bundle size (Workers Paid limit is 10 MiB compressed)"
         run: npx wrangler deploy --dry-run --outdir .wrangler/dry 2>&1 | grep -E "Total Upload|gzip"
 
   secrets-scan:
