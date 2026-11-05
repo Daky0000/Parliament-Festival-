@@ -92,8 +92,21 @@ async function main() {
     },
   });
 
+  const supervisorUser = await prisma.user.upsert({
+    where: { organizationId_email: { organizationId: org.id, email: "supervisor@parliament.gh" } },
+    update: { passwordHash },
+    create: {
+      organizationId: org.id,
+      email: "supervisor@parliament.gh",
+      fullName: "Yaw Asante (Check-in Supervisor)",
+      passwordHash,
+      status: "active",
+    },
+  });
+
   // Assign user roles (idempotent)
   const assignments: [string, string][] = [
+    [supervisorUser.id, "checkin_supervisor"],
     [adminUser.id, "super_admin"],
     [protocolUser.id, "protocol_officer"],
     [approverUser.id, "campaign_approver"],
@@ -402,6 +415,20 @@ async function main() {
       approvedAt: new Date(),
     },
   });
+
+  // 6. Gates and usher assignment
+  const mainGate = await prisma.gate.upsert({
+    where: { eventId_code: { eventId: event.id, code: "MAIN" } },
+    update: {},
+    create: { eventId: event.id, code: "MAIN", name: "Main Forecourt Gate" },
+  });
+  await prisma.gate.upsert({
+    where: { eventId_code: { eventId: event.id, code: "VIP" } },
+    update: {},
+    create: { eventId: event.id, code: "VIP", name: "VIP Entrance" },
+  });
+  const hasGate = await prisma.userGateAssignment.findFirst({ where: { userId: usherUser.id, gateId: mainGate.id, revokedAt: null } });
+  if (!hasGate) await prisma.userGateAssignment.create({ data: { userId: usherUser.id, gateId: mainGate.id, assignedBy: adminUser.id } });
 
   console.log("Seeding completed successfully!");
 }

@@ -51,6 +51,7 @@ model User {
   roleAssignments UserRoleAssignment[]
   eventAccess     EventUserAccess[]
   sessions        Session[]
+  gateAssignments UserGateAssignment[]
   invites         UserInvite[]
   auditLogs       AuditLog[]
   aiSessions      AiSession[]
@@ -184,6 +185,8 @@ model Event {
   startsAt         DateTime?
   endsAt           DateTime?
   rsvpDeadline     DateTime?
+  checkinOpensAt   DateTime?
+  checkinClosesAt  DateTime?
   brandConfig      String    @default("{}") // JSON string: colors, logos, badges
   attendancePolicy String    @default("{}") // JSON string
   createdBy        String?
@@ -211,6 +214,7 @@ model Event {
   tasks                 Task[]
   notifications         Notification[]
   communicationMessages CommunicationMessage[]
+  gates                 Gate[]
 
   @@unique([organizationId, eventCode])
   @@map("events")
@@ -771,24 +775,85 @@ model QrCredential {
 }
 
 model AttendanceRecord {
-  id              String   @id @default(uuid())
+  id              String    @id @default(uuid())
   eventId         String
   eventGuestId    String
   qrCredentialId  String?
-  checkinStatus   String   @default("checked_in") // checked_in, reversed, exception
-  checkedInAt     DateTime @default(now())
+  checkinStatus   String    @default("checked_in") // checked_in, reversed, exception
+  checkedInAt     DateTime  @default(now())
   checkedInBy     String?
-  checkinMethod   String // qr, manual, offline_sync, supervisor_override
+  checkinMethod   String // qr, manual, offline_sync, supervisor_override, fast_track, contingency
+  gateId          String?
   overrideReason  String?
+  overrideBy      String?
+  reversedAt      DateTime?
+  reversedBy      String?
+  reversalReason  String?
   deviceReference String?
-  createdAt       DateTime @default(now())
+  createdAt       DateTime  @default(now())
 
   event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventGuest   EventGuest    @relation(fields: [eventGuestId], references: [id], onDelete: Cascade)
   qrCredential QrCredential? @relation(fields: [qrCredentialId], references: [id], onDelete: SetNull)
   recorder     User?         @relation("AttendanceRecordedBy", fields: [checkedInBy], references: [id])
+  gate         Gate?         @relation(fields: [gateId], references: [id], onDelete: SetNull)
 
+  @@index([eventId, checkedInAt])
   @@map("attendance_records")
+}
+
+// Physical entry points. Ushers are assigned to gates per event.
+model Gate {
+  id               String   @id @default(uuid())
+  eventId          String
+  code             String
+  name             String
+  // When on, a verified scan by an authorized usher is recorded without a
+  // second tap. Off by default (manual confirmation).
+  fastTrackEnabled Boolean  @default(false)
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  event       Event                @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  assignments UserGateAssignment[]
+  attendance  AttendanceRecord[]
+  attempts    CheckinAttempt[]
+
+  @@unique([eventId, code])
+  @@map("gates")
+}
+
+model UserGateAssignment {
+  id         String    @id @default(uuid())
+  userId     String
+  gateId     String
+  assignedBy String?
+  assignedAt DateTime  @default(now())
+  revokedAt  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gate Gate @relation(fields: [gateId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_gate_assignments")
+}
+
+// Every confirm attempt, including refused ones, for the operations view.
+model CheckinAttempt {
+  id           String   @id @default(uuid())
+  eventId      String?
+  gateId       String?
+  actorUserId  String
+  eventGuestId String?
+  result       String // checked_in, already_checked_in, invalid, expired, revoked, declined, event_closed, wrong_gate, unauthorized
+  method       String // qr, manual, fast_track, supervisor_override
+  createdAt    DateTime @default(now())
+
+  gate Gate? @relation(fields: [gateId], references: [id], onDelete: SetNull)
+
+  @@index([eventId, createdAt])
+  @@map("checkin_attempts")
 }
 
 // 7.3.12 Audit logs

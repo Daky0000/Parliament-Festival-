@@ -2,6 +2,7 @@ import { guardPage } from "@/lib/page-guard";
 import { AccessDenied } from "@/components/auth/AccessDenied";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { LiveOps } from "./LiveOps";
 import { QrCode, ShieldAlert, CheckCircle2, Users, ExternalLink, Calendar } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -50,6 +51,7 @@ export default async function AttendancePage() {
 
   return (
     <div className="space-y-[var(--frame)]">
+      <LiveOps eventId={guard.event.id} />
       <div className="panel px-6 py-6 sm:px-8 sm:py-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="font-editorial text-[28px] sm:text-[34px] leading-[1.1] font-normal tracking-[-0.035em] text-[#0D1526]">

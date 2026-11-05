@@ -17,7 +17,8 @@ const campaigns = await import("../../src/app/api/v1/campaigns/route.ts");
 const campaignOne = await import("../../src/app/api/v1/campaigns/[campaignId]/route.ts");
 const webhook = await import("../../src/app/api/v1/webhooks/email/route.ts");
 const publicInv = await import("../../src/app/api/v1/public/invitations/[token]/route.ts");
-const checkin = await import("../../src/app/api/v1/check-in/route.ts");
+const checkin = await import("../../src/app/api/v1/check-in/confirm/route.ts");
+import { findCredentialByToken } from "../../src/lib/guest-tokens.ts";
 
 test("full invitation lifecycle", async () => {
   const f = await seededFixtures();
@@ -25,7 +26,16 @@ test("full invitation lifecycle", async () => {
   const approver = await cookieFor("approver@parliament.gh");
   const usher = await cookieFor("usher@parliament.gh");
   const version = await prisma.invitationTemplateVersion.findFirstOrThrow({ where: { template: { eventId: f.event.id }, status: "approved" } });
-  const category = await prisma.protocolCategory.findFirstOrThrow({ where: { eventId: f.event.id, eventGuests: { some: { person: { email: { not: null } } } } } });
+  // A fresh guest in a fresh category, so the journey is repeatable.
+  const top = await prisma.protocolCategory.findFirst({ where: { eventId: f.event.id }, orderBy: { rankOrder: "desc" } });
+  const stamp = Date.now();
+  const category = await prisma.protocolCategory.create({
+    data: { eventId: f.event.id, categoryKey: `e2e_${stamp}`, name: "E2E", colourHex: "#2563EB", rankOrder: (top?.rankOrder ?? 0) + 1 },
+  });
+  const person = await prisma.person.create({ data: { organizationId: f.event.organizationId, fullName: `E2E Guest ${stamp}`, email: `e2e-${stamp}@example.org` } });
+  await prisma.eventGuest.create({
+    data: { eventId: f.event.id, personId: person.id, protocolCategoryId: category.id, guestReference: `E2E-${stamp}`, guestStatus: "active" },
+  });
 
   // 1. Create (admin) and approve (approver — a different person)
   const created = await call(campaigns.POST, request("/api/v1/campaigns", {
@@ -69,9 +79,16 @@ test("full invitation lifecycle", async () => {
   assert.strictEqual(rsvp.status, 200, JSON.stringify(rsvp.json));
   assert.match(rsvp.json.data.qrCodeDataUrl, /^data:image\/png/);
 
-  // 5. Usher checks in; a second attempt is refused
-  const first = await call(checkin.POST, request("/api/v1/check-in", { method: "POST", cookie: usher, body: { eventId: f.event.id, eventGuestId: invitation.eventGuestId, checkinMethod: "manual" } }));
+  // 5. Usher scans the pass at their gate; a second scan is refused
+  const cred = await prisma.qrCredential.findFirstOrThrow({ where: { invitationId: invitation.id, status: "active" } });
+  const { decryptSecret } = await import("../../src/lib/crypto.ts");
+  const passToken = await decryptSecret(cred.tokenEnc, `qr_credentials.tokenEnc:${cred.id}`);
+  assert.ok(await findCredentialByToken(prisma, passToken));
+  const gate = await prisma.gate.findFirstOrThrow({ where: { eventId: f.event.id, code: "MAIN" } });
+  const body = { eventId: f.event.id, gateId: gate.id, token: passToken, method: "qr" };
+  const first = await call(checkin.POST, request("/api/v1/check-in/confirm", { method: "POST", cookie: usher, body }));
   assert.strictEqual(first.status, 200, JSON.stringify(first.json));
-  const second = await call(checkin.POST, request("/api/v1/check-in", { method: "POST", cookie: usher, body: { eventId: f.event.id, eventGuestId: invitation.eventGuestId, checkinMethod: "manual" } }));
+  const second = await call(checkin.POST, request("/api/v1/check-in/confirm", { method: "POST", cookie: usher, body }));
   assert.strictEqual(second.status, 409);
+  assert.strictEqual(second.json.data.state, "ALREADY_CHECKED_IN");
 });

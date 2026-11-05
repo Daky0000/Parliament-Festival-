@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { MessageSquare, Power, Send, CheckCircle, AlertTriangle, ExternalLink, RefreshCw, Key, ShieldCheck } from "lucide-react";
-import { normalizeGhanaPhone, calculateSmsSegments } from "@/lib/sms/vynfy";
+import { normalizeGhanaPhone, calculateSmsSegments } from "@/lib/sms/format";
 import { EditKeyModal } from "@/components/super-admin/EditKeyModal";
 
 export function VynfySmsClientView({

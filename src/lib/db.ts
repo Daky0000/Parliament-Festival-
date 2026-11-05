@@ -1,6 +1,5 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
-import { AsyncLocalStorage } from "node:async_hooks";
 
 // Two runtimes, one `prisma` export:
 // - Node (next dev, tests, seed scripts): one long-lived client over TCP.
@@ -23,10 +22,21 @@ export function createWorkerClient(): PrismaClient {
 }
 
 const perRequest = new WeakMap<object, PrismaClient>();
-const taskScope = new AsyncLocalStorage<PrismaClient>();
+// AsyncLocalStorage is only needed on Workers (nodejs_compat); loaded lazily
+// so this module never pulls node:async_hooks into other bundles.
+type Als<T> = { getStore(): T | undefined; run<R>(store: T, fn: () => R): R };
+let taskScopeInstance: Als<PrismaClient> | null = null;
+function taskScope(): Als<PrismaClient> {
+  if (!taskScopeInstance) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { AsyncLocalStorage } = require("node:async_hooks") as typeof import("node:async_hooks");
+    taskScopeInstance = new AsyncLocalStorage<PrismaClient>();
+  }
+  return taskScopeInstance;
+}
 
 function getWorkerClient(): PrismaClient {
-  const task = taskScope.getStore();
+  const task = taskScope().getStore();
   if (task) return task;
   // Resolved lazily so Node never loads the Workers adapter package.
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -44,7 +54,7 @@ function getWorkerClient(): PrismaClient {
 export async function runWithTaskClient<T>(fn: () => Promise<T>): Promise<T> {
   const client = createWorkerClient();
   try {
-    return await taskScope.run(client, fn);
+    return await taskScope().run(client, fn);
   } finally {
     await client.$disconnect().catch(() => {});
   }

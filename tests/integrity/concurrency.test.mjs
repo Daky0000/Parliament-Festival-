@@ -5,7 +5,7 @@ import { prisma } from "../../src/lib/db.ts";
 import { request, call, cookieFor, seededFixtures } from "../helpers.mjs";
 
 const seating = await import("../../src/app/api/v1/seating/route.ts");
-const checkin = await import("../../src/app/api/v1/check-in/route.ts");
+const checkin = await import("../../src/app/api/v1/check-in/confirm/route.ts");
 const events = await import("../../src/app/api/v1/events/[eventId]/route.ts");
 
 async function makeGuests(eventId, organizationId, n) {
@@ -50,9 +50,10 @@ test("20 simultaneous check-ins for one guest: exactly one attendance record", a
   const f = await seededFixtures();
   const cookie = await cookieFor("usher@parliament.gh");
   const [guest] = await makeGuests(f.event.id, f.event.organizationId, 1);
+  const gate = await prisma.gate.findFirstOrThrow({ where: { eventId: f.event.id, code: "MAIN" } });
   const results = await Promise.all(
     Array.from({ length: 20 }, () =>
-      call(checkin.POST, request("/api/v1/check-in", { method: "POST", cookie, body: { eventId: f.event.id, eventGuestId: guest.id, checkinMethod: "manual" } }))
+      call(checkin.POST, request("/api/v1/check-in/confirm", { method: "POST", cookie, body: { eventId: f.event.id, gateId: gate.id, eventGuestId: guest.id, method: "manual" } }))
     )
   );
   assert.strictEqual(results.filter((r) => r.status === 200).length, 1, `statuses: ${results.map((r) => r.status).join(",")}`);
