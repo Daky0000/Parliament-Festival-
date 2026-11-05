@@ -148,3 +148,14 @@ test("tracking summary: a click or RSVP visit counts as opened even with images 
   assert.strictEqual(emailTrackingFor([]).status, "not_sent");
   assert.strictEqual(emailTrackingFor([{ emailAttempts: [{ status: "failed", submittedAt: null, createdAt: at, errorMessage: "x" }], invitationEvents: [] }]).status, "failed");
 });
+
+test("every email gets the Powered by DakyXTech footer, linked, with the phone number, once", async () => {
+  const { withPoweredBy, withPoweredByText } = await import("../../src/lib/email/powered-by.ts");
+  const html = withPoweredBy("<html><body><p>Invitation</p></body></html>");
+  assert.match(html, /Powered by <a href="https:\/\/dakyx\.com"[^>]*>DakyXTech<\/a>/);
+  assert.match(html, /href="tel:\+233545950611"[^>]*>\+233 545 950 611</);
+  assert.ok(html.indexOf("Powered by") < html.indexOf("</body>"), "inside the body");
+  assert.strictEqual(withPoweredBy(html), html, "never added twice");
+  const text = withPoweredByText("Invitation");
+  assert.ok(text.includes("Powered by DakyXTech (https://dakyx.com)") && text.includes("+233 545 950 611"));
+});

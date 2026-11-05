@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useRef, useState } from "react";
+import { PoweredBy } from "@/components/brand/PoweredBy";
 import { INVITATION_HTML, INVITATION_SUBJECT } from "@/lib/email/invitation-template";
 import { buildInvitationVars, fillTemplate } from "@/lib/email/render-invitation";
 import { rankTheme } from "@/lib/email/rank-theme";
@@ -162,6 +163,7 @@ export function PassTemplate({
           <div className="px-5 pt-5 pb-4 flex flex-col items-center gap-2.5">
             <QrBlock src={qrCodeDataUrl} loading={qrLoading} />
             <p className="font-mono text-[12px] tracking-wider text-brand-blue">{guestReference || invitationReference}</p>
+            <PoweredBy />
           </div>
 
           <div className="border-t border-brand-line px-5 py-3 flex items-center justify-between gap-3 text-[11.5px] text-brand-muted">
@@ -238,7 +240,10 @@ export function PassTemplate({
               <p>Admits: <span className="text-brand-ink font-medium">{admits}</span></p>
               <p>Please present this card with your VIP Security Pass on arrival.</p>
             </div>
-            <QrBlock src={qrCodeDataUrl} loading={qrLoading} size={104} />
+            <div className="flex flex-col items-center gap-1.5">
+              <QrBlock src={qrCodeDataUrl} loading={qrLoading} size={104} />
+              <PoweredBy />
+            </div>
           </div>
         </div>
       </div>

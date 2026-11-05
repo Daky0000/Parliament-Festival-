@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
+import { PoweredBy } from "@/components/brand/PoweredBy";
 import { CheckCircle2, XCircle, Calendar, MapPin, Clock, ShieldCheck, Download, AlertCircle, RefreshCw } from "lucide-react";
 
 export default function PublicRsvpPage({
@@ -287,6 +288,9 @@ export default function PublicRsvpPage({
                       alt="Parliamentary Event Pass"
                       className="w-48 h-48 mx-auto rounded-lg border-2 border-[#2563EB] p-2 bg-white"
                     />
+                  ) : null}
+                  {confirmationData.qrCodeDataUrl ? (
+                    <PoweredBy className="!text-white/80" showPhone />
                   ) : (
                     <div className="w-48 h-48 mx-auto rounded-lg border border-[#2563EB] flex items-center justify-center text-xs text-[#8FB2FF]">
                       Your pass will appear here once your attendance is confirmed.
