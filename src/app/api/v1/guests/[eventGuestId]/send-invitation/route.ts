@@ -90,8 +90,11 @@ export const POST = withActor<{ eventGuestId: string }>(async (_request, { actor
     { eventName: guest.event.name, venueName: guest.event.venueName, rsvpUrl: rsvpUrl(rawToken!), reference: invitation.invitationReference }
   );
 
-  // Same sender as the event's latest campaign, else the configured default.
-  const campaign = await prisma.invitationCampaign.findFirst({ where: { eventId: guest.eventId }, orderBy: { createdAt: "desc" } });
+  // The configured, verified sender (RESEND_FROM_EMAIL) wins; a campaign's
+  // sender is only a fallback, since it may be on an unverified domain.
+  const campaign = process.env.RESEND_FROM_EMAIL
+    ? null
+    : await prisma.invitationCampaign.findFirst({ where: { eventId: guest.eventId }, orderBy: { createdAt: "desc" } });
   const attemptNumber = (await prisma.emailAttempt.count({ where: { invitationId: invitation.id } })) + 1;
 
   const result = await sendInvitationEmail({
