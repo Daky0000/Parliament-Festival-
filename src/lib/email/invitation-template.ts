@@ -20,7 +20,7 @@
 // which stores it as a new approved version (the database is what campaigns send).
 
 export const INVITATION_TEMPLATE_VERSION_NOTE =
-  "Brand redesign: rank-coloured header, landing-page design system.";
+  "White theme: white header with rank strip and chip, subtle blue dot field clear of the text.";
 
 export const INVITATION_SUBJECT =
   "Invitation to the 2026 Festival of Nine Lessons and Carols - Parliament of Ghana";
@@ -58,6 +58,8 @@ export const INVITATION_HTML = `<!DOCTYPE html>
       .row td{display:block!important;width:100%!important}
       .row .k{padding-bottom:2px!important;border-bottom:0!important}
       .row .v{padding-top:0!important}
+      .dots{width:40px!important}
+      .pad{padding-right:24px!important}
     }
   </style>
 </head>
@@ -72,28 +74,30 @@ export const INVITATION_HTML = `<!DOCTYPE html>
       <td align="center" style="padding:24px 12px;">
         <table role="presentation" class="shell" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;font-family:'Outfit','Segoe UI',Helvetica,Arial,sans-serif;color:#0D1526;">
 
-          <!-- Band: who it's from. Its colour is the guest's protocol rank colour;
-               text and logo switch between white and ink to stay readable. -->
+          <!-- Header: white panel, the guest's rank colour as a thin top strip
+               and the rank chip, and the subtle blue dot field kept in its own
+               column so it never sits behind text. -->
           <tr>
-            <td style="background:{{guest.rank_color}};background-image:radial-gradient(circle,{{guest.rank_dots}} 1.15px,transparent 1.6px);background-size:11px 11px;border-radius:22px;" class="pad" bgcolor="{{guest.rank_color}}">
+            <td style="background:#FFFFFF;border-radius:22px;border-top:6px solid {{guest.rank_color}};" bgcolor="#FFFFFF">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td class="pad" style="padding:36px 40px 34px 40px;">
-                    <img src="{{guest.rank_mark_url}}" width="48" height="48" alt="" style="display:block;border:0;width:48px;height:48px;">
-                    <p style="margin:22px 0 0 0;font-size:12px;line-height:1.4;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:{{guest.rank_text_muted}};">
+                  <td class="pad" style="padding:34px 0 32px 40px;vertical-align:top;">
+                    <img src="{{app.asset_base}}/email/mark-navy.png" width="48" height="48" alt="" style="display:block;border:0;width:48px;height:48px;">
+                    <p style="margin:22px 0 0 0;font-size:12px;line-height:1.4;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#5B6374;">
                       Parliament of Ghana · Office of the Rt. Hon. Speaker
                     </p>
-                    <h1 class="title" style="margin:10px 0 0 0;font-size:36px;line-height:1.08;font-weight:400;letter-spacing:-.035em;color:{{guest.rank_text}};">
+                    <h1 class="title" style="margin:10px 0 0 0;font-size:36px;line-height:1.08;font-weight:400;letter-spacing:-.035em;color:#0D1526;">
                       Festival of Nine Lessons and Carols 2026
                     </h1>
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;">
                       <tr>
-                        <td style="border:1px solid {{guest.rank_dots}};border-radius:10px;padding:7px 12px;font-size:12px;line-height:1.4;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:{{guest.rank_text}};">
+                        <td bgcolor="{{guest.rank_color}}" style="background:{{guest.rank_color}};border-radius:10px;padding:7px 12px;font-size:12px;line-height:1.4;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:{{guest.rank_text}};">
                           {{guest.rank_label}}
                         </td>
                       </tr>
                     </table>
                   </td>
+                  <td class="dots" width="150" style="width:150px;border-radius:0 22px 22px 0;background-image:radial-gradient(circle,rgba(37,99,235,.16) 1.15px,transparent 1.6px);background-size:11px 11px;">&nbsp;</td>
                 </tr>
               </table>
             </td>

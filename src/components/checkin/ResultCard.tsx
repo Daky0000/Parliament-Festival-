@@ -28,7 +28,16 @@ export function ResultCard({
   guest?: GuestCard;
   existing?: { checkedInAt: string | Date; gateName: string | null; byName: string | null } | null;
 }) {
-  const s = STYLE[state] ?? STYLE.INVALID;
+  const base = STYLE[state] ?? STYLE.INVALID;
+  // A valid pass says plainly whether the guest confirmed their invitation.
+  const s =
+    state === "VALID" && guest
+      ? guest.rsvp === "accepted"
+        ? { ...base, label: "Confirmed guest" }
+        : { ...base, bg: "#FFFAEB", fg: "#B54708", label: "Invited guest · RSVP not confirmed" }
+      : state === "CHECKED_IN" && guest?.rsvp === "accepted"
+        ? { ...base, label: "Confirmed guest · checked in" }
+        : base;
   return (
     <div className="space-y-3">
       <div role="status" aria-live="polite" className="rounded-[14px] p-4 flex items-start gap-3" style={{ background: s.bg, color: s.fg }}>
@@ -46,16 +55,20 @@ export function ResultCard({
         </div>
       </div>
       {guest && (
-        <div className="panel p-4 space-y-2">
-          <p className="text-[13px] uppercase tracking-[0.12em] text-brand-muted">Welcome</p>
-          <p className="text-[24px] font-medium leading-tight text-brand-ink">
+        <div className="panel dot-surface p-5 space-y-3">
+          <p className="relative text-[13px] uppercase tracking-[0.12em] text-brand-muted">Welcome</p>
+          <p className="relative text-[28px] font-medium leading-tight tracking-[-0.02em] text-brand-ink">
             {guest.title && !guest.displayName.startsWith(guest.title) ? `${guest.title} ` : ""}
             {guest.displayName}
           </p>
           {(guest.designation || guest.institution) && (
-            <p className="text-[15px] text-brand-muted">{[guest.designation, guest.institution].filter(Boolean).join(" · ")}</p>
+            <p className="relative text-[15px] text-brand-muted">{[guest.designation, guest.institution].filter(Boolean).join(" · ")}</p>
           )}
-          <dl className="grid grid-cols-2 gap-2 text-[14px] pt-1">
+          <div className="relative rounded-[14px] bg-brand-pale px-4 py-3">
+            <p className="text-[12px] uppercase tracking-[0.12em] text-brand-blue">Seat</p>
+            <p className="text-[24px] font-semibold leading-tight text-brand-ink">{guest.seat ?? "Open seating"}</p>
+          </div>
+          <dl className="relative grid grid-cols-2 gap-2 text-[14px] pt-1">
             <div>
               <dt className="text-brand-muted text-[12px]">Category</dt>
               <dd className="font-medium text-brand-ink flex items-center gap-2">
@@ -64,8 +77,10 @@ export function ResultCard({
               </dd>
             </div>
             <div>
-              <dt className="text-brand-muted text-[12px]">Seat</dt>
-              <dd className="font-medium text-brand-ink">{guest.seat ?? "Open seating"}</dd>
+              <dt className="text-brand-muted text-[12px]">RSVP</dt>
+              <dd className="font-medium text-brand-ink">
+                {guest.rsvp === "accepted" ? "Confirmed" : guest.rsvp === "declined" ? "Declined" : "Not confirmed"}
+              </dd>
             </div>
             <div>
               <dt className="text-brand-muted text-[12px]">Companions expected</dt>

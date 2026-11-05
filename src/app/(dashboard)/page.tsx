@@ -153,9 +153,8 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        <section className="band p-6 sm:p-8 flex flex-col justify-center gap-5" aria-label="Event at a glance">
-          <div className="dotfield" aria-hidden="true" />
-          <span className="relative cap !text-white/70">At a glance</span>
+        <section className="panel dot-surface p-6 sm:p-8 flex flex-col justify-center gap-5" aria-label="Event at a glance">
+          <span className="relative cap !text-brand-muted">At a glance</span>
           <div className="relative grid grid-cols-2 gap-2.5">
             {[
               { label: "Invited", value: totalGuests },
@@ -163,9 +162,9 @@ export default async function DashboardPage() {
               { label: "Seats assigned", value: `${totalSeatsAssigned}/${totalCapacity}` },
               { label: "Checked in", value: checkedInCount },
             ].map((s) => (
-              <div key={s.label} className="rounded-[14px] bg-white/[0.06] border border-white/[0.12] px-4 py-3.5">
-                <div className="text-[12px] text-white/70">{s.label}</div>
-                <div className="text-[28px] leading-tight font-normal tracking-[-0.03em] text-white mt-0.5">
+              <div key={s.label} className="rounded-[14px] bg-brand-soft border border-brand-line px-4 py-3.5">
+                <div className="text-[12px] text-brand-muted">{s.label}</div>
+                <div className="text-[28px] leading-tight font-normal tracking-[-0.03em] text-brand-ink mt-0.5">
                   {s.value}
                 </div>
               </div>
@@ -314,12 +313,12 @@ export default async function DashboardPage() {
           </div>
 
           {/* AI Command Centre Card */}
-          <div className="band p-6 text-white">
-            <div className="flex items-center gap-2 mb-2 text-[#8FB2FF]">
+          <div className="panel dot-surface p-6 text-brand-ink">
+            <div className="flex items-center gap-2 mb-2 text-brand-blue">
               <Sparkles className="w-4 h-4" />
               <h4 className="text-xs font-semibold uppercase tracking-wider">AI Protocol Assistant</h4>
             </div>
-            <p className="text-xs text-white/70 mb-4">
+            <p className="text-xs text-brand-muted mb-4">
               Query guest records, draft invitation reminder notices, or propose seating plans with institutional oversight.
             </p>
             <Link

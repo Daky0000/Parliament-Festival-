@@ -162,23 +162,22 @@ export function GuestDetailDrawer({
         className="h-full w-full max-w-[520px] bg-brand-canvas p-2 flex flex-col gap-2 overflow-y-auto shadow-float"
       >
         {/* Header */}
-        <div className="band px-5 py-5 flex-none">
-          <div className="dotfield dotfield-faint" aria-hidden="true" />
+        <div className="panel dot-surface px-5 py-5 flex-none">
           <div className="relative flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-brand-blueLight">Dignitary</span>
-              <h2 className="mt-1 text-[24px] leading-[1.15] font-light tracking-[-0.03em] text-white">{d ? name : "Loading…"}</h2>
+              <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-brand-blue">Dignitary</span>
+              <h2 className="mt-1 text-[24px] leading-[1.15] font-light tracking-[-0.03em] text-brand-ink">{d ? name : "Loading…"}</h2>
               {d && (d.designation || d.institution) && (
-                <p className="mt-1 text-[13.5px] text-white/70">{[d.designation, d.institution].filter(Boolean).join(" · ")}</p>
+                <p className="mt-1 text-[13.5px] text-brand-muted">{[d.designation, d.institution].filter(Boolean).join(" · ")}</p>
               )}
               {d?.rank && (
-                <span className="mt-3 inline-flex items-center gap-2 rounded-[10px] bg-white/10 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em] text-white">
+                <span className="mt-3 inline-flex items-center gap-2 rounded-[10px] bg-brand-soft px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em] text-brand-ink">
                   <span className="w-2 h-2 rounded-full" style={{ background: d.rank.colour }} />
                   Rank {d.rank.order} · {d.rank.name}
                 </span>
               )}
             </div>
-            <button onClick={onClose} aria-label="Close" className="w-9 h-9 flex-none rounded-[10px] bg-white/10 hover:bg-white/20 text-white grid place-items-center">
+            <button onClick={onClose} aria-label="Close" className="w-9 h-9 flex-none rounded-[10px] bg-brand-soft hover:bg-brand-line text-brand-ink grid place-items-center">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -194,7 +193,7 @@ export function GuestDetailDrawer({
                   {sending ? "Sending…" : d.sends.length ? "Resend invitation" : "Send invitation"}
                 </button>
               )}
-              <button onClick={onViewPass} className="px-3 py-2 rounded-[10px] bg-white/10 hover:bg-white/20 text-white text-[12.5px] font-medium flex items-center gap-1.5">
+              <button onClick={onViewPass} className="px-3 py-2 rounded-[10px] bg-brand-soft hover:bg-brand-line text-brand-ink text-[12.5px] font-medium flex items-center gap-1.5">
                 <Eye className="w-3.5 h-3.5" />
                 View pass
               </button>

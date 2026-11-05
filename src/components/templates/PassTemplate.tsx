@@ -27,8 +27,8 @@ export interface TemplateData {
   qrLoading?: boolean;
 }
 
-// The two printed credentials, in the platform design system: Outfit, navy
-// band with the dot field, white panels on the cool grey canvas, one blue
+// The two printed credentials, in the platform design system: Outfit, a white
+// header with the subtle blue dot field (kept clear of the text), white panels on the cool grey canvas, one blue
 // accent and the guest's protocol rank colour as the only other colour.
 
 const DEFAULTS = {
@@ -114,20 +114,19 @@ export function PassTemplate({
   if (viewMode === "badge") {
     return (
       <div className="pass-print mx-auto w-full max-w-[360px] bg-brand-canvas rounded-[22px] p-2 font-sans text-brand-ink print:bg-white">
-        <div className="band px-5 pt-3 pb-5">
-          <div className="dotfield" aria-hidden="true" />
+        <div className="panel dot-surface px-5 pt-3 pb-5">
           <div className="relative flex justify-center pb-4">
-            <span className="w-14 h-[7px] rounded-full bg-white/25" aria-hidden="true" />
+            <span className="w-14 h-[7px] rounded-full bg-brand-line2" aria-hidden="true" />
           </div>
           <div className="relative flex items-center gap-3">
-            <Mark className="w-10 h-10" />
+            <Mark className="w-10 h-10" tone="dark" />
             <div className="min-w-0 leading-tight">
-              <p className="text-[15px] font-medium tracking-[-0.01em] text-white">Parliament of Ghana</p>
-              <p className="text-[11.5px] text-white/60">Protocol Directorate</p>
+              <p className="text-[15px] font-medium tracking-[-0.01em] text-brand-ink">Parliament of Ghana</p>
+              <p className="text-[11.5px] text-brand-muted">Protocol Directorate</p>
             </div>
           </div>
-          <p className="relative mt-5 text-[11px] font-medium uppercase tracking-[0.16em] text-brand-blueLight">VIP Security Pass</p>
-          <p className="relative mt-1 text-[19px] leading-[1.15] font-light tracking-[-0.03em] text-white">{eventName}</p>
+          <p className="relative mt-5 text-[11px] font-medium uppercase tracking-[0.16em] text-brand-blue">VIP Security Pass</p>
+          <p className="relative mt-1 text-[19px] leading-[1.15] font-light tracking-[-0.03em] text-brand-ink">{eventName}</p>
         </div>
 
         <div className="mt-2 bg-white rounded-[22px] overflow-hidden">
@@ -190,17 +189,16 @@ export function PassTemplate({
     ];
     return (
       <div className="pass-print mx-auto w-full max-w-[640px] bg-brand-canvas rounded-[22px] p-2 font-sans text-brand-ink print:bg-white">
-        <div className="band px-6 sm:px-9 py-7">
-          <div className="dotfield" aria-hidden="true" />
+        <div className="panel dot-surface px-6 sm:px-9 py-7">
           <div className="relative flex items-center gap-3">
-            <Mark className="w-11 h-11" />
+            <Mark className="w-11 h-11" tone="dark" />
             <div className="leading-tight">
-              <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-white/70">Parliament of Ghana</p>
-              <p className="text-[13px] text-white/60">Office of the Rt. Hon. Speaker</p>
+              <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-brand-muted">Parliament of Ghana</p>
+              <p className="text-[13px] text-brand-muted">Office of the Rt. Hon. Speaker</p>
             </div>
           </div>
-          <p className="relative mt-6 text-[11px] font-medium uppercase tracking-[0.16em] text-brand-blueLight">State Invitation</p>
-          <h2 className="relative mt-1 text-[26px] sm:text-[32px] leading-[1.08] font-light tracking-[-0.035em] text-white">{eventName}</h2>
+          <p className="relative mt-6 text-[11px] font-medium uppercase tracking-[0.16em] text-brand-blue">State Invitation</p>
+          <h2 className="relative mt-1 text-[26px] sm:text-[32px] leading-[1.08] font-light tracking-[-0.035em] text-brand-ink">{eventName}</h2>
         </div>
 
         <div className="mt-2 bg-white rounded-[22px] px-6 sm:px-9 pt-8 pb-6">

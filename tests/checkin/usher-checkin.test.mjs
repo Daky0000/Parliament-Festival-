@@ -70,18 +70,19 @@ test("invalid, revoked and expired passes show the right state", async () => {
   assert.strictEqual((await verifyScan(usher, c.token, c.mainGate.id)).state, "RSVP_DECLINED");
 });
 
-test("an usher can confirm only at an assigned gate", async () => {
-  const { f, token, mainGate, vipGate } = await guestWithPass();
+test("gates never block: an usher can verify and confirm at any gate or none", async () => {
+  const { f, token, vipGate } = await guestWithPass();
   const cookie = await cookieFor("usher@parliament.gh");
-  const wrong = await confirm(cookie, { eventId: f.event.id, gateId: vipGate.id, token, method: "qr" });
-  assert.strictEqual(wrong.status, 403);
-  assert.strictEqual(wrong.json.data.state, "WRONG_GATE");
-  const noGate = await confirm(cookie, { eventId: f.event.id, token, method: "qr" });
-  assert.strictEqual(noGate.status, 403, "a gate is required when gates exist");
-  const ok = await confirm(cookie, { eventId: f.event.id, gateId: mainGate.id, token, method: "qr" });
+  const usher = await actorFor("usher@parliament.gh");
+  const v = await verifyScan(usher, token, vipGate.id);
+  assert.strictEqual(v.state, "VALID", "an unassigned gate does not block verification");
+  assert.ok(v.guest.displayName && "rsvp" in v.guest);
+  const noGate = await verifyScan(usher, token, null);
+  assert.strictEqual(noGate.state, "VALID", "no gate selected is fine");
+  const ok = await confirm(cookie, { eventId: f.event.id, gateId: vipGate.id, token, method: "qr" });
   assert.strictEqual(ok.status, 200, JSON.stringify(ok.json));
   const rec = await prisma.attendanceRecord.findUniqueOrThrow({ where: { id: ok.json.data.attendanceId } });
-  assert.strictEqual(rec.gateId, mainGate.id);
+  assert.strictEqual(rec.gateId, vipGate.id, "the gate is still recorded for reports");
   assert.strictEqual(rec.checkedInBy, (await userByEmail("usher@parliament.gh")).id);
   assert.strictEqual(rec.checkinMethod, "qr");
 });
@@ -152,7 +153,7 @@ test("manual lookup is event-scoped and returns usher-safe fields only", async (
   const r = await call(lookupRoute.GET, request(`/api/v1/check-in/lookup?eventId=${f.event.id}&q=${encodeURIComponent(guest.guestReference)}`, { cookie }));
   assert.strictEqual(r.status, 200);
   assert.strictEqual(r.json.data.length, 1);
-  assert.deepStrictEqual(Object.keys(r.json.data[0]).sort(), ["category", "companionsExpected", "designation", "displayName", "eventGuestId", "institution", "reference", "seat", "title"]);
+  assert.deepStrictEqual(Object.keys(r.json.data[0]).sort(), ["category", "companionsExpected", "designation", "displayName", "eventGuestId", "institution", "reference", "rsvp", "seat", "title"]);
 });
 
 test("the live summary is for supervisors and staff, not ushers", async () => {
