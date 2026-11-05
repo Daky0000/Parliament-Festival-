@@ -4,6 +4,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { FileSpreadsheet, Award, QrCode } from "lucide-react";
 import { GuestsClientView } from "./GuestsClientView";
+import { can } from "@/lib/authz";
+import { emailTrackingFor, trackingInvitationInclude } from "@/lib/email/tracking-summary";
 
 export const dynamic = "force-dynamic";
 
@@ -24,8 +26,7 @@ export default async function GuestsPage() {
           invitations: {
             include: {
               rsvps: { orderBy: { submittedAt: "desc" }, take: 1 },
-              emailAttempts: { orderBy: { attemptNumber: "desc" }, take: 1 },
-              invitationEvents: { orderBy: { occurredAt: "desc" }, take: 2 },
+              ...trackingInvitationInclude,
             },
           },
           seatAssignments: {
@@ -92,7 +93,15 @@ export default async function GuestsPage() {
 
       <GuestsClientView
         eventId={event.id}
-        initialGuests={event.guests}
+        initialGuests={event.guests.map((g) => ({
+          ...g,
+          invitations: g.invitations.map(({ emailAttempts: _a, invitationEvents: _e, ...inv }) => inv),
+          emailTracking: emailTrackingFor(g.invitations),
+        }))}
+        canSendEmail={can(guard.actor, "campaigns.dispatch", event.id)}
+        eventName={event.name}
+        eventVenue={event.venueName}
+        eventStartsAt={event.startsAt ? event.startsAt.toISOString() : null}
         categories={event.categories}
         seatingSections={event.seatingPlans[0]?.sections || []}
       />

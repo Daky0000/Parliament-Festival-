@@ -40,7 +40,7 @@ export function Sidebar({ viewer }: { viewer: Viewer }) {
 
   return (
     <aside className="band hidden lg:flex w-[272px] flex-none flex-col sticky top-3 h-[calc(100vh-24px)]">
-      <div className="dotfield" aria-hidden="true" />
+      <div className="dotfield dotfield-faint" aria-hidden="true" />
 
       <Link href="/" className="relative flex items-center gap-3 px-5 pt-5 pb-4 no-underline">
         <span className="w-10 h-10 flex-none rounded-full bg-white/10 text-white grid place-items-center">

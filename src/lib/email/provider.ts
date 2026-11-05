@@ -2,6 +2,7 @@ import { prisma } from "../db";
 import { appEnv } from "../config";
 import { getProviderSecret } from "../integrations";
 import { sendViaResend, type SendResult } from "./resend";
+import { openTrackingToken, openTrackingUrl, withOpenPixel } from "./tracking";
 
 // Sends one invitation email and records the truth: an EmailAttempt row per
 // try with the provider's real message id or the real error. The invitation
@@ -33,6 +34,8 @@ export function activeEmailProvider(): EmailProvider {
 export async function sendInvitationEmail(payload: SendEmailPayload): Promise<SendResult> {
   const provider = activeEmailProvider();
   const attemptNumber = (await prisma.emailAttempt.count({ where: { invitationId: payload.invitationId } })) + 1;
+  // Our own open-tracking image, tied to this invitation and attempt.
+  const html = withOpenPixel(payload.htmlContent, openTrackingUrl(await openTrackingToken(payload.invitationId, attemptNumber)));
 
   let result: SendResult;
   if (provider === "mock") {
@@ -48,7 +51,7 @@ export async function sendInvitationEmail(payload: SendEmailPayload): Promise<Se
             from,
             to: payload.recipientEmail,
             subject: payload.subject,
-            html: payload.htmlContent,
+            html,
             text: payload.textContent,
             replyTo: payload.replyTo,
             idempotencyKey: payload.idempotencyKey,

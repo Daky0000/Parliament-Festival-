@@ -95,6 +95,16 @@ Set each of these per Worker with `wrangler secret put <NAME> --env <env>`:
 
 Background work (the campaign queue) runs from a Cron Trigger every minute; see `worker.ts`.
 
+### Email open tracking
+
+Every invitation email (campaign or the one-click **Send Email** in the Guest Directory) carries a
+signed 1x1 image served from `APP_URL` at `/api/v1/public/track/open/<token>.gif`, so opens are
+recorded per dignitary without depending on Resend's own open tracking. `APP_URL` must be the
+public https origin the recipient can reach. Point a Resend webhook at `/api/v1/webhooks/email`
+(with `RESEND_WEBHOOK_SECRET`) to also get delivered, bounced and click events. An open is a
+signal, not proof: Apple Mail pre-loads images and Outlook may block them, so a button click or an
+RSVP page visit also counts as "opened".
+
 To create the first administrator in a new environment, run `scripts/create-admin.ts` (instructions are at the top of the file).
 
 **Never commit secrets.**

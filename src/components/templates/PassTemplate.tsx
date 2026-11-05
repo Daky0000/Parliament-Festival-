@@ -3,6 +3,7 @@
 import React, { useMemo, useRef, useState } from "react";
 import { INVITATION_HTML, INVITATION_SUBJECT } from "@/lib/email/invitation-template";
 import { buildInvitationVars, fillTemplate } from "@/lib/email/render-invitation";
+import { rankTheme } from "@/lib/email/rank-theme";
 import { ShieldCheck, Calendar, Clock, MapPin, Armchair, Award, Building2, UserCheck, QrCode } from "lucide-react";
 
 export interface TemplateData {
@@ -16,10 +17,61 @@ export interface TemplateData {
   seatReference?: string | null;
   sectionName?: string | null;
   invitationReference?: string;
+  guestReference?: string | null;
+  companionAllowance?: number;
   eventName?: string;
   eventDate?: string;
+  eventTime?: string;
   eventVenue?: string;
   qrCodeDataUrl?: string | null;
+  qrLoading?: boolean;
+}
+
+// The two printed credentials, in the platform design system: Outfit, navy
+// band with the dot field, white panels on the cool grey canvas, one blue
+// accent and the guest's protocol rank colour as the only other colour.
+
+const DEFAULTS = {
+  eventName: "2026 Festival of Nine Lessons and Carols",
+  eventDate: "Friday, 18 December 2026",
+  eventTime: "4:00 PM GMT",
+  eventVenue: "Forecourt of Parliament House, Accra",
+};
+
+function Mark({ className = "w-10 h-10", tone = "light" }: { className?: string; tone?: "light" | "dark" }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`${className} flex-none rounded-full grid place-items-center ${
+        tone === "light" ? "bg-white/10 text-white" : "bg-brand-navy text-white"
+      }`}
+    >
+      <svg viewBox="0 0 24 24" className="w-[55%] h-[55%]" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9.5 12 4l9 5.5" />
+        <path d="M4.5 10h15" />
+        <path d="M6.5 10v7.5M10 10v7.5M14 10v7.5M17.5 10v7.5" />
+        <path d="M4 20h16" />
+      </svg>
+    </span>
+  );
+}
+
+function QrBlock({ src, loading, size = 148 }: { src?: string | null; loading?: boolean; size?: number }) {
+  return (
+    <div className="bg-white rounded-[14px] border border-brand-line p-2.5 inline-block" style={{ width: size + 22, height: size + 22 }}>
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt="Pass QR code" width={size} height={size} className="block" style={{ width: size, height: size }} />
+      ) : (
+        <div className="w-full h-full grid place-items-center text-center rounded-[10px] bg-brand-soft text-brand-muted">
+          <span className="flex flex-col items-center gap-1.5 px-2">
+            <QrCode className="w-8 h-8 text-brand-faint" />
+            <span className="text-[10.5px] leading-tight">{loading ? "Loading pass…" : "QR issued once a seat is assigned"}</span>
+          </span>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function PassTemplate({
@@ -36,209 +88,159 @@ export function PassTemplate({
     company,
     rankName,
     rankOrder,
-    rankColourHex = "#2563EB",
-    seatReference = "SEC-A-R1-S01",
-    sectionName = "Section A (Leadership)",
-    invitationReference = "GH-INV-8821",
-    eventName = "2026 Festival of Nine Lessons and Carols",
-    eventDate = "Friday, 18th December 2026 • 4:00 PM GMT",
-    eventVenue = "Forecourt of Parliament House, Osu, Accra",
+    rankColourHex,
+    seatReference,
+    sectionName,
+    invitationReference,
+    guestReference,
+    companionAllowance = 0,
     qrCodeDataUrl,
+    qrLoading,
   } = data;
+  const eventName = data.eventName || DEFAULTS.eventName;
+  const eventDate = data.eventDate || DEFAULTS.eventDate;
+  const eventTime = data.eventTime || DEFAULTS.eventTime;
+  const eventVenue = data.eventVenue || DEFAULTS.eventVenue;
 
-  const displayName = `${guestTitle ? guestTitle + " " : ""}${fullName || "Honorable Dignitary"}`;
+  const showTitle = guestTitle && !fullName.toLowerCase().startsWith(guestTitle.toLowerCase());
+  const displayName = `${showTitle ? guestTitle + " " : ""}${fullName || "Honourable Dignitary"}`;
+  const theme = rankTheme(rankColourHex, rankName, rankOrder);
+  const rankBg = theme["guest.rank_color"];
+  const rankText = theme["guest.rank_text"];
+  const rankLabel = theme["guest.rank_label"];
+  const admits = companionAllowance > 0 ? `Principal + ${companionAllowance}` : "Principal only";
 
-  // 1. VIP SECURITY PASS & BADGE
+  // 1. VIP SECURITY PASS — portrait, lanyard badge
   if (viewMode === "badge") {
     return (
-      <div className="relative mx-auto w-full max-w-[390px] bg-[#0A1830] text-white rounded-2xl shadow-2xl border-2 border-[#C6A65B]/60 overflow-hidden font-sans print:border-black print:text-black print:shadow-none">
-        {/* Lanyard punch slot */}
-        <div className="bg-[#050D1A] py-2 flex justify-center border-b border-white/10">
-          <div className="w-16 h-3 bg-white/20 rounded-full border border-white/30" />
-        </div>
-
-        {/* State Emblem Header */}
-        <div className="px-6 pt-5 pb-3 text-center bg-gradient-to-b from-[#0A1830] to-[#0E2246] border-b border-[#C6A65B]/30 relative">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#102343] border border-[#C6A65B] mb-2 shadow-inner">
-            <span className="font-editorial text-sm font-bold text-[#C6A65B] tracking-wider">GH</span>
+      <div className="pass-print mx-auto w-full max-w-[360px] bg-brand-canvas rounded-[22px] p-2 font-sans text-brand-ink print:bg-white">
+        <div className="band px-5 pt-3 pb-5">
+          <div className="dotfield" aria-hidden="true" />
+          <div className="relative flex justify-center pb-4">
+            <span className="w-14 h-[7px] rounded-full bg-white/25" aria-hidden="true" />
           </div>
-          <div className="font-editorial text-xs font-semibold uppercase tracking-[0.2em] text-[#C6A65B]">
-            Parliament of Ghana
-          </div>
-          <div className="text-[10px] text-white/60 uppercase tracking-widest mt-0.5">
-            Office of the Rt. Hon. Speaker &bull; Protocol Directorate
-          </div>
-          <div className="mt-2 text-[11px] font-medium text-white/90">
-            {eventName}
-          </div>
-        </div>
-
-        {/* Rank Banner */}
-        <div
-          className="py-1.5 px-4 text-center text-xs font-bold uppercase tracking-wider text-white shadow-sm flex items-center justify-center gap-2"
-          style={{ backgroundColor: rankColourHex }}
-        >
-          <Award className="w-3.5 h-3.5" />
-          <span>
-            Rank {rankOrder}: {rankName}
-          </span>
-        </div>
-
-        {/* Dignitary Body */}
-        <div className="px-6 py-6 text-center space-y-4">
-          <div className="space-y-1">
-            <div className="text-[10px] uppercase tracking-widest text-[#C6A65B] font-semibold">
-              Official Credential Pass
+          <div className="relative flex items-center gap-3">
+            <Mark className="w-10 h-10" />
+            <div className="min-w-0 leading-tight">
+              <p className="text-[15px] font-medium tracking-[-0.01em] text-white">Parliament of Ghana</p>
+              <p className="text-[11.5px] text-white/60">Protocol Directorate</p>
             </div>
-            <h2 className="font-editorial text-xl font-bold tracking-tight text-white leading-tight">
-              {displayName}
-            </h2>
-            {designation && (
-              <p className="text-xs text-[#8FB2FF] font-medium leading-relaxed">
-                {designation}
+          </div>
+          <p className="relative mt-5 text-[11px] font-medium uppercase tracking-[0.16em] text-brand-blueLight">VIP Security Pass</p>
+          <p className="relative mt-1 text-[19px] leading-[1.15] font-light tracking-[-0.03em] text-white">{eventName}</p>
+        </div>
+
+        <div className="mt-2 bg-white rounded-[22px] overflow-hidden">
+          <div className="px-5 py-2.5 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.12em]" style={{ background: rankBg, color: rankText }}>
+            <Award className="w-3.5 h-3.5 flex-none" />
+            <span className="truncate">{rankLabel}</span>
+          </div>
+
+          <div className="px-5 pt-5 pb-4 text-center">
+            <p className="text-[24px] leading-[1.12] font-light tracking-[-0.035em] text-brand-ink">{displayName}</p>
+            {designation && <p className="mt-1.5 text-[13.5px] text-brand-muted">{designation}</p>}
+            {company && (
+              <span className="mt-3 inline-flex items-center gap-1.5 rounded-[10px] bg-brand-soft px-2.5 py-1 text-[12px] text-brand-ink">
+                <Building2 className="w-3.5 h-3.5 text-brand-blue" />
+                {company}
+              </span>
+            )}
+          </div>
+
+          <div className="px-5 grid grid-cols-2 gap-2">
+            <div className="rounded-[14px] bg-brand-soft px-3 py-2.5">
+              <span className="cap !text-[10.5px]">Section</span>
+              <p className="mt-0.5 text-[13.5px] font-medium leading-snug text-brand-ink">{sectionName || "To be assigned"}</p>
+            </div>
+            <div className="rounded-[14px] bg-brand-pale px-3 py-2.5">
+              <span className="cap !text-[10.5px] !text-brand-blue">Seat</span>
+              <p className={`mt-0.5 font-mono font-semibold text-brand-ink leading-snug [overflow-wrap:anywhere] ${(seatReference?.length ?? 0) > 12 ? "text-[12px]" : "text-[14px] tracking-wide"}`}>
+                {seatReference || "—"}
               </p>
-            )}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 mt-1 rounded-full bg-white/10 border border-white/15 text-[11px] text-white">
-              <Building2 className="w-3 h-3 text-[#C6A65B]" />
-              <span className="font-semibold">{company || "Invited Dignitary"}</span>
             </div>
           </div>
 
-          {/* Seat Number & Reference Callout */}
-          <div className="bg-[#102343]/90 border-2 border-[#C6A65B] rounded-xl p-3.5 text-center shadow-inner space-y-1">
-            <div className="flex items-center justify-center gap-1.5 text-[10px] uppercase font-bold tracking-[0.15em] text-[#C6A65B]">
-              <Armchair className="w-3.5 h-3.5 text-[#C6A65B]" />
-              Allocated Seat Reference
-            </div>
-            <div className="text-xl font-mono font-bold text-white tracking-wider">
-              {seatReference || "SEC-A-RESERVED"}
-            </div>
-            <div className="text-[11px] text-[#8FB2FF] font-medium">
-              {sectionName}
-            </div>
+          <div className="px-5 pt-5 pb-4 flex flex-col items-center gap-2.5">
+            <QrBlock src={qrCodeDataUrl} loading={qrLoading} />
+            <p className="font-mono text-[12px] tracking-wider text-brand-blue">{guestReference || invitationReference}</p>
           </div>
 
-          {/* QR Code Verification */}
-          <div className="bg-white rounded-xl p-3 inline-block shadow-md border-2 border-[#C6A65B]/40">
-            {qrCodeDataUrl ? (
-              <img
-                src={qrCodeDataUrl}
-                alt="Security QR Code"
-                className="w-32 h-32 mx-auto object-contain"
-              />
-            ) : (
-              <div className="w-32 h-32 flex flex-col items-center justify-center bg-gray-50 border border-dashed border-gray-300 rounded text-gray-700 p-2">
-                <QrCode className="w-12 h-12 text-[#102343] mb-1" />
-                <span className="text-[9px] font-mono text-center">SECURE QR ACTIVE</span>
-              </div>
-            )}
+          <div className="border-t border-brand-line px-5 py-3 flex items-center justify-between gap-3 text-[11.5px] text-brand-muted">
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-brand-blue" />
+              Scan at the gate
+            </span>
+            <span className="flex items-center gap-1.5 font-medium text-brand-ink">
+              <UserCheck className="w-3.5 h-3.5 text-brand-blue" />
+              {admits}
+            </span>
           </div>
-
-          <div className="space-y-1 text-center">
-            <div className="font-mono text-[11px] text-[#C6A65B] font-semibold tracking-wider">
-              REF: {invitationReference}
-            </div>
-            <div className="text-[9px] text-white/50 italic">
-              Present this credential upon arrival at the Forecourt for usher verification.
-            </div>
-          </div>
-        </div>
-
-        {/* Pass Footer */}
-        <div className="bg-[#050D1A] px-4 py-2.5 border-t border-white/10 flex items-center justify-between text-[10px] text-white/60">
-          <span className="flex items-center gap-1">
-            <ShieldCheck className="w-3 h-3 text-[#C6A65B]" />
-            Official Security Protocol
-          </span>
-          <span>Access: Principal + 1</span>
         </div>
       </div>
     );
   }
 
-  // 2. FORMAL DIPLOMATIC INVITATION CARD
+  // 2. STATE INVITATION CARD — landscape, formal
   if (viewMode === "card") {
+    const rows: Array<{ icon: React.ComponentType<{ className?: string }>; k: string; v: string; mono?: boolean }> = [
+      { icon: Calendar, k: "Date", v: eventDate },
+      { icon: Clock, k: "Time", v: eventTime },
+      { icon: MapPin, k: "Venue", v: eventVenue },
+      { icon: Armchair, k: "Reserved seat", v: [sectionName, seatReference].filter(Boolean).join(" · ") || "To be assigned" },
+    ];
     return (
-      <div className="mx-auto w-full max-w-[620px] bg-[#FAF8F5] text-[#0A1830] rounded-2xl p-8 sm:p-12 shadow-2xl border-4 border-[#C6A65B] relative font-serif print:shadow-none print:border-black">
-        {/* Subtle Watermark Frame */}
-        <div className="border border-[#C6A65B]/40 p-6 sm:p-8 rounded-lg relative bg-white/70">
-          {/* Header */}
-          <div className="text-center space-y-2 border-b border-[#C6A65B]/40 pb-5">
-            <div className="w-14 h-14 rounded-full bg-[#0A1830] text-[#C6A65B] flex items-center justify-center text-lg font-bold mx-auto shadow-md">
-              GH
-            </div>
-            <h2 className="text-xs uppercase tracking-[0.25em] font-bold text-[#0A1830]">
-              Parliament of Ghana
-            </h2>
-            <p className="text-[11px] tracking-widest uppercase text-[#5B6374]">
-              Office of the Rt. Hon. Speaker &bull; Protocol Services
-            </p>
-          </div>
-
-          {/* Invitation Text */}
-          <div className="py-8 text-center space-y-5">
-            <p className="text-sm italic text-[#5B6374]">
-              The Rt. Hon. Speaker and Leadership of Parliament request the honour of the presence of
-            </p>
-
-            <div className="space-y-1">
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#0A1830] tracking-tight">
-                {displayName}
-              </h1>
-              {designation && (
-                <p className="text-sm font-medium text-[#2563EB]">
-                  {designation}
-                </p>
-              )}
-              <div className="text-xs font-semibold text-[#5B6374] uppercase tracking-wider">
-                {company}
-              </div>
-            </div>
-
-            {/* Rank Callout */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold text-white shadow-sm" style={{ backgroundColor: rankColourHex }}>
-              <Award className="w-3.5 h-3.5" />
-              <span>Rank {rankOrder}: {rankName}</span>
-            </div>
-
-            <p className="text-xs text-[#5B6374] uppercase tracking-widest pt-2">
-              to the official commemoration of the
-            </p>
-
-            <h3 className="text-xl sm:text-2xl font-bold text-[#C6A65B] tracking-wide uppercase">
-              {eventName}
-            </h3>
-
-            {/* Event Details Grid */}
-            <div className="bg-[#FAF8F5] border border-[#C6A65B]/40 rounded-xl p-4 max-w-md mx-auto text-xs space-y-2">
-              <div className="flex items-center justify-center gap-2 font-semibold text-[#0A1830]">
-                <Calendar className="w-4 h-4 text-[#2563EB]" />
-                <span>{eventDate}</span>
-              </div>
-              <div className="flex items-center justify-center gap-2 text-[#5B6374]">
-                <MapPin className="w-4 h-4 text-[#2563EB]" />
-                <span>{eventVenue}</span>
-              </div>
-            </div>
-
-            {/* Official Seat Reference Badge */}
-            <div className="bg-[#0A1830] text-white rounded-xl p-4 max-w-sm mx-auto shadow-md">
-              <div className="text-[10px] uppercase font-bold tracking-widest text-[#C6A65B]">
-                Reserved Seat Assignment
-              </div>
-              <div className="text-lg font-mono font-bold tracking-wider text-white mt-0.5">
-                {seatReference}
-              </div>
-              <div className="text-xs text-[#8FB2FF] mt-0.5">
-                {sectionName}
-              </div>
+      <div className="pass-print mx-auto w-full max-w-[640px] bg-brand-canvas rounded-[22px] p-2 font-sans text-brand-ink print:bg-white">
+        <div className="band px-6 sm:px-9 py-7">
+          <div className="dotfield" aria-hidden="true" />
+          <div className="relative flex items-center gap-3">
+            <Mark className="w-11 h-11" />
+            <div className="leading-tight">
+              <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-white/70">Parliament of Ghana</p>
+              <p className="text-[13px] text-white/60">Office of the Rt. Hon. Speaker</p>
             </div>
           </div>
+          <p className="relative mt-6 text-[11px] font-medium uppercase tracking-[0.16em] text-brand-blueLight">State Invitation</p>
+          <h2 className="relative mt-1 text-[26px] sm:text-[32px] leading-[1.08] font-light tracking-[-0.035em] text-white">{eventName}</h2>
+        </div>
 
-          {/* Footer Card */}
-          <div className="border-t border-[#C6A65B]/40 pt-4 flex flex-col sm:flex-row items-center justify-between text-[11px] text-[#5B6374] gap-2">
-            <span>Security Pass: <strong className="font-mono text-[#0A1830]">{invitationReference}</strong></span>
-            <span>R.S.V.P: <strong>protocol@parliament.gh</strong></span>
+        <div className="mt-2 bg-white rounded-[22px] px-6 sm:px-9 pt-8 pb-6">
+          <p className="text-[15px] leading-relaxed text-brand-muted">
+            The Rt. Hon. Speaker and the Leadership of Parliament request the honour of the presence of
+          </p>
+          <p className="mt-4 text-[28px] sm:text-[34px] leading-[1.1] font-light tracking-[-0.035em] text-brand-ink">{displayName}</p>
+          {(designation || company) && (
+            <p className="mt-1.5 text-[14.5px] text-brand-muted">{[designation, company].filter(Boolean).join(" · ")}</p>
+          )}
+          <span
+            className="mt-4 inline-flex items-center gap-2 rounded-[10px] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em]"
+            style={{ background: rankBg, color: rankText }}
+          >
+            <Award className="w-3.5 h-3.5" />
+            {rankLabel}
+          </span>
+
+          <dl className="mt-6 border-t border-brand-line text-[14.5px]">
+            {rows.map(({ icon: Icon, k, v }) => (
+              <div key={k} className="grid grid-cols-[130px_1fr] sm:grid-cols-[170px_1fr] gap-3 py-3 border-b border-brand-line">
+                <dt className="flex items-center gap-2 text-brand-muted">
+                  <Icon className="w-4 h-4 text-brand-blue flex-none" />
+                  {k}
+                </dt>
+                <dd className="font-medium text-brand-ink">{v}</dd>
+              </div>
+            ))}
+          </dl>
+
+          <div className="mt-6 flex flex-col sm:flex-row sm:items-end justify-between gap-5">
+            <div className="space-y-1 text-[13px] text-brand-muted">
+              <p>
+                Invitation reference{" "}
+                <span className="font-mono text-brand-blue">{invitationReference || guestReference}</span>
+              </p>
+              <p>Admits: <span className="text-brand-ink font-medium">{admits}</span></p>
+              <p>Please present this card with your VIP Security Pass on arrival.</p>
+            </div>
+            <QrBlock src={qrCodeDataUrl} loading={qrLoading} size={104} />
           </div>
         </div>
       </div>

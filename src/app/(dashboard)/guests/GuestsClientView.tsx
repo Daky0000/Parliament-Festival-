@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Search,
   Plus,
@@ -17,14 +17,23 @@ import {
   ShieldCheck,
   QrCode,
   Sparkles,
+  Send,
+  MailOpen,
+  MailX,
+  RefreshCw,
+  MousePointerClick,
+  Loader2,
 } from "lucide-react";
 import { TemplatePreviewModal } from "@/components/templates/TemplatePreviewModal";
 import { TemplateData } from "@/components/templates/PassTemplate";
+import { DESIGNATION_GROUPS, OTHER_DESIGNATION } from "@/lib/designations";
+import type { EmailTracking } from "@/lib/email/tracking-summary";
 
 interface GuestItem {
   id: string;
   guestReference: string | null;
   companionAllowance: number;
+  emailTracking?: EmailTracking;
   person: {
     title: string | null;
     fullName: string;
@@ -88,16 +97,104 @@ const HONORIFIC_TITLES = [
   "Ms.",
 ];
 
+const EMPTY_TRACKING: EmailTracking = {
+  status: "not_sent",
+  lastSentAt: null,
+  sendCount: 0,
+  firstOpenedAt: null,
+  lastOpenedAt: null,
+  openCount: 0,
+  clicked: false,
+  visitedRsvpPage: false,
+  lastError: null,
+};
+
+const POLL_MS = 30_000;
+
+function when(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const mins = Math.round((Date.now() - +d) / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  if (mins < 24 * 60) return `${Math.round(mins / 60)} h ago`;
+  return d.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+function formatEventDate(iso: string | null | undefined) {
+  if (!iso) return { date: undefined, time: undefined };
+  const d = new Date(iso);
+  return {
+    date: d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Africa/Accra" }),
+    time: `${d.toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Africa/Accra" }).toUpperCase()} GMT`,
+  };
+}
+
+function EmailStatus({ t }: { t: EmailTracking }) {
+  const base = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[10px] text-[10.5px] font-medium";
+  switch (t.status) {
+    case "clicked":
+    case "opened":
+      return (
+        <div>
+          <span className={`${base} bg-brand-positiveBg text-brand-positive`}>
+            {t.status === "clicked" ? <MousePointerClick className="w-3 h-3" /> : <MailOpen className="w-3 h-3" />}
+            {t.status === "clicked" ? "Opened · RSVP link used" : `Opened${t.openCount > 1 ? ` ${t.openCount}×` : ""}`}
+          </span>
+          <div className="text-[10.5px] text-brand-muted mt-0.5" title={t.firstOpenedAt ? new Date(t.firstOpenedAt).toLocaleString() : ""}>
+            First opened {when(t.firstOpenedAt)}
+            {t.lastOpenedAt && t.lastOpenedAt !== t.firstOpenedAt ? ` · last ${when(t.lastOpenedAt)}` : ""}
+          </div>
+        </div>
+      );
+    case "delivered":
+    case "sent":
+      return (
+        <div>
+          <span className={`${base} bg-brand-pale text-brand-blue`}>
+            <Mail className="w-3 h-3" />
+            {t.status === "delivered" ? "Delivered · not opened" : "Sent · not opened"}
+          </span>
+          <div className="text-[10.5px] text-brand-muted mt-0.5">Sent {when(t.lastSentAt)}</div>
+        </div>
+      );
+    case "bounced":
+      return (
+        <span className={`${base} bg-brand-dangerBg text-brand-danger`}>
+          <MailX className="w-3 h-3" />
+          Bounced
+        </span>
+      );
+    case "failed":
+      return (
+        <span className={`${base} bg-brand-dangerBg text-brand-danger`} title={t.lastError ?? ""}>
+          <MailX className="w-3 h-3" />
+          Send failed
+        </span>
+      );
+    default:
+      return <span className="text-[11px] text-brand-muted italic">Not sent</span>;
+  }
+}
+
 export function GuestsClientView({
   eventId,
   initialGuests,
   categories,
   seatingSections = [],
+  canSendEmail = false,
+  eventName,
+  eventVenue,
+  eventStartsAt,
 }: {
   eventId: string;
   initialGuests: any[];
   categories: CategoryItem[];
   seatingSections?: SeatingSectionItem[];
+  canSendEmail?: boolean;
+  eventName?: string;
+  eventVenue?: string | null;
+  eventStartsAt?: string | null;
 }) {
   const [guests, setGuests] = useState<GuestItem[]>(initialGuests);
   const [searchQuery, setSearchQuery] = useState("");
@@ -107,7 +204,14 @@ export function GuestsClientView({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const [selectedEmail, setSelectedEmail] = useState("all");
+  const [sendingId, setSendingId] = useState<string | null>(null);
+  const [confirmGuest, setConfirmGuest] = useState<GuestItem | null>(null);
+  const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
   // Template Preview Modal
+  const [previewGuestId, setPreviewGuestId] = useState<string | undefined>(undefined);
   const [previewData, setPreviewData] = useState<TemplateData | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
@@ -116,15 +220,74 @@ export function GuestsClientView({
     title: "Hon.",
     fullName: "",
     designation: "",
+    customDesignation: "",
     company: "",
     email: "",
     phone: "",
     protocolCategoryId: categories[0]?.id || "",
-    sectionId: seatingSections[0]?.id || "",
-    seatCode: "",
+    sectionId: "",
     companionAllowance: 1,
     operationalNotes: "",
   });
+
+  const trackingOf = (g: GuestItem) => g.emailTracking ?? EMPTY_TRACKING;
+
+  // Live email tracking: poll while the page is visible, so opens appear without a reload.
+  const refreshTracking = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const res = await fetch(`/api/v1/email-tracking?eventId=${encodeURIComponent(eventId)}`);
+      if (!res.ok) return;
+      const { data } = (await res.json()) as { data: Record<string, EmailTracking> };
+      setGuests((prev) => prev.map((g) => (data[g.id] ? { ...g, emailTracking: data[g.id] } : g)));
+    } catch {
+      /* offline: keep the last known state */
+    } finally {
+      setRefreshing(false);
+    }
+  }, [eventId]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") refreshTracking();
+    }, POLL_MS);
+    return () => clearInterval(id);
+  }, [refreshTracking]);
+
+  const sendEmail = async (guest: GuestItem) => {
+    setConfirmGuest(null);
+    setSendingId(guest.id);
+    setNotice(null);
+    try {
+      const res = await fetch(`/api/v1/guests/${guest.id}/send-invitation`, { method: "POST" });
+      const body = await res.json().catch(() => ({}));
+      if (body.tracking || body.data?.tracking) {
+        const t = (body.data?.tracking ?? body.tracking) as EmailTracking;
+        setGuests((prev) => prev.map((g) => (g.id === guest.id ? { ...g, emailTracking: t } : g)));
+      }
+      if (res.ok) {
+        setNotice({ kind: "ok", text: `Invitation sent to ${guest.person.fullName} (${body.data.sentTo}). You will see here when it is opened.` });
+      } else {
+        setNotice({ kind: "error", text: body.error || "The email could not be sent." });
+      }
+    } catch {
+      setNotice({ kind: "error", text: "Network error while sending the email." });
+    } finally {
+      setSendingId(null);
+    }
+  };
+
+  const emailCounts = guests.reduce(
+    (acc, g) => {
+      const t = trackingOf(g);
+      if (t.status === "opened" || t.status === "clicked") acc.opened++;
+      else if (t.status === "sent" || t.status === "delivered") acc.unopened++;
+      else if (t.status === "failed" || t.status === "bounced") acc.failed++;
+      else acc.notSent++;
+      return acc;
+    },
+    { opened: 0, unopened: 0, failed: 0, notSent: 0 }
+  );
 
   const filteredGuests = guests.filter((g) => {
     const matchesSearch =
@@ -141,18 +304,29 @@ export function GuestsClientView({
     const latestRsvp = g.invitations?.[0]?.rsvps?.[0]?.response || "pending";
     const matchesRsvp = selectedRsvp === "all" || latestRsvp === selectedRsvp;
 
-    return matchesSearch && matchesCategory && matchesRsvp;
+    const t = trackingOf(g).status;
+    const matchesEmail =
+      selectedEmail === "all" ||
+      (selectedEmail === "opened" && (t === "opened" || t === "clicked")) ||
+      (selectedEmail === "unopened" && (t === "sent" || t === "delivered")) ||
+      (selectedEmail === "failed" && (t === "failed" || t === "bounced")) ||
+      (selectedEmail === "not_sent" && t === "not_sent");
+
+    return matchesSearch && matchesCategory && matchesRsvp && matchesEmail;
   });
 
-  // When protocol category changes in form, auto-suggest the matching seating section
+  // The seat follows the rank: the section is matched from the category on save.
   const handleCategorySelect = (categoryId: string) => {
-    const matchingSection = seatingSections.find((s) => s.protocolCategoryId === categoryId);
-    setFormData((prev) => ({
-      ...prev,
-      protocolCategoryId: categoryId,
-      sectionId: matchingSection?.id || prev.sectionId,
-    }));
+    setFormData((prev) => ({ ...prev, protocolCategoryId: categoryId }));
   };
+
+  const autoSection =
+    seatingSections.find((s) => s.id === formData.sectionId) ||
+    seatingSections.find((s) => s.protocolCategoryId === formData.protocolCategoryId) ||
+    seatingSections[0];
+
+  const resolvedDesignation =
+    formData.designation === OTHER_DESIGNATION ? formData.customDesignation.trim() : formData.designation;
 
   const handleAddGuest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,6 +336,14 @@ export function GuestsClientView({
     }
     if (!formData.company.trim()) {
       setErrorMessage("Company / Institution is required.");
+      return;
+    }
+    if (!formData.designation) {
+      setErrorMessage("Please select a designation.");
+      return;
+    }
+    if (formData.designation === OTHER_DESIGNATION && !formData.customDesignation.trim()) {
+      setErrorMessage("Please type the custom designation.");
       return;
     }
 
@@ -176,13 +358,12 @@ export function GuestsClientView({
           eventId,
           title: formData.title,
           fullName: formData.fullName.trim(),
-          designation: formData.designation.trim(),
+          designation: resolvedDesignation,
           company: formData.company.trim(),
           email: formData.email.trim(),
           phone: formData.phone.trim(),
           protocolCategoryId: formData.protocolCategoryId,
           sectionId: formData.sectionId || undefined,
-          seatCode: formData.seatCode.trim() || undefined,
           companionAllowance: formData.companionAllowance,
           operationalNotes: formData.operationalNotes,
         }),
@@ -198,18 +379,29 @@ export function GuestsClientView({
 
         setGuests([createdGuest, ...guests]);
         setIsModalOpen(false);
+        const seat = createdGuest.seatAssignments?.[0];
+        setNotice({
+          kind: "ok",
+          text: `${createdGuest.person.fullName} added. Reference ${createdGuest.guestReference}${
+            seat
+              ? ` · ${seat.section.name}${seat.seat ? ` · Seat ${seat.seat.seatCode}` : ""}`
+              : seatingSections.length
+                ? ". The section for this rank is full, so no seat was allocated; assign one in the Seating Planner"
+                : ""
+          }.`,
+        });
 
         // Reset form
         setFormData({
           title: "Hon.",
           fullName: "",
           designation: "",
+          customDesignation: "",
           company: "",
           email: "",
           phone: "",
           protocolCategoryId: categories[0]?.id || "",
-          sectionId: seatingSections[0]?.id || "",
-          seatCode: "",
+          sectionId: "",
           companionAllowance: 1,
           operationalNotes: "",
         });
@@ -228,18 +420,26 @@ export function GuestsClientView({
     const seatAssign = guest.seatAssignments?.[0];
     const cat = guest.protocolCategory;
 
+    const { date, time } = formatEventDate(eventStartsAt);
     setPreviewData({
       guestTitle: guest.person.title,
       fullName: guest.person.fullName,
       designation: guest.person.designation,
-      company: guest.institution?.name || "State Dignitary",
-      rankName: cat?.name || "General Dignitary",
-      rankOrder: cat?.rankOrder || 1,
-      rankColourHex: cat?.colourHex || "#2563EB",
-      seatReference: seatAssign?.seat?.seatCode || `SEC-${cat?.rankOrder || 1}-R1-S01`,
-      sectionName: seatAssign?.section?.name || `Section Rank ${cat?.rankOrder || 1}`,
-      invitationReference: guest.invitations?.[0]?.invitationReference || guest.guestReference || "GH-INV-8821",
+      company: guest.institution?.name || "",
+      rankName: cat?.name || "",
+      rankOrder: cat?.rankOrder ?? 0,
+      rankColourHex: cat?.colourHex,
+      seatReference: seatAssign?.seat?.seatCode || null,
+      sectionName: seatAssign?.section?.name || null,
+      invitationReference: guest.invitations?.[0]?.invitationReference || guest.guestReference || undefined,
+      guestReference: guest.guestReference,
+      companionAllowance: guest.companionAllowance,
+      eventName,
+      eventVenue: eventVenue || undefined,
+      eventDate: date,
+      eventTime: time,
     });
+    setPreviewGuestId(seatAssign ? guest.id : undefined);
     setIsPreviewOpen(true);
   };
 
@@ -282,6 +482,19 @@ export function GuestsClientView({
             <option value="declined">Declined</option>
             <option value="pending">Pending Response</option>
           </select>
+
+          <select
+            value={selectedEmail}
+            onChange={(e) => setSelectedEmail(e.target.value)}
+            className="text-xs border border-[#E3E6EB] rounded-lg px-3 py-2 bg-white text-[#0D1526] focus:outline-none focus:border-[#2563EB]"
+            aria-label="Filter by email status"
+          >
+            <option value="all">All Email Statuses</option>
+            <option value="opened">Opened ({emailCounts.opened})</option>
+            <option value="unopened">Sent, not opened ({emailCounts.unopened})</option>
+            <option value="failed">Failed / bounced ({emailCounts.failed})</option>
+            <option value="not_sent">Not sent ({emailCounts.notSent})</option>
+          </select>
         </div>
 
         {/* Prominent High-Contrast Add Dignitary Button */}
@@ -296,6 +509,45 @@ export function GuestsClientView({
           <span>Add Dignitary</span>
         </button>
       </div>
+
+      {/* Email tracking at a glance */}
+      <div className="bg-white px-4 py-3 rounded-xl border border-[#E3E6EB] flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
+        <span className="cap !text-[11px]">Invitation emails</span>
+        <button onClick={() => setSelectedEmail("opened")} className="flex items-center gap-1.5 text-brand-positive font-medium hover:underline">
+          <MailOpen className="w-3.5 h-3.5" /> {emailCounts.opened} opened
+        </button>
+        <button onClick={() => setSelectedEmail("unopened")} className="flex items-center gap-1.5 text-brand-blue font-medium hover:underline">
+          <Mail className="w-3.5 h-3.5" /> {emailCounts.unopened} not opened yet
+        </button>
+        {emailCounts.failed > 0 && (
+          <button onClick={() => setSelectedEmail("failed")} className="flex items-center gap-1.5 text-brand-danger font-medium hover:underline">
+            <MailX className="w-3.5 h-3.5" /> {emailCounts.failed} failed
+          </button>
+        )}
+        <button onClick={() => setSelectedEmail("not_sent")} className="flex items-center gap-1.5 text-brand-muted hover:underline">
+          {emailCounts.notSent} not sent
+        </button>
+        <button
+          onClick={refreshTracking}
+          className="ml-auto flex items-center gap-1.5 text-brand-muted hover:text-brand-ink"
+          title="Opens update automatically every 30 seconds"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+          Live · refresh
+        </button>
+      </div>
+
+      {notice && (
+        <div
+          role="status"
+          className={`px-4 py-3 rounded-xl text-xs flex items-start justify-between gap-3 ${
+            notice.kind === "ok" ? "bg-brand-positiveBg text-brand-positive" : "bg-brand-dangerBg text-brand-danger"
+          }`}
+        >
+          <span>{notice.text}</span>
+          <button onClick={() => setNotice(null)} aria-label="Dismiss" className="font-semibold">✕</button>
+        </div>
+      )}
 
       {/* Responsive Table */}
       <div className="bg-white rounded-xl border border-[#E3E6EB] overflow-hidden shadow-sm">
@@ -318,6 +570,9 @@ export function GuestsClientView({
                 <th className="p-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5B6374]">
                   Seat Reference
                 </th>
+                <th className="p-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5B6374]">
+                  Invitation Email
+                </th>
                 <th className="p-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5B6374] text-right">
                   Actions
                 </th>
@@ -326,7 +581,7 @@ export function GuestsClientView({
             <tbody className="divide-y divide-[#E3E6EB] text-xs">
               {filteredGuests.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-[#5B6374]">
+                  <td colSpan={7} className="p-8 text-center text-[#5B6374]">
                     No dignitaries match the current filters. Click &quot;Add Dignitary&quot; to register a guest.
                   </td>
                 </tr>
@@ -410,15 +665,34 @@ export function GuestsClientView({
                         )}
                       </td>
 
+                      <td className="p-3">
+                        <EmailStatus t={trackingOf(guest)} />
+                      </td>
+
                       <td className="p-3 text-right">
-                        <button
-                          onClick={() => handleOpenPreview(guest)}
-                          className="px-2.5 py-1 bg-white border border-[#E3E6EB] hover:border-[#2563EB] text-[#2563EB] rounded-md font-semibold text-[11px] inline-flex items-center gap-1.5 transition-colors shadow-sm"
-                          title="Preview Official Pass &amp; Invitation"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>View Pass</span>
-                        </button>
+                        <div className="inline-flex items-center gap-1.5">
+                          {canSendEmail && (
+                            <button
+                              onClick={() => setConfirmGuest(guest)}
+                              disabled={!guest.person.email || sendingId === guest.id}
+                              className="px-2.5 py-1 bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-md font-semibold text-[11px] inline-flex items-center gap-1.5 transition-colors shadow-sm"
+                              title={guest.person.email ? "Send the invitation email to this dignitary" : "No email address on record"}
+                            >
+                              {sendingId === guest.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                              <span>
+                                {sendingId === guest.id ? "Sending…" : trackingOf(guest).sendCount > 0 ? "Resend" : "Send Email"}
+                              </span>
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleOpenPreview(guest)}
+                            className="px-2.5 py-1 bg-white border border-[#E3E6EB] hover:border-[#2563EB] text-[#2563EB] rounded-md font-semibold text-[11px] inline-flex items-center gap-1.5 transition-colors shadow-sm"
+                            title="Preview Official Pass &amp; Invitation"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>View Pass</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -504,14 +778,40 @@ export function GuestsClientView({
                     />
                   </div>
                   <div>
-                    <label className="font-semibold text-[#5B6374] block mb-1">Designation / Official Post</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Speaker of Parliament / Ambassador"
+                    <label htmlFor="designation" className="font-semibold text-[#5B6374] block mb-1">Designation / Official Post *</label>
+                    <select
+                      id="designation"
+                      required
                       value={formData.designation}
                       onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
-                      className="w-full border border-[#E3E6EB] rounded-lg p-2 focus:outline-none focus:border-[#2563EB]"
-                    />
+                      className="w-full border border-[#E3E6EB] rounded-lg p-2 bg-white focus:outline-none focus:border-[#2563EB]"
+                    >
+                      <option value="" disabled>
+                        Select designation…
+                      </option>
+                      {DESIGNATION_GROUPS.map((g) => (
+                        <optgroup key={g.label} label={g.label}>
+                          {g.options.map((o) => (
+                            <option key={o} value={o}>
+                              {o}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                      <option value={OTHER_DESIGNATION}>Others (type below)</option>
+                    </select>
+                    {formData.designation === OTHER_DESIGNATION && (
+                      <input
+                        type="text"
+                        required
+                        autoFocus
+                        aria-label="Custom designation"
+                        placeholder="Type the designation, e.g. Executive Secretary"
+                        value={formData.customDesignation}
+                        onChange={(e) => setFormData({ ...formData, customDesignation: e.target.value })}
+                        className="mt-2 w-full border border-[#2563EB] rounded-lg p-2 focus:outline-none"
+                      />
+                    )}
                   </div>
                 </div>
               </div>
@@ -610,17 +910,17 @@ export function GuestsClientView({
                   </div>
 
                   <div>
-                    <label className="font-semibold text-[#5B6374] block mb-1 flex items-center gap-1">
+                    <span className="font-semibold text-[#5B6374] block mb-1 flex items-center gap-1">
                       <Armchair className="w-3.5 h-3.5 text-[#2563EB]" />
-                      Seat Number / Reference
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. SEC-A-R1-S01 or Row 1-Seat 5"
-                      value={formData.seatCode}
-                      onChange={(e) => setFormData({ ...formData, seatCode: e.target.value })}
-                      className="w-full border border-[#E3E6EB] rounded-lg p-2 font-mono uppercase focus:outline-none focus:border-[#2563EB]"
-                    />
+                      Seat Number &amp; Reference
+                    </span>
+                    <div className="w-full rounded-lg p-2 bg-brand-pale text-brand-blue flex items-center gap-1.5" aria-live="polite">
+                      <Sparkles className="w-3.5 h-3.5 flex-none" />
+                      <span>
+                        Allocated automatically on save
+                        {autoSection ? ` · next free seat in ${autoSection.name}` : ""}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -651,10 +951,57 @@ export function GuestsClientView({
                   className="px-5 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold rounded-lg text-xs shadow-sm transition-colors flex items-center gap-1.5"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>{isSubmitting ? "Saving..." : "Save &amp; Generate Credentials"}</span>
+                  <span>{isSubmitting ? "Saving..." : "Save & Allocate Seat"}</span>
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* SEND INVITATION CONFIRMATION — the email is the approved template, not editable */}
+      {confirmGuest && (
+        <div
+          className="fixed inset-0 bg-brand-navy/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Send invitation email"
+          onClick={(e) => e.target === e.currentTarget && setConfirmGuest(null)}
+        >
+          <div className="bg-white rounded-[22px] max-w-md w-full p-6 shadow-float space-y-4">
+            <div className="flex items-start gap-3">
+              <span className="w-10 h-10 rounded-[10px] bg-brand-pale text-brand-blue grid place-items-center flex-none">
+                <Send className="w-5 h-5" />
+              </span>
+              <div className="min-w-0">
+                <h3 className="text-[17px] font-medium text-brand-ink">
+                  {trackingOf(confirmGuest).sendCount > 0 ? "Resend invitation?" : "Send invitation?"}
+                </h3>
+                <p className="text-[13px] text-brand-muted mt-1">
+                  The official invitation template will be sent to{" "}
+                  <strong className="text-brand-ink">
+                    {[confirmGuest.person.title, confirmGuest.person.fullName].filter(Boolean).join(" ")}
+                  </strong>{" "}
+                  at <span className="font-mono text-brand-ink">{confirmGuest.person.email}</span>, with their own RSVP link and reference. Opens are tracked.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setConfirmGuest(null)}
+                className="px-4 py-2 border border-brand-line rounded-[10px] text-xs font-semibold text-brand-muted hover:bg-brand-soft"
+              >
+                Cancel
+              </button>
+              <button
+                autoFocus
+                onClick={() => sendEmail(confirmGuest)}
+                className="px-4 py-2 bg-brand-blue hover:bg-brand-blueDark text-white rounded-[10px] text-xs font-semibold flex items-center gap-1.5"
+              >
+                <Send className="w-3.5 h-3.5" />
+                Send now
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -665,6 +1012,7 @@ export function GuestsClientView({
           isOpen={isPreviewOpen}
           onClose={() => setIsPreviewOpen(false)}
           data={previewData}
+          guestId={previewGuestId}
         />
       )}
     </div>
