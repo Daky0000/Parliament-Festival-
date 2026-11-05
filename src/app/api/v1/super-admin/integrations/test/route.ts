@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/auth";
+import { withActor, requireGlobal } from "@/lib/authz";
+import { getProviderSecret, sanitizeMetadata } from "@/lib/integrations";
 
-export async function POST(request: NextRequest) {
-  const user = await getCurrentUser();
+export const POST = withActor(async (request, { actor }) => {
+  requireGlobal(actor, "platform.manage");
   const body = await request.json();
   const { providerKey } = body;
 
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
 
   try {
     if (providerKey === "resend") {
-      const apiKey = process.env.RESEND_API_KEY;
+      const apiKey = await getProviderSecret("resend");
       if (!apiKey) {
         throw new Error("RESEND_API_KEY is not set in environment.");
       }
@@ -42,10 +43,10 @@ export async function POST(request: NextRequest) {
       const activeKey = keys[0]?.name || "Default";
       details = `Authenticated with Resend. Key: "${activeKey}". Ready for email dispatches.`;
     } else if (providerKey === "cloudflare") {
-      const token = process.env.CLOUDFLARE_API_TOKEN;
-      const accountId = process.env.CLOUDFLARE_ACCOUNT_ID || "e5a51fb1e3d789757e36438c304fea8b";
-      if (!token) {
-        throw new Error("CLOUDFLARE_API_TOKEN is not set in environment.");
+      const token = await getProviderSecret("cloudflare");
+      const accountId = process.env.CLOUDFLARE_ACCOUNT_ID || String(sanitizeMetadata(integration.metadata).accountId || "");
+      if (!token || !accountId) {
+        throw new Error("Cloudflare API token or account ID is not configured.");
       }
       const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/r2/buckets`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -60,12 +61,14 @@ export async function POST(request: NextRequest) {
       const bucketNames = data.result?.buckets?.map((b: any) => b.name) || [];
       details = `Cloudflare R2 verified. ${bucketNames.length} buckets available (${bucketNames.slice(0, 3).join(", ")}).`;
     } else if (providerKey === "vynfy") {
-      const apiKey = process.env.VYNFY_API_KEY;
-      latencyMs = Math.floor(45 + Math.random() * 20);
+      const apiKey = await getProviderSecret("vynfy");
+      latencyMs = Date.now() - startTime;
       if (!apiKey) {
-        throw new Error("VYNFY_API_KEY is not set in environment.");
+        throw new Error("Vynfy API key is not configured.");
       }
-      details = `Vynfy SMS Gateway operational. Sender ID: "${process.env.VYNFY_SENDER_ID || "PARLIAMENT"}", Ghana E.164 +233 formatting active.`;
+      // No live check until the real Vynfy adapter lands (Phase 3).
+      result = "failed";
+      sanitisedError = "Vynfy connectivity cannot be verified yet: the live API adapter is not implemented.";
     } else if (providerKey === "openai") {
       const apiKey = process.env.OPENAI_API_KEY;
       if (!apiKey || apiKey.trim() === "") {
@@ -103,7 +106,7 @@ export async function POST(request: NextRequest) {
       latencyMs: Math.max(latencyMs, 10),
       sanitisedError: sanitisedError || details,
       requestId,
-      testedBy: user?.fullName || "Super Admin",
+      testedBy: actor.fullName,
     },
   });
 
@@ -118,4 +121,4 @@ export async function POST(request: NextRequest) {
       error: sanitisedError,
     },
   });
-}
+});

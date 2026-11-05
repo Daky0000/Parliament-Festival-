@@ -1,13 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/auth";
+import { withActor, authorizeEvent } from "@/lib/authz";
+import { notFound } from "@/lib/http";
 import { logAuditEvent } from "@/lib/audit";
 
-export async function GET(request: NextRequest) {
+export const GET = withActor(async (request, { actor }) => {
   const { searchParams } = new URL(request.url);
   const eventId = searchParams.get("eventId");
+  await authorizeEvent(actor, "protocol.read", eventId);
 
-  const whereClause = eventId ? { eventId } : {};
+  const whereClause = { eventId: eventId! };
 
   const categories = await prisma.protocolCategory.findMany({
     where: whereClause,
@@ -91,16 +93,17 @@ export async function GET(request: NextRequest) {
   });
 
   return NextResponse.json({ data: categoriesWithStats });
-}
+});
 
-export async function POST(request: NextRequest) {
-  const user = await getCurrentUser();
+export const POST = withActor(async (request, { actor }) => {
+  const user = actor;
   const body = await request.json();
 
   const { eventId, name, rankOrder, colourHex, description, categoryKey } = body;
+  await authorizeEvent(actor, "protocol.configure", eventId);
 
-  if (!eventId || !name) {
-    return NextResponse.json({ error: "eventId and rank name are required" }, { status: 400 });
+  if (!name) {
+    return NextResponse.json({ error: "Rank name is required" }, { status: 400 });
   }
 
   // 1. Slugify categoryKey if not provided
@@ -214,12 +217,21 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ data: newCategory }, { status: 201 });
-}
+});
 
-export async function PATCH(request: NextRequest) {
-  const user = await getCurrentUser();
+export const PATCH = withActor(async (request, { actor }) => {
+  const user = actor;
   const body = await request.json();
-  const { action, eventId, categoryId, guestIds, name, rankOrder, colourHex, description } = body;
+  const { action, categoryId, guestIds, name, rankOrder, colourHex, description } = body;
+
+  // The event comes from the category record, never from the client.
+  if (typeof categoryId !== "string") {
+    return NextResponse.json({ error: "categoryId is required" }, { status: 400 });
+  }
+  const target = await prisma.protocolCategory.findUnique({ where: { id: categoryId } });
+  if (!target) throw notFound();
+  const eventId = target.eventId;
+  await authorizeEvent(actor, "protocol.configure", eventId);
 
   // Action: Assign Dignitaries to a Rank
   if (action === "assign_guests") {
@@ -238,8 +250,8 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Update guests to this category
-    await prisma.eventGuest.updateMany({
-      where: { id: { in: guestIds } },
+    const updatedGuests = await prisma.eventGuest.updateMany({
+      where: { id: { in: guestIds }, eventId },
       data: {
         protocolCategoryId: category.id,
         categoryUpdatedBy: user?.userId,
@@ -257,14 +269,14 @@ export async function PATCH(request: NextRequest) {
           action: "GUESTS_ASSIGNED_TO_RANK",
           entityType: "protocol_category",
           entityId: category.id,
-          afterData: { guestCount: guestIds.length, targetRank: category.rankOrder },
+          afterData: { guestCount: updatedGuests.count, targetRank: category.rankOrder },
         });
       }
     }
 
     return NextResponse.json({
       success: true,
-      message: `Assigned ${guestIds.length} dignitary(ies) to Rank ${category.rankOrder}`,
+      message: `Assigned ${updatedGuests.count} dignitary(ies) to Rank ${category.rankOrder}`,
     });
   }
 
@@ -291,5 +303,4 @@ export async function PATCH(request: NextRequest) {
   }
 
   return NextResponse.json({ error: "Invalid action or parameters" }, { status: 400 });
-}
-
+});

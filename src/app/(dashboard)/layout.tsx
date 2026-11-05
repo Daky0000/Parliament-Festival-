@@ -1,16 +1,25 @@
+import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
+import { getActor } from "@/lib/authz";
+import { buildViewer } from "@/lib/viewer";
 
-export default function DashboardLayout({
+// Every dashboard page requires a signed-in user; each page also checks its
+// own permission (see src/lib/page-guard.ts).
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const actor = await getActor();
+  if (!actor) redirect("/login");
+  const viewer = await buildViewer(actor);
+
   return (
     <div className="flex min-h-screen gap-[var(--frame)] p-[var(--frame)] bg-brand-canvas">
-      <Sidebar />
+      <Sidebar viewer={viewer} />
       <div className="flex-1 flex flex-col min-w-0 gap-[var(--frame)]">
-        <Topbar />
+        <Topbar viewer={viewer} />
         <main className="flex-1 min-w-0">
           <div className="max-w-[1280px] mx-auto space-y-[var(--frame)]">{children}</div>
         </main>

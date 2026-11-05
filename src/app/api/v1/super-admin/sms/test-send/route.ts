@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { NextResponse } from "next/server";
 import { sendVynfySms } from "@/lib/sms/vynfy";
+import { withActor, requireGlobal, authorizeEvent } from "@/lib/authz";
 
-export async function POST(request: NextRequest) {
+export const POST = withActor(async (request, { actor }) => {
+  requireGlobal(actor, "platform.manage");
   try {
     const body = await request.json();
-    const { phone, message, senderId } = body;
+    const { phone, message, senderId, eventId } = body;
 
     if (!phone || !message) {
       return NextResponse.json(
@@ -14,13 +15,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const event = await prisma.event.findFirst({
-      where: { eventCode: "CAROLS-2026" },
-    });
-
-    if (!event) {
-      return NextResponse.json({ error: "Active event not found" }, { status: 404 });
-    }
+    const event = await authorizeEvent(actor, "platform.manage", eventId);
 
     const result = await sendVynfySms({
       eventId: event.id,
@@ -31,8 +26,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: result });
   } catch (error: any) {
+    if (error?.status) throw error;
     console.error("Test SMS Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "SMS test failed" }, { status: 500 });
   }
-}
-
+});

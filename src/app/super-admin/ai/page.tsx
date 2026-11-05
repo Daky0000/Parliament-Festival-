@@ -16,7 +16,7 @@ export default async function SuperAdminAiPage() {
 
   const aiIntegrations = await prisma.platformIntegration.findMany({
     where: { providerKey: { in: ["openai", "anthropic"] } },
-    include: { credentials: { where: { status: "active" }, take: 1 } },
+    include: { credentials: { where: { status: "active", credentialKey: "apiKey" }, take: 1, select: { maskedHint: true, credentialVersion: true, createdAt: true, createdBy: true, status: true } } },
   });
 
   return (

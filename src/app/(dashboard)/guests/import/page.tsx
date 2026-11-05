@@ -89,9 +89,9 @@ export default function ImportWizardPage() {
     setIsLoading(true);
     try {
       // Fetch event ID
-      const eventsRes = await fetch("/api/v1/events");
+      const eventsRes = await fetch("/api/auth/event");
       const eventsData = await eventsRes.json();
-      const eventId = eventsData.data[0]?.id;
+      const eventId = eventsData.current?.id;
 
       const res = await fetch("/api/v1/imports", {
         method: "POST",
@@ -115,9 +115,9 @@ export default function ImportWizardPage() {
   const handleCommit = async () => {
     setIsLoading(true);
     try {
-      const eventsRes = await fetch("/api/v1/events");
+      const eventsRes = await fetch("/api/auth/event");
       const eventsData = await eventsRes.json();
-      const eventId = eventsData.data[0]?.id;
+      const eventId = eventsData.current?.id;
 
       const res = await fetch("/api/v1/imports", {
         method: "POST",

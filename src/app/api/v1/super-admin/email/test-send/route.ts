@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/auth";
+import { withActor, requireGlobal } from "@/lib/authz";
+import { getProviderSecret } from "@/lib/integrations";
 
-export async function POST(request: NextRequest) {
-  const user = await getCurrentUser();
+export const POST = withActor(async (request, { actor }) => {
+  requireGlobal(actor, "platform.manage");
+  const user = actor;
   const body = await request.json();
   const { recipientEmail } = body;
 
@@ -11,7 +13,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "recipientEmail is required" }, { status: 400 });
   }
 
-  const apiKey = process.env.RESEND_API_KEY;
+  const apiKey = await getProviderSecret("resend");
   if (!apiKey) {
     return NextResponse.json(
       { error: "RESEND_API_KEY is not configured in environment." },
@@ -103,5 +105,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
+});

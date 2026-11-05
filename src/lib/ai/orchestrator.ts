@@ -1,4 +1,6 @@
 import { prisma } from "../db";
+import { authorizeEvent, type Actor } from "../authz";
+import type { Permission } from "../roles";
 import { logAuditEvent } from "../audit";
 import { runDeterministicSeatingEngine } from "../seating/engine";
 
@@ -86,20 +88,34 @@ export const AI_TOOL_REGISTRY: Record<string, ToolDefinition> = {
 export async function executeAiTool(
   toolName: string,
   args: Record<string, any>,
-  userId: string,
-  userPermissions: string[]
+  actor: Actor
 ) {
   const tool = AI_TOOL_REGISTRY[toolName];
   if (!tool) {
     throw new Error(`Tool ${toolName} not registered in AI Tool Registry.`);
   }
+  const userId = actor.userId;
 
-  // 1. Permission Gate Check
-  if (!userPermissions.includes(tool.permissionKey) && !userPermissions.includes("platform.manage")) {
+  // 1. Every tool is event-scoped: the actor must reach the event and hold the
+  // tool's permission for it. There is no platform-wide bypass.
+  try {
+    await authorizeEvent(actor, "ai.use", args.eventId);
+    await authorizeEvent(actor, tool.permissionKey as Permission, args.eventId);
+  } catch {
     return {
       status: "denied",
-      error: `Security Policy Gate: User lacks required permission '${tool.permissionKey}' to execute tool '${toolName}'.`,
+      error: `Security Policy Gate: you lack '${tool.permissionKey}' for this event.`,
     };
+  }
+  // IDs that point at other records must belong to the same event.
+  if (args.seatingPlanId) {
+    const plan = await prisma.seatingPlan.findUnique({ where: { id: String(args.seatingPlanId) } });
+    if (!plan || plan.eventId !== args.eventId) return { status: "denied", error: "Seating plan not found for this event." };
+  }
+  const guestRef = args.eventGuestId ?? args.guestId;
+  if (guestRef) {
+    const g = await prisma.eventGuest.findUnique({ where: { id: String(guestRef) } });
+    if (!g || g.eventId !== args.eventId) return { status: "denied", error: "Guest not found for this event." };
   }
 
   // 2. Human-In-The-Loop Approval Gate for Write Tools

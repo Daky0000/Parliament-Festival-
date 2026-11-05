@@ -1,10 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/auth";
-import { logAuditEvent } from "@/lib/audit";
+import { withActor, authorizeEvent, can } from "@/lib/authz";
+import { HttpError, forbidden } from "@/lib/http";
 
-export async function POST(request: NextRequest) {
-  const user = await getCurrentUser();
+// Interim (Phase 1) check-in: authorized, event-scoped, one check-in per
+// guest enforced by the database. Phase 4 replaces this with the scan ->
+// verify -> confirm flow and gate assignments.
+export const POST = withActor(async (request, { actor }) => {
+  const user = actor;
   const body = await request.json();
   const {
     eventId,
@@ -16,8 +20,12 @@ export async function POST(request: NextRequest) {
     overrideReason,
   } = body;
 
-  if (!eventId) {
-    return NextResponse.json({ error: "eventId is required" }, { status: 400 });
+  const event = await authorizeEvent(actor, "checkin.scan", eventId);
+  if (isSupervisorOverride) {
+    if (!can(actor, "checkin.manual_override", eventId)) throw forbidden();
+    if (typeof overrideReason !== "string" || overrideReason.trim().length < 5) {
+      throw new HttpError(400, "An override needs a reason.");
+    }
   }
 
   let targetGuest = null;
@@ -58,7 +66,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (qrCredential.status !== "active") {
+    if (qrCredential.status !== "active" || (qrCredential.expiresAt && qrCredential.expiresAt < new Date())) {
       return NextResponse.json(
         { error: `This credential has been ${qrCredential.status}. Access denied.` },
         { status: 403 }
@@ -128,8 +136,18 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  if (!targetGuest) {
+  if (!targetGuest || targetGuest.eventId !== eventId) {
     return NextResponse.json({ error: "Attendee record not found." }, { status: 404 });
+  }
+
+  const latestResponse = targetGuest.invitations
+    .flatMap((i) => i.rsvps)
+    .sort((a, b) => b.submittedAt.getTime() - a.submittedAt.getTime())[0]?.response;
+  if (latestResponse === "declined" && !isSupervisorOverride) {
+    return NextResponse.json(
+      { status: "RSVP_DECLINED", message: "This guest declined the invitation. Refer to a supervisor." },
+      { status: 409 }
+    );
   }
 
   // 4. Check for duplicate active check-in
@@ -139,10 +157,10 @@ export async function POST(request: NextRequest) {
       eventGuestId: targetGuest.id,
       checkinStatus: "checked_in",
     },
-    include: { recorder: true },
+    include: { recorder: { select: { fullName: true } } },
   });
 
-  if (existingCheckin && !isSupervisorOverride) {
+  if (existingCheckin) {
     return NextResponse.json(
       {
         status: "DUPLICATE_CHECKIN_WARNING",
@@ -159,11 +177,12 @@ export async function POST(request: NextRequest) {
   }
 
   // 5. Record Check-In
-  const method = isSupervisorOverride
-    ? "supervisor_override"
-    : (checkinMethod as "qr" | "manual");
+  const method = isSupervisorOverride ? "supervisor_override" : checkinMethod === "manual" ? "manual" : "qr";
 
-  const attendance = await prisma.attendanceRecord.create({
+  let attendance;
+  try {
+    attendance = await prisma.$transaction(async (tx) => {
+      const rec = await tx.attendanceRecord.create({
     data: {
       eventId,
       eventGuestId: targetGuest.id,
@@ -175,6 +194,30 @@ export async function POST(request: NextRequest) {
       deviceReference: request.headers.get("user-agent")?.slice(0, 100) || "Usher Device",
     },
   });
+      await tx.auditLog.create({
+        data: {
+          organizationId: event.organizationId,
+          eventId: event.id,
+          actorUserId: actor.userId,
+          action: isSupervisorOverride ? "CHECKIN_OVERRIDE" : "CHECKIN_RECORDED",
+          entityType: "attendance_record",
+          entityId: rec.id,
+          reason: isSupervisorOverride ? overrideReason : null,
+          afterData: JSON.stringify({ guestId: targetGuest.id, method }),
+        },
+      });
+      return rec;
+    });
+  } catch (err) {
+    // Another device checked this guest in first (partial unique index).
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      return NextResponse.json(
+        { status: "DUPLICATE_CHECKIN_WARNING", message: "This guest has already checked in!" },
+        { status: 409 }
+      );
+    }
+    throw err;
+  }
 
   const latestRsvp = targetGuest.invitations[0]?.rsvps[0];
   const activeSeat = targetGuest.seatAssignments[0];
@@ -197,5 +240,4 @@ export async function POST(request: NextRequest) {
       },
     },
   });
-}
-
+});

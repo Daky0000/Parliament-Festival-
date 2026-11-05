@@ -1,23 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/auth";
+import { withActor, authorizeEvent } from "@/lib/authz";
+import { HttpError, notFound } from "@/lib/http";
 import { logAuditEvent } from "@/lib/audit";
 import { generateSecureToken, generateReferenceCode } from "@/lib/tokens";
 import { sendInvitationEmail } from "@/lib/email/provider";
 import { buildInvitationVars, fillTemplate } from "@/lib/email/render-invitation";
 
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ campaignId: string }> }
-) {
-  const { campaignId } = await context.params;
+export const GET = withActor<{ campaignId: string }>(async (_request, { actor, params }) => {
+  const { campaignId } = params;
 
   const campaign = await prisma.invitationCampaign.findUnique({
     where: { id: campaignId },
     include: {
       templateVersion: { include: { template: true } },
-      creator: true,
-      approver: true,
+      creator: { select: { id: true, fullName: true } },
+      approver: { select: { id: true, fullName: true } },
       invitations: {
         include: {
           eventGuest: { include: { person: true, protocolCategory: true } },
@@ -29,19 +27,15 @@ export async function GET(
     },
   });
 
-  if (!campaign) {
-    return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
-  }
+  if (!campaign) throw notFound();
+  await authorizeEvent(actor, "campaigns.read", campaign.eventId);
 
   return NextResponse.json({ data: campaign });
-}
+});
 
-export async function PATCH(
-  request: NextRequest,
-  context: { params: Promise<{ campaignId: string }> }
-) {
-  const { campaignId } = await context.params;
-  const user = await getCurrentUser();
+export const PATCH = withActor<{ campaignId: string }>(async (request, { actor, params }) => {
+  const { campaignId } = params;
+  const user = actor;
   const body = await request.json();
   const { action, approvalNote } = body;
 
@@ -53,12 +47,20 @@ export async function PATCH(
     },
   });
 
-  if (!campaign) {
-    return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
+  if (!campaign) throw notFound();
+  if (action !== "approve" && action !== "dispatch") {
+    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   }
+  await authorizeEvent(actor, action === "approve" ? "campaigns.approve" : "campaigns.dispatch", campaign.eventId);
 
-  // 1. APPROVE CAMPAIGN
+  // 1. APPROVE CAMPAIGN (four-eyes: never by its creator, only while pending)
   if (action === "approve") {
+    if (campaign.createdBy === actor.userId) {
+      throw new HttpError(403, "A campaign cannot be approved by the person who created it.");
+    }
+    if (campaign.status !== "pending_approval") {
+      throw new HttpError(409, `Campaign is ${campaign.status}; only pending campaigns can be approved.`);
+    }
     const updated = await prisma.invitationCampaign.update({
       where: { id: campaignId },
       data: {
@@ -219,5 +221,4 @@ export async function PATCH(
   }
 
   return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-}
-
+});

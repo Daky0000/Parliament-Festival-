@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getCurrentUser, hasPermission } from "@/lib/auth";
+import { withActor, hasGlobalRole } from "@/lib/authz";
 
-export async function GET() {
+// Lists only the events the actor can reach, in the actor's organization.
+export const GET = withActor(async (_req, { actor }) => {
   const events = await prisma.event.findMany({
+    where: {
+      organizationId: actor.organizationId,
+      ...(hasGlobalRole(actor) ? {} : { id: { in: [...actor.scopedEventIds] } }),
+    },
     include: {
       categories: { orderBy: { rankOrder: "asc" } },
       _count: {
@@ -19,5 +24,5 @@ export async function GET() {
   });
 
   return NextResponse.json({ data: events });
-}
+});
 

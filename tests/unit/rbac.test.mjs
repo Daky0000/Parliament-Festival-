@@ -1,45 +1,46 @@
 import test from "node:test";
 import assert from "node:assert";
 import { prisma } from "../../src/lib/db.ts";
-import { hasPermission } from "../../src/lib/auth.ts";
+import { actorFromSession, can } from "../../src/lib/authz.ts";
+import { SYSTEM_ROLES } from "../../src/lib/roles.ts";
 import { executeAiTool } from "../../src/lib/ai/orchestrator.ts";
+import { createSession } from "../../src/lib/session.ts";
 
-test("RBAC & Security Policy Gate: enforces event-scoped permissions and blocks unauthorized tool actions", async () => {
-  const adminUser = await prisma.user.findFirst({
-    where: { email: "admin@parliament.gh" },
-  });
-  const usherUser = await prisma.user.findFirst({
-    where: { email: "usher@parliament.gh" },
-  });
-  const event = await prisma.event.findFirst({
-    where: { eventCode: "CAROLS-2026" },
-  });
+async function actorFor(email) {
+  const user = await prisma.user.findFirstOrThrow({ where: { email } });
+  const { session } = await createSession(user.id, { mfaPending: false });
+  return actorFromSession(session);
+}
 
-  assert.ok(adminUser, "Admin user must exist");
-  assert.ok(usherUser, "Usher user must exist");
-  assert.ok(event, "Event must exist");
+test("RBAC: roles grant exactly their mapped permissions", async () => {
+  const event = await prisma.event.findFirstOrThrow({ where: { eventCode: "CAROLS-2026" } });
+  const admin = await actorFor("admin@parliament.gh");
+  const usher = await actorFor("usher@parliament.gh");
 
-  // 1. Admin has platform.manage and campaigns.dispatch
-  const adminHasManage = await hasPermission(adminUser.id, event.id, "platform.manage");
-  assert.strictEqual(adminHasManage, true, "Admin must have platform.manage");
-
-  // 2. Usher does NOT have campaigns.dispatch or seating.assign
-  const usherHasDispatch = await hasPermission(usherUser.id, event.id, "campaigns.dispatch");
-  assert.strictEqual(usherHasDispatch, false, "Usher must not have campaigns.dispatch");
-
-  // 3. AI Tool Policy Gate: Usher cannot run write tools
-  const toolResult = await executeAiTool(
-    "propose_seating_allocation",
-    { eventId: event.id, seatingPlanId: "dummy" },
-    usherUser.id,
-    ["checkin.scan"] // Usher only has scan permission
-  );
-
-  assert.strictEqual(toolResult.status, "denied", "AI tool execution must be denied for unauthorized users");
-  assert.match(
-    toolResult.error,
-    /Security Policy Gate/,
-    "Error must cite security policy gate enforcement"
-  );
+  assert.ok(admin.isSuperAdmin, "seeded admin is the super admin");
+  assert.ok(can(admin, "platform.manage"));
+  assert.ok(can(usher, "checkin.scan", event.id));
+  assert.ok(!can(usher, "campaigns.dispatch", event.id), "usher must not dispatch campaigns");
+  assert.ok(!can(usher, "guests.read", event.id), "usher must not browse the guest list");
+  assert.ok(!SYSTEM_ROLES.admin.permissions.includes("platform.manage"), "event owners are not platform admins");
 });
 
+test("RBAC: a revoked role assignment grants nothing", async () => {
+  const user = await prisma.user.findFirstOrThrow({ where: { email: "seating@parliament.gh" } });
+  const assignment = await prisma.userRoleAssignment.findFirstOrThrow({ where: { userId: user.id, revokedAt: null } });
+  await prisma.userRoleAssignment.update({ where: { id: assignment.id }, data: { revokedAt: new Date() } });
+  try {
+    const actor = await actorFor("seating@parliament.gh");
+    assert.strictEqual(actor.globalPermissions.size, 0);
+  } finally {
+    await prisma.userRoleAssignment.update({ where: { id: assignment.id }, data: { revokedAt: null } });
+  }
+});
+
+test("AI policy gate: an usher cannot run seating tools", async () => {
+  const event = await prisma.event.findFirstOrThrow({ where: { eventCode: "CAROLS-2026" } });
+  const usher = await actorFor("usher@parliament.gh");
+  const result = await executeAiTool("propose_seating_allocation", { eventId: event.id, seatingPlanId: "dummy" }, usher);
+  assert.strictEqual(result.status, "denied");
+  assert.match(result.error, /Security Policy Gate/);
+});

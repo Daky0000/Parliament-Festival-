@@ -1,12 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/auth";
+import { withActor, authorizeEvent } from "@/lib/authz";
 
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ eventId: string }> }
-) {
-  const { eventId } = await context.params;
+export const GET = withActor<{ eventId: string }>(async (_req, { actor, params }) => {
+  const { eventId } = params;
+  await authorizeEvent(actor, "events.read", eventId);
 
   const event = await prisma.event.findUnique({
     where: { id: eventId },
@@ -71,5 +69,4 @@ export async function GET(
       },
     },
   });
-}
-
+});

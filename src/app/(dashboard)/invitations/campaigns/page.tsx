@@ -1,11 +1,16 @@
+import { guardPage } from "@/lib/page-guard";
+import { AccessDenied } from "@/components/auth/AccessDenied";
 import { prisma } from "@/lib/db";
 import { CampaignsClientView } from "./CampaignsClientView";
 
 export const dynamic = "force-dynamic";
 
 export default async function CampaignsPage() {
+  const guard = await guardPage("campaigns.read", "/invitations/campaigns");
+  if (!guard.ok) return <AccessDenied reason={guard.reason} />;
+
   const event = await prisma.event.findFirst({
-    where: { eventCode: "CAROLS-2026" },
+    where: { id: guard.event.id },
     include: {
       categories: { orderBy: { rankOrder: "asc" } },
       templates: {

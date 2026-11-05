@@ -15,13 +15,14 @@ export interface AuditParams {
   afterData?: any;
   correlationId?: string;
   ipAddress?: string;
+  ipHash?: string;
 }
 
 export async function logAuditEvent(params: AuditParams) {
   try {
-    const ipHash = params.ipAddress
+    const ipHash = params.ipHash ?? (params.ipAddress
       ? crypto.createHash("sha256").update(params.ipAddress).digest("hex")
-      : undefined;
+      : undefined);
 
     return await prisma.auditLog.create({
       data: {

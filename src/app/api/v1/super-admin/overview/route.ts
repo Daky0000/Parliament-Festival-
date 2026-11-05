@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { withActor, requireGlobal } from "@/lib/authz";
+import { sanitizeMetadata } from "@/lib/integrations";
 
-export async function GET() {
+export const GET = withActor(async (_req, { actor }) => {
+  requireGlobal(actor, "platform.manage");
   const integrations = await prisma.platformIntegration.findMany({
     include: {
       credentials: {
-        where: { status: "active" },
+        where: { status: "active", credentialKey: "apiKey" },
+        select: { maskedHint: true },
         take: 1,
       },
       testLogs: {
@@ -34,7 +38,7 @@ export async function GET() {
   return NextResponse.json({
     data: {
       platformOwner: "DakyXTech",
-      environment: process.env.NODE_ENV || "production",
+      environment: process.env.APP_ENV || "local",
       integrations: integrations.map((i) => ({
         id: i.id,
         providerKey: i.providerKey,
@@ -43,9 +47,8 @@ export async function GET() {
         status: i.status,
         isEnabled: i.isEnabled,
         maskedSecret: i.credentials[0]?.maskedHint || "Not Configured",
-        secretRef: i.credentials[0]?.secretReference || "none",
         lastTested: i.testLogs[0]?.testedAt || null,
-        metadata: JSON.parse(i.metadata || "{}"),
+        metadata: sanitizeMetadata(i.metadata),
       })),
       aiRouting: aiConfigs,
       recentTestLogs,
@@ -53,9 +56,8 @@ export async function GET() {
         totalSmsSent,
         totalAiRequests,
         databaseStatus: "connected",
-        queueStatus: "healthy",
+        queueStatus: "not_configured",
       },
     },
   });
-}
-
+});

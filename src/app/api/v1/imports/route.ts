@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/auth";
+import { withActor, authorizeEvent } from "@/lib/authz";
 import { logAuditEvent } from "@/lib/audit";
 
 interface ImportRowPayload {
@@ -14,8 +14,8 @@ interface ImportRowPayload {
   companionAllowance?: number;
 }
 
-export async function POST(request: NextRequest) {
-  const user = await getCurrentUser();
+export const POST = withActor(async (request, { actor }) => {
+  const user = actor;
   const body = await request.json();
   const { eventId, originalFilename, rows, mode } = body as {
     eventId: string;
@@ -28,14 +28,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "eventId and rows array are required" }, { status: 400 });
   }
 
-  const event = await prisma.event.findUnique({
+  await authorizeEvent(actor, "guests.import", eventId);
+  const event = await prisma.event.findUniqueOrThrow({
     where: { id: eventId },
     include: { categories: true },
   });
-
-  if (!event) {
-    return NextResponse.json({ error: "Event not found" }, { status: 404 });
-  }
 
   const existingGuests = await prisma.eventGuest.findMany({
     where: { eventId },
@@ -151,7 +148,7 @@ export async function POST(request: NextRequest) {
     let institution = null;
     if (row.institution) {
       institution = await prisma.institution.findFirst({
-        where: { name: row.institution.trim() },
+        where: { organizationId: event.organizationId, name: row.institution.trim() },
       });
       if (!institution) {
         institution = await prisma.institution.create({
@@ -166,7 +163,7 @@ export async function POST(request: NextRequest) {
     // 2. Resolve or create person
     let person = row.email
       ? await prisma.person.findFirst({
-          where: { email: row.email.toLowerCase().trim() },
+          where: { organizationId: event.organizationId, email: row.email.toLowerCase().trim() },
         })
       : null;
 
@@ -243,5 +240,4 @@ export async function POST(request: NextRequest) {
       errorCount,
     },
   });
-}
-
+});

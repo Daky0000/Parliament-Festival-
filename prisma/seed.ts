@@ -7,6 +7,7 @@ import {
 } from "../src/lib/email/invitation-template";
 
 import { assertSeedAllowed, seedPassword } from "./seed-guard";
+import { syncRoles } from "../src/lib/roles";
 
 assertSeedAllowed("seed");
 const prisma = new PrismaClient();
@@ -25,99 +26,8 @@ async function main() {
     },
   });
 
-  // 2. Permissions
-  const permissionKeys = [
-    "platform.manage", "users.read", "users.create", "users.update", "users.suspend",
-    "events.create", "events.read", "events.update", "events.archive",
-    "guests.read", "guests.create", "guests.update", "guests.archive", "guests.import", "guests.export",
-    "protocol.read", "protocol.configure", "protocol.override",
-    "campaigns.read", "campaigns.create", "campaigns.update", "campaigns.approve", "campaigns.dispatch", "campaigns.cancel",
-    "invitations.read_activity", "rsvps.read", "rsvps.override",
-    "seating.read", "seating.configure", "seating.assign", "seating.approve",
-    "checkin.scan", "checkin.manual_override",
-    "reports.read", "reports.export", "documents.read", "documents.upload",
-    "ai.use", "ai.execute_read_tools", "ai.execute_write_tools",
-    "audit.read", "integrations.manage"
-  ];
-
-  for (const key of permissionKeys) {
-    await prisma.permission.upsert({
-      where: { key },
-      update: {},
-      create: { key, description: `Permission to ${key}` },
-    });
-  }
-
-  // 3. Roles
-  const adminRole = await prisma.role.upsert({
-    where: { organizationId_key: { organizationId: org.id, key: "admin" } },
-    update: {},
-    create: {
-      organizationId: org.id,
-      key: "admin",
-      name: "System Administrator",
-      description: "Full access to platform configuration, users, events, and security.",
-      isSystemRole: true,
-    },
-  });
-
-  const protocolOfficerRole = await prisma.role.upsert({
-    where: { organizationId_key: { organizationId: org.id, key: "protocol_officer" } },
-    update: {},
-    create: {
-      organizationId: org.id,
-      key: "protocol_officer",
-      name: "Protocol Officer",
-      description: "Manages guests, protocol rankings, and event participation.",
-      isSystemRole: true,
-    },
-  });
-
-  const campaignApproverRole = await prisma.role.upsert({
-    where: { organizationId_key: { organizationId: org.id, key: "campaign_approver" } },
-    update: {},
-    create: {
-      organizationId: org.id,
-      key: "campaign_approver",
-      name: "Campaign Approver",
-      description: "Reviews and approves bulk invitations before dispatch.",
-      isSystemRole: true,
-    },
-  });
-
-  const seatingManagerRole = await prisma.role.upsert({
-    where: { organizationId_key: { organizationId: org.id, key: "seating_manager" } },
-    update: {},
-    create: {
-      organizationId: org.id,
-      key: "seating_manager",
-      name: "Seating Manager",
-      description: "Allocates seats and reviews seating conflicts.",
-      isSystemRole: true,
-    },
-  });
-
-  const usherRole = await prisma.role.upsert({
-    where: { organizationId_key: { organizationId: org.id, key: "usher" } },
-    update: {},
-    create: {
-      organizationId: org.id,
-      key: "usher",
-      name: "Event Usher",
-      description: "Scans QR credentials, validates attendees, and provides seating directions.",
-      isSystemRole: true,
-    },
-  });
-
-  // Assign permissions to Admin
-  const allPermissions = await prisma.permission.findMany();
-  for (const perm of allPermissions) {
-    await prisma.rolePermission.upsert({
-      where: { roleId_permissionId: { roleId: adminRole.id, permissionId: perm.id } },
-      update: {},
-      create: { roleId: adminRole.id, permissionId: perm.id },
-    });
-  }
+  // 2-3. Permissions and system roles (single source: src/lib/roles.ts)
+  const roleIds = await syncRoles(prisma, org.id);
 
   // 4. Test Users (with hashed passwords)
   const passwordHash = await bcrypt.hash(seedPassword(), 10);
@@ -182,16 +92,20 @@ async function main() {
     },
   });
 
-  // Assign user roles
-  await prisma.userRoleAssignment.createMany({
-    data: [
-      { userId: adminUser.id, roleId: adminRole.id },
-      { userId: protocolUser.id, roleId: protocolOfficerRole.id },
-      { userId: approverUser.id, roleId: campaignApproverRole.id },
-      { userId: seatingUser.id, roleId: seatingManagerRole.id },
-      { userId: usherUser.id, roleId: usherRole.id },
-    ],
-  });
+  // Assign user roles (idempotent)
+  const assignments: [string, string][] = [
+    [adminUser.id, "super_admin"],
+    [protocolUser.id, "protocol_officer"],
+    [approverUser.id, "campaign_approver"],
+    [seatingUser.id, "seating_manager"],
+    [usherUser.id, "usher"],
+  ];
+  for (const [userId, roleKey] of assignments) {
+    const exists = await prisma.userRoleAssignment.findFirst({
+      where: { userId, roleId: roleIds[roleKey], eventId: null, revokedAt: null },
+    });
+    if (!exists) await prisma.userRoleAssignment.create({ data: { userId, roleId: roleIds[roleKey] } });
+  }
 
   // 5. Initial Event: 2026 Festival of Nine Lessons and Carols
   const event = await prisma.event.upsert({

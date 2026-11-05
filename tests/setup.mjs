@@ -12,3 +12,7 @@ for (const key of [
 process.env.EMAIL_PROVIDER = "mock";
 process.env.SMS_PROVIDER = "mock";
 process.env.APP_ENV ||= "ci";
+process.env.APP_URL = "http://localhost:3000";
+process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
+// Test-only root key (not a secret): 32 bytes, base64.
+process.env.APP_ENCRYPTION_KEY ||= "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=";

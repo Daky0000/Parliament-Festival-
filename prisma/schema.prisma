@@ -38,6 +38,11 @@ model User {
   externalSubject String?
   status          String    @default("active") // invited, active, suspended, deactivated
   mfaRequired     Boolean   @default(false)
+  mfaSecretEnc    String?   // AES-GCM, see src/lib/crypto.ts
+  mfaPendingSecretEnc String? // set during enrolment, promoted on first valid code
+  mfaEnabledAt    DateTime?
+  mfaLastStep     Int?      // last accepted TOTP step (replay protection)
+  passwordChangedAt DateTime?
   lastLoginAt     DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -45,6 +50,8 @@ model User {
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   roleAssignments UserRoleAssignment[]
   eventAccess     EventUserAccess[]
+  sessions        Session[]
+  invites         UserInvite[]
   auditLogs       AuditLog[]
   aiSessions      AiSession[]
   aiInteractions  AiInteraction[]
@@ -115,6 +122,52 @@ model UserRoleAssignment {
   event      Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@map("user_role_assignments")
+}
+
+// Server-side sessions. id = sha256(raw cookie token).
+model Session {
+  id         String    @id
+  userId     String
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  mfaPending Boolean   @default(false)
+  userAgent  String?
+  ipHash     String?
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// Login and MFA attempts, for rate limiting. keyHash = HMAC of email or IP.
+model AuthAttempt {
+  id        String   @id @default(uuid())
+  keyHash   String
+  kind      String   // login_email, login_ip, mfa
+  succeeded Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([keyHash, kind, createdAt])
+  @@map("auth_attempts")
+}
+
+// Single-use staff activation links. tokenHash = sha256(raw token).
+model UserInvite {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdBy String?
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_invites")
 }
 
 // 7.3.2 Events and access
@@ -859,6 +912,8 @@ model IntegrationCredential {
   id                String    @id @default(uuid())
   integrationId     String
   secretReference   String    // KMS reference or vault key identifier
+  secretCiphertext  String?   // AES-GCM blob; never returned by any API
+  credentialKey     String    @default("apiKey") // apiKey, r2AccessKeyId, r2SecretAccessKey
   maskedHint        String    // e.g. "re_...4829", "sk-proj-...8831"
   credentialVersion Int       @default(1)
   status            String    @default("active") // active, rotated, revoked

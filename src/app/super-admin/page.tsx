@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export default async function SuperAdminOverviewPage() {
   const integrations = await prisma.platformIntegration.findMany({
     include: {
-      credentials: { where: { status: "active" }, take: 1 },
+      credentials: { where: { status: "active", credentialKey: "apiKey" }, take: 1, select: { maskedHint: true, credentialVersion: true, createdAt: true, createdBy: true, status: true } },
       testLogs: { orderBy: { testedAt: "desc" }, take: 1 },
     },
   });

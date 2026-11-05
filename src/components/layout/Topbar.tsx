@@ -2,14 +2,43 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Calendar, MapPin, Menu, X } from "lucide-react";
-import { navigationItems } from "./nav-items";
+import { usePathname, useRouter } from "next/navigation";
+import { Calendar, MapPin, Menu, X, LogOut } from "lucide-react";
+import { navigationItems, type Viewer } from "./nav-items";
 import { BrandMark } from "./Sidebar";
 
-export function Topbar() {
+function initials(name: string) {
+  return name.replace(/(.*)/, "").trim().split(/s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("");
+}
+
+function formatStart(iso: string | null) {
+  if (!iso) return "Date to be confirmed";
+  return new Date(iso).toLocaleString("en-GB", {
+    weekday: "long", day: "numeric", month: "short", year: "numeric",
+    hour: "numeric", minute: "2-digit", timeZone: "Africa/Accra", timeZoneName: "short",
+  });
+}
+
+export function Topbar({ viewer }: { viewer: Viewer }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  const items = navigationItems.filter((item) => viewer.allowedHrefs.includes(item.href));
+
+  async function switchEvent(eventId: string) {
+    await fetch("/api/auth/event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ eventId }),
+    });
+    router.refresh();
+  }
+
+  async function signOut() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  }
 
   return (
     <header className="panel">
@@ -20,9 +49,22 @@ export function Topbar() {
 
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="text-[16px] sm:text-[17px] font-medium tracking-[-0.02em] text-brand-ink truncate">
-              2026 Festival of Nine Lessons and Carols
-            </span>
+            {viewer.events.length > 1 ? (
+              <select
+                aria-label="Current event"
+                className="text-[16px] sm:text-[17px] font-medium tracking-[-0.02em] text-brand-ink bg-transparent border border-brand-line2 rounded-[10px] px-2 py-1"
+                value={viewer.event?.id ?? ""}
+                onChange={(e) => switchEvent(e.target.value)}
+              >
+                {viewer.events.map((ev) => (
+                  <option key={ev.id} value={ev.id}>{ev.name}</option>
+                ))}
+              </select>
+            ) : (
+              <span className="text-[16px] sm:text-[17px] font-medium tracking-[-0.02em] text-brand-ink truncate">
+                {viewer.event?.name ?? "No event assigned"}
+              </span>
+            )}
             <span className="chip">
               <span className="pip" />
               Active event
@@ -31,23 +73,27 @@ export function Topbar() {
           <div className="hidden sm:flex flex-wrap items-center gap-x-4 gap-y-1 text-[13.5px] text-brand-muted mt-1">
             <span className="flex items-center gap-1.5">
               <Calendar className="w-4 h-4 text-brand-blue" />
-              Friday, 18 Dec 2026 · 4:00 PM GMT
+              {formatStart(viewer.event?.startsAt ?? null)}
             </span>
             <span className="flex items-center gap-1.5">
               <MapPin className="w-4 h-4 text-brand-blue" />
-              Forecourt of Parliament House, Accra
+              {viewer.event?.venueName ?? "Venue to be confirmed"}
             </span>
           </div>
         </div>
 
         <div className="hidden sm:flex items-center gap-3 pl-4 border-l border-brand-line">
           <span className="w-9 h-9 rounded-full bg-brand-navy text-white grid place-items-center text-[13px] font-medium">
-            KB
+            {initials(viewer.fullName)}
           </span>
           <span className="flex flex-col leading-tight">
-            <span className="text-[14px] font-medium text-brand-ink">Kwame Boateng</span>
-            <span className="text-[12px] text-brand-muted">Director of IT &amp; Protocol</span>
+            <Link href="/account" className="text-[14px] font-medium text-brand-ink no-underline hover:underline">{viewer.fullName}</Link>
+            <span className="text-[12px] text-brand-muted">{viewer.roleLabel}</span>
           </span>
+          <button type="button" onClick={signOut} aria-label="Sign out" title="Sign out"
+            className="w-9 h-9 grid place-items-center rounded-[10px] border border-brand-line2 text-brand-ink hover:bg-brand-soft">
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
 
         <button
@@ -64,7 +110,7 @@ export function Topbar() {
 
       {open && (
         <nav id="mobile-nav" className="lg:hidden border-t border-brand-line px-3 py-3 grid gap-1" aria-label="Dashboard">
-          {navigationItems.map((item) => {
+          {items.map((item) => {
             const active = pathname === item.href;
             const Icon = item.icon;
             return (
@@ -82,12 +128,22 @@ export function Topbar() {
               </Link>
             );
           })}
-          <Link href="/usher" target="_blank" className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[15px] text-brand-ink hover:bg-brand-soft">
-            Usher Scanner
+          {viewer.canUsher && (
+            <Link href="/usher" target="_blank" className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[15px] text-brand-ink hover:bg-brand-soft">
+              Usher Scanner
+            </Link>
+          )}
+          {viewer.canSuperAdmin && (
+            <Link href="/super-admin" className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[15px] text-brand-ink hover:bg-brand-soft">
+              Super Admin Console
+            </Link>
+          )}
+          <Link href="/account" className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[15px] text-brand-ink hover:bg-brand-soft">
+            My account
           </Link>
-          <Link href="/super-admin" className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[15px] text-brand-ink hover:bg-brand-soft">
-            Super Admin Console
-          </Link>
+          <button type="button" onClick={signOut} className="text-left flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[15px] text-brand-ink hover:bg-brand-soft">
+            Sign out
+          </button>
         </nav>
       )}
     </header>

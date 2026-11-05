@@ -1,40 +1,33 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { NextResponse } from "next/server";
+import { withActor, canAny } from "@/lib/authz";
+import { forbidden } from "@/lib/http";
 import { executeAiTool, AI_TOOL_REGISTRY } from "@/lib/ai/orchestrator";
 import { prisma } from "@/lib/db";
 
-export async function GET() {
-  return NextResponse.json({
-    data: {
-      tools: Object.values(AI_TOOL_REGISTRY),
-    },
-  });
-}
+// Interim AI endpoint (Phase 1: authorization only). Phase 6 replaces the
+// keyword router with real provider calls and server-side approvals.
 
-export async function POST(request: NextRequest) {
-  const user = await getCurrentUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export const GET = withActor(async (_req, { actor }) => {
+  if (!canAny(actor, "ai.use")) throw forbidden();
+  return NextResponse.json({ data: { tools: Object.values(AI_TOOL_REGISTRY) } });
+});
 
+export const POST = withActor(async (request, { actor }) => {
+  if (!canAny(actor, "ai.use")) throw forbidden();
   const body = await request.json();
   const { toolName, args, message, eventId } = body;
 
-  // 1. Direct Tool Invocation
+  // 1. Direct tool invocation. Every tool needs an eventId it authorizes.
   if (toolName) {
-    try {
-      const result = await executeAiTool(toolName, args || {}, user.userId, user.permissions);
-      return NextResponse.json({ data: result });
-    } catch (err: any) {
-      return NextResponse.json({ error: err.message }, { status: 500 });
-    }
+    const result = await executeAiTool(toolName, { ...(args || {}), eventId: args?.eventId ?? eventId }, actor);
+    return NextResponse.json({ data: result });
   }
 
-  // 2. Natural Language Prompt Interpretation (Intelligent Tool Router)
+  // 2. Keyword router
   if (message && eventId) {
-    const text = message.toLowerCase();
-    let proposedTool: string | null = null;
-    const toolArgs: Record<string, any> = { eventId };
+    const text = String(message).toLowerCase();
+    let proposedTool: string;
+    const toolArgs: Record<string, unknown> = { eventId };
 
     if (text.includes("pending") || text.includes("unanswered") || text.includes("rsvp")) {
       proposedTool = "list_pending_rsvps";
@@ -54,16 +47,11 @@ export async function POST(request: NextRequest) {
       toolArgs.query = message;
     }
 
-    const toolExecution = await executeAiTool(proposedTool, toolArgs, user.userId, user.permissions);
-
+    const toolExecution = await executeAiTool(proposedTool, toolArgs, actor);
     return NextResponse.json({
-      data: {
-        reply: `I analyzed your request using parliamentary protocol guidelines and executed tool '${proposedTool}'.`,
-        toolExecution,
-      },
+      data: { reply: `Executed tool '${proposedTool}'.`, toolExecution },
     });
   }
 
   return NextResponse.json({ error: "toolName or message is required" }, { status: 400 });
-}
-
+});

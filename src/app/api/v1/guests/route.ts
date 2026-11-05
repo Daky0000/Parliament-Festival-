@@ -1,23 +1,34 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/auth";
+import { withActor, authorizeEvent, can } from "@/lib/authz";
+import { forbidden, notFound } from "@/lib/http";
+
+/** A category or section supplied by the client must belong to this event. */
+async function assertBelongsToEvent(eventId: string, ids: { protocolCategoryId?: string | null; sectionId?: string | null }) {
+  if (ids.protocolCategoryId) {
+    const cat = await prisma.protocolCategory.findUnique({ where: { id: ids.protocolCategoryId } });
+    if (!cat || cat.eventId !== eventId) throw notFound();
+  }
+  if (ids.sectionId) {
+    const sec = await prisma.seatingSection.findUnique({ where: { id: ids.sectionId }, include: { seatingPlan: true } });
+    if (!sec || sec.seatingPlan.eventId !== eventId) throw notFound();
+  }
+}
 import { logAuditEvent } from "@/lib/audit";
 import { generateSecureToken, generateReferenceCode } from "@/lib/tokens";
 
-export async function GET(request: NextRequest) {
+export const GET = withActor(async (request, { actor }) => {
   const { searchParams } = new URL(request.url);
   const eventId = searchParams.get("eventId");
   const query = searchParams.get("q")?.toLowerCase();
   const categoryKey = searchParams.get("category");
   const rsvpStatus = searchParams.get("rsvp");
 
-  if (!eventId) {
-    return NextResponse.json({ error: "eventId is required" }, { status: 400 });
-  }
+  await authorizeEvent(actor, "guests.read", eventId);
 
   const guests = await prisma.eventGuest.findMany({
     where: {
-      eventId,
+      eventId: eventId!,
       ...(categoryKey && categoryKey !== "all" ? { protocolCategory: { categoryKey } } : {}),
       ...(query
         ? {
@@ -66,10 +77,10 @@ export async function GET(request: NextRequest) {
     : guests;
 
   return NextResponse.json({ data: filtered });
-}
+});
 
-export async function POST(request: NextRequest) {
-  const user = await getCurrentUser();
+export const POST = withActor(async (request, { actor }) => {
+  const user = actor;
   const body = await request.json();
 
   const {
@@ -90,9 +101,12 @@ export async function POST(request: NextRequest) {
 
   const resolvedInstitutionName = (company || institutionName || "").trim();
 
-  if (!eventId || !fullName) {
-    return NextResponse.json({ error: "eventId and fullName are required" }, { status: 400 });
+  await authorizeEvent(actor, "guests.create", eventId);
+  if (!fullName) {
+    return NextResponse.json({ error: "fullName is required" }, { status: 400 });
   }
+  if (sectionId && !can(actor, "seating.assign", eventId)) throw forbidden();
+  await assertBelongsToEvent(eventId, { protocolCategoryId, sectionId });
 
   const event = await prisma.event.findUnique({
     where: { id: eventId },
@@ -104,7 +118,7 @@ export async function POST(request: NextRequest) {
   let institution = null;
   if (resolvedInstitutionName) {
     institution = await prisma.institution.findFirst({
-      where: { name: resolvedInstitutionName },
+      where: { organizationId: event.organizationId, name: resolvedInstitutionName },
     });
     if (!institution) {
       institution = await prisma.institution.create({
@@ -120,7 +134,7 @@ export async function POST(request: NextRequest) {
   // 2. Check for duplicate person candidate or create
   let person = email
     ? await prisma.person.findFirst({
-        where: { email: email.toLowerCase().trim() },
+        where: { organizationId: event.organizationId, email: email.toLowerCase().trim() },
       })
     : null;
 
@@ -293,10 +307,10 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ data: fullGuest }, { status: 201 });
-}
+});
 
-export async function PATCH(request: NextRequest) {
-  const user = await getCurrentUser();
+export const PATCH = withActor(async (request, { actor }) => {
+  const user = actor;
   const body = await request.json();
   const { eventGuestId, protocolCategoryId, seatCode, sectionId } = body;
 
@@ -308,9 +322,11 @@ export async function PATCH(request: NextRequest) {
     where: { id: eventGuestId },
     include: { event: true },
   });
-  if (!guest) {
-    return NextResponse.json({ error: "Guest not found" }, { status: 404 });
-  }
+  if (!guest) throw notFound();
+  // The event comes from the guest record, never from the client.
+  await authorizeEvent(actor, "guests.update", guest.eventId);
+  if (sectionId && !can(actor, "seating.assign", guest.eventId)) throw forbidden();
+  await assertBelongsToEvent(guest.eventId, { protocolCategoryId, sectionId });
 
   // Update rank/category
   if (protocolCategoryId !== undefined) {
@@ -392,4 +408,4 @@ export async function PATCH(request: NextRequest) {
   });
 
   return NextResponse.json({ data: updatedGuest });
-}
+});

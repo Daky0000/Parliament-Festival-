@@ -1,160 +1,118 @@
-import { prisma } from "./db";
 import bcrypt from "bcryptjs";
-import { cookies } from "next/headers";
+import { prisma } from "./db";
+import { isDeployed } from "./config";
+import { keyedHash, randomToken, sha256Hex } from "./crypto";
+import { PRIVILEGED_ROLES } from "./roles";
+import { HttpError } from "./http";
 
-export interface AuthSession {
-  userId: string;
-  email: string;
-  fullName: string;
-  organizationId: string;
-  roles: string[];
-  permissions: string[];
+// Credentials, login throttling, MFA policy and staff invites.
+// There is deliberately no "current user" fallback: see src/lib/authz.ts.
+
+const BCRYPT_COST = 10;
+// Compared against when the email is unknown, so timing does not reveal
+// whether an account exists. (bcrypt hash of a random throwaway string.)
+const DUMMY_HASH = "$2b$10$AfRqtmqfh0gxW4NOgn0lJ.PSMo2/jaImPoxDfu.Gtj2XsUWGNSja2";
+
+export const PASSWORD_MIN = 12;
+export const PASSWORD_MAX_BYTES = 72; // bcrypt silently truncates beyond 72 bytes
+
+export function validatePassword(password: string, email?: string): string | null {
+  if (password.length < PASSWORD_MIN) return `Password must be at least ${PASSWORD_MIN} characters.`;
+  if (new TextEncoder().encode(password).length > PASSWORD_MAX_BYTES) return "Password is too long.";
+  if (email && password.toLowerCase().includes(email.toLowerCase().split("@")[0])) {
+    return "Password must not contain your email name.";
+  }
+  return null;
 }
 
-export async function verifyUserCredentials(email: string, passwordPlain: string) {
+export function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, BCRYPT_COST);
+}
+
+export const normalizeEmail = (email: string) => email.toLowerCase().trim();
+
+/** Looks up by case-insensitive email (unique across orgs) and checks the password. */
+export async function verifyCredentials(email: string, password: string) {
   const user = await prisma.user.findFirst({
-    where: { email: email.toLowerCase().trim() },
-    include: {
-      organization: true,
-      roleAssignments: {
-        include: {
-          role: {
-            include: {
-              permissions: {
-                include: { permission: true },
-              },
-            },
-          },
-        },
-      },
-    },
+    where: { email: { equals: normalizeEmail(email), mode: "insensitive" } },
   });
-
-  if (!user || !user.passwordHash) return null;
-
-  const isValid = await bcrypt.compare(passwordPlain, user.passwordHash);
-  if (!isValid) return null;
-
+  const hash = user?.passwordHash || DUMMY_HASH;
+  const ok = await bcrypt.compare(password, hash);
+  if (!user || !user.passwordHash || !ok || user.status !== "active") return null;
   return user;
 }
 
-export async function getCurrentUser(): Promise<AuthSession | null> {
-  try {
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get("parliament_session")?.value;
+// ---- Throttling ----------------------------------------------------------
 
-    if (!sessionCookie) {
-      // Default to admin user for convenient evaluation if no cookie is set yet
-      const defaultUser = await prisma.user.findFirst({
-        where: { email: "admin@parliament.gh" },
-        include: {
-          roleAssignments: {
-            include: {
-              role: {
-                include: {
-                  permissions: { include: { permission: true } },
-                },
-              },
-            },
-          },
-        },
-      });
+const WINDOW_MS = 15 * 60 * 1000;
+const LIMITS = { login_email: 5, login_ip: 30, mfa: 5 } as const;
+export type AttemptKind = keyof typeof LIMITS;
 
-      if (!defaultUser) return null;
+export async function attemptKey(kind: AttemptKind, value: string): Promise<string> {
+  return keyedHash(`${kind}:${value}`);
+}
 
-      const roles = defaultUser.roleAssignments.map((ra) => ra.role.key);
-      const permissions = Array.from(
-        new Set(
-          defaultUser.roleAssignments.flatMap((ra) =>
-            ra.role.permissions.map((rp) => rp.permission.key)
-          )
-        )
-      );
+async function failuresSince(keyHash: string, kind: AttemptKind): Promise<number> {
+  return prisma.authAttempt.count({
+    where: { keyHash, kind, succeeded: false, createdAt: { gte: new Date(Date.now() - WINDOW_MS) } },
+  });
+}
 
-      return {
-        userId: defaultUser.id,
-        email: defaultUser.email,
-        fullName: defaultUser.fullName,
-        organizationId: defaultUser.organizationId,
-        roles,
-        permissions,
-      };
-    }
-
-    const [userId] = sessionCookie.split(":");
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        roleAssignments: {
-          include: {
-            role: {
-              include: {
-                permissions: { include: { permission: true } },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!user || user.status !== "active") return null;
-
-    const roles = user.roleAssignments.map((ra) => ra.role.key);
-    const permissions = Array.from(
-      new Set(
-        user.roleAssignments.flatMap((ra) =>
-          ra.role.permissions.map((rp) => rp.permission.key)
-        )
-      )
-    );
-
-    return {
-      userId: user.id,
-      email: user.email,
-      fullName: user.fullName,
-      organizationId: user.organizationId,
-      roles,
-      permissions,
-    };
-  } catch (error) {
-    return null;
+/** Throws 429 when the key has too many recent failures. Same response for known and unknown accounts. */
+export async function assertNotThrottled(keyHash: string, kind: AttemptKind): Promise<void> {
+  if ((await failuresSince(keyHash, kind)) >= LIMITS[kind]) {
+    throw new HttpError(429, "Too many attempts. Try again in 15 minutes.");
   }
 }
 
-export async function hasPermission(
-  userId: string,
-  eventId: string | null,
-  permissionKey: string
-): Promise<boolean> {
+export async function recordAttempt(keyHash: string, kind: AttemptKind, succeeded: boolean): Promise<void> {
+  await prisma.authAttempt.create({ data: { keyHash, kind, succeeded } });
+  if (Math.random() < 0.02) {
+    // Opportunistic cleanup of old rows.
+    await prisma.authAttempt.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - 24 * 3600 * 1000) } } });
+  }
+}
+
+// ---- MFA policy ----------------------------------------------------------
+
+/**
+ * MFA is required for users flagged mfaRequired, and in deployed environments
+ * for anyone holding a privileged role (super_admin, admin).
+ */
+export async function mfaRequiredFor(userId: string): Promise<boolean> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    include: {
-      roleAssignments: {
-        include: {
-          role: {
-            include: {
-              permissions: {
-                include: { permission: true },
-              },
-            },
-          },
-        },
-      },
-    },
+    include: { roleAssignments: { where: { revokedAt: null }, include: { role: true } } },
   });
-
-  if (!user || user.status !== "active") return false;
-
-  for (const assignment of user.roleAssignments) {
-    // If assignment is global (eventId is null) or scoped to the current event
-    if (!assignment.eventId || !eventId || assignment.eventId === eventId) {
-      const hasKey = assignment.role.permissions.some(
-        (rp) => rp.permission.key === permissionKey
-      );
-      if (hasKey) return true;
-    }
-  }
-
-  return false;
+  if (!user) return true;
+  if (user.mfaRequired || user.mfaEnabledAt) return true;
+  if (!isDeployed()) return false;
+  return user.roleAssignments.some((a) => PRIVILEGED_ROLES.includes(a.role.key));
 }
 
+// ---- Staff invites -------------------------------------------------------
+
+export const INVITE_TTL_MS = 72 * 60 * 60 * 1000;
+
+/** Creates a single-use activation token; previous unused invites are removed. */
+export async function issueInvite(userId: string, createdBy: string | null): Promise<string> {
+  const rawToken = randomToken(32);
+  await prisma.userInvite.deleteMany({ where: { userId, usedAt: null } });
+  await prisma.userInvite.create({
+    data: { userId, tokenHash: await sha256Hex(rawToken), expiresAt: new Date(Date.now() + INVITE_TTL_MS), createdBy },
+  });
+  return rawToken;
+}
+
+/** Atomically consumes an invite. Returns the userId, or null if invalid/expired/used. */
+export async function consumeInvite(rawToken: string): Promise<string | null> {
+  if (!rawToken || rawToken.length > 100) return null;
+  const tokenHash = await sha256Hex(rawToken);
+  const invite = await prisma.userInvite.findUnique({ where: { tokenHash }, include: { user: true } });
+  if (!invite || invite.user.status !== "invited") return null;
+  const res = await prisma.userInvite.updateMany({
+    where: { id: invite.id, usedAt: null, expiresAt: { gt: new Date() } },
+    data: { usedAt: new Date() },
+  });
+  return res.count === 1 ? invite.userId : null;
+}

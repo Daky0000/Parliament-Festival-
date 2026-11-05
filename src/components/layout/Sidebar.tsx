@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { QrCode, ShieldCheck, ExternalLink, ArrowRight } from "lucide-react";
-import { navigationItems } from "./nav-items";
+import { navigationItems, type Viewer } from "./nav-items";
 
 export function BrandMark({ className = "w-10 h-10" }: { className?: string }) {
   return (
@@ -35,7 +35,7 @@ function isActive(pathname: string, href: string) {
   return pathname === href;
 }
 
-export function Sidebar() {
+export function Sidebar({ viewer }: { viewer: Viewer }) {
   const pathname = usePathname();
 
   return (
@@ -70,7 +70,7 @@ export function Sidebar() {
         <span className="px-3 pt-3 pb-2 text-[11px] font-medium uppercase tracking-[0.14em] text-white/50">
           Operations
         </span>
-        {navigationItems.map((item) => {
+        {navigationItems.filter((item) => viewer.allowedHrefs.includes(item.href)).map((item) => {
           const active = isActive(pathname, item.href);
           const Icon = item.icon;
           return (
@@ -102,6 +102,7 @@ export function Sidebar() {
         <span className="px-3 pt-5 pb-2 text-[11px] font-medium uppercase tracking-[0.14em] text-white/50">
           Event day &amp; governance
         </span>
+        {viewer.canUsher && (
         <Link
           href="/usher"
           target="_blank"
@@ -116,6 +117,8 @@ export function Sidebar() {
           </span>
           <ExternalLink className="w-4 h-4 text-brand-blueLight" />
         </Link>
+        )}
+        {viewer.canSuperAdmin && (
         <Link
           href="/super-admin"
           className="group flex items-center gap-3 px-3 py-3 rounded-[14px] bg-white/[0.06] border border-white/[0.12] text-white hover:bg-white/[0.11] transition-colors"
@@ -129,6 +132,7 @@ export function Sidebar() {
           </span>
           <ArrowRight className="w-4 h-4 text-brand-blueLight transition-transform group-hover:translate-x-[3px]" />
         </Link>
+        )}
       </nav>
 
       <div className="relative mx-3 mb-3 px-4 py-3 rounded-[14px] bg-white/[0.06] text-[12px]">
@@ -136,7 +140,7 @@ export function Sidebar() {
           <span className="w-[7px] h-[7px] rounded-full bg-[#A3E635]" aria-hidden="true" />
           Event engine online
         </div>
-        <p className="text-white/55 mt-0.5">CAROLS-2026 baseline</p>
+        <p className="text-white/55 mt-0.5">{viewer.event?.eventCode ?? "No event selected"}</p>
       </div>
     </aside>
   );

@@ -1,34 +1,28 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/auth";
+import { withActor, authorizeEvent } from "@/lib/authz";
+import { notFound } from "@/lib/http";
 import { logAuditEvent } from "@/lib/audit";
-import { generateSecureToken, generateReferenceCode } from "@/lib/tokens";
-import { sendInvitationEmail, interpolateInvitationTemplate } from "@/lib/email/provider";
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const eventId = searchParams.get("eventId");
-
-  if (!eventId) {
-    return NextResponse.json({ error: "eventId is required" }, { status: 400 });
-  }
+export const GET = withActor(async (request, { actor }) => {
+  const eventId = new URL(request.url).searchParams.get("eventId");
+  await authorizeEvent(actor, "campaigns.read", eventId);
 
   const campaigns = await prisma.invitationCampaign.findMany({
-    where: { eventId },
+    where: { eventId: eventId! },
     include: {
       templateVersion: { include: { template: true } },
-      creator: true,
-      approver: true,
+      creator: { select: { id: true, fullName: true } },
+      approver: { select: { id: true, fullName: true } },
       _count: { select: { invitations: true, emailAttempts: true } },
     },
     orderBy: { createdAt: "desc" },
   });
 
   return NextResponse.json({ data: campaigns });
-}
+});
 
-export async function POST(request: NextRequest) {
-  const user = await getCurrentUser();
+export const POST = withActor(async (request, { actor }) => {
   const body = await request.json();
 
   const {
@@ -42,7 +36,14 @@ export async function POST(request: NextRequest) {
     categoryKey,
   } = body;
 
-  if (!eventId || !name || !templateVersionId || !senderName || !senderEmail) {
+  const event = await authorizeEvent(actor, "campaigns.create", eventId);
+  const version = await prisma.invitationTemplateVersion.findUnique({
+    where: { id: String(templateVersionId ?? "") },
+    include: { template: true },
+  });
+  if (!version || version.template.eventId !== event.id) throw notFound();
+
+  if (!name || !senderName || !senderEmail) {
     return NextResponse.json(
       { error: "Missing required fields for campaign creation" },
       { status: 400 }
@@ -73,13 +74,23 @@ export async function POST(request: NextRequest) {
       audienceFilter: JSON.stringify({ categoryKey: categoryKey || "all" }),
       audienceCount: validEmailGuests.length,
       status: "pending_approval", // Requires approver sign-off
-      createdBy: user?.userId || "system",
+      createdBy: actor.userId,
     },
     include: {
       templateVersion: true,
     },
   });
 
+  await logAuditEvent({
+    organizationId: event.organizationId,
+    eventId: event.id,
+    actorUserId: actor.userId,
+    action: "CAMPAIGN_CREATED",
+    entityType: "invitation_campaign",
+    entityId: campaign.id,
+    afterData: { name, audienceCount: campaign.audienceCount },
+  });
+
   return NextResponse.json({ data: campaign }, { status: 201 });
-}
+});
 

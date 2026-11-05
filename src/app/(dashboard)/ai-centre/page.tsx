@@ -1,11 +1,16 @@
+import { guardPage } from "@/lib/page-guard";
+import { AccessDenied } from "@/components/auth/AccessDenied";
 import { prisma } from "@/lib/db";
 import { AiCentreClientView } from "./AiCentreClientView";
 
 export const dynamic = "force-dynamic";
 
 export default async function AiCentrePage() {
+  const guard = await guardPage("ai.use", "/ai-centre");
+  if (!guard.ok) return <AccessDenied reason={guard.reason} />;
+
   const event = await prisma.event.findFirst({
-    where: { eventCode: "CAROLS-2026" },
+    where: { id: guard.event.id },
   });
 
   if (!event) return <div>No event found.</div>;

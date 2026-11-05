@@ -1,3 +1,5 @@
+import { guardPage } from "@/lib/page-guard";
+import { AccessDenied } from "@/components/auth/AccessDenied";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { QrCode, ShieldAlert, CheckCircle2, Users, ExternalLink, Calendar } from "lucide-react";
@@ -5,8 +7,11 @@ import { QrCode, ShieldAlert, CheckCircle2, Users, ExternalLink, Calendar } from
 export const dynamic = "force-dynamic";
 
 export default async function AttendancePage() {
+  const guard = await guardPage("reports.read", "/attendance");
+  if (!guard.ok) return <AccessDenied reason={guard.reason} />;
+
   const event = await prisma.event.findFirst({
-    where: { eventCode: "CAROLS-2026" },
+    where: { id: guard.event.id },
     include: {
       categories: { orderBy: { rankOrder: "asc" } },
       guests: {

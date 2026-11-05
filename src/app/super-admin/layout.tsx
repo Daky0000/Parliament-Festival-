@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getActor, can } from "@/lib/authz";
+import { AccessDenied } from "@/components/auth/AccessDenied";
 import { ShieldCheck, Cpu, Mail, MessageSquare, ArrowLeft, Server } from "lucide-react";
 
 const tabs = [
@@ -6,13 +9,25 @@ const tabs = [
   { href: "/super-admin/ai", label: "AI providers (OpenAI / Claude)", icon: Cpu },
   { href: "/super-admin/sms", label: "SMS gateway (Vynfy)", icon: MessageSquare },
   { href: "/super-admin/email", label: "Email (Resend)", icon: Mail },
+  { href: "/super-admin/users", label: "Users & roles", icon: ShieldCheck },
 ];
 
-export default function SuperAdminLayout({
+export default async function SuperAdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Platform administration: super admins only. Every API also checks.
+  const actor = await getActor();
+  if (!actor) redirect("/login?next=/super-admin");
+  if (!can(actor, "platform.manage")) {
+    return (
+      <main className="min-h-screen p-4 bg-brand-canvas">
+        <AccessDenied />
+      </main>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#0D1526] text-white flex flex-col gap-[var(--frame)] p-[var(--frame)]">
       <header className="band">
