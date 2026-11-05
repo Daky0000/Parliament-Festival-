@@ -215,7 +215,7 @@ export function UsherPortal({
                   Guest reference, invitation reference, seat number or name
                 </label>
                 <div className="flex gap-2">
-                  <input id="q" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="e.g. GH-GST-7K3QX9PA or SEC-A-R1-S3"
+                  <input id="q" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Guest ref, SMS confirmation code (CONF-…), or seat"
                     autoCapitalize="characters" autoComplete="off" minLength={2}
                     className="flex-1 min-h-[52px] border border-brand-line2 rounded-[12px] px-3 text-[16px]" />
                   <button type="submit" disabled={searching || query.trim().length < 2} className="min-h-[52px] px-4 rounded-[12px] bg-[#2563EB] text-white text-[16px] disabled:opacity-50">

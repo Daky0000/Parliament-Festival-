@@ -296,8 +296,8 @@ export async function reverseCheckin(actor: Actor, attendanceId: string, reason:
 export async function lookupGuests(eventId: string, q: string) {
   const query = q.trim();
   if (query.length < 2) return [];
-  // Exact references first (guest reference, invitation reference, seat
-  // number), then partial name / organisation matches.
+  // Exact references first (guest reference, invitation reference, RSVP
+  // confirmation code from the thank-you SMS, seat number), then partial name / organisation matches.
   const exact = await prisma.eventGuest.findMany({
     where: {
       eventId,
@@ -305,6 +305,7 @@ export async function lookupGuests(eventId: string, q: string) {
       OR: [
         { guestReference: { equals: query, mode: "insensitive" } },
         { invitations: { some: { invitationReference: { equals: query, mode: "insensitive" } } } },
+        { invitations: { some: { rsvps: { some: { confirmationReference: { equals: query, mode: "insensitive" } } } } } },
         { seatAssignments: { some: { status: { in: ["proposed", "approved"] }, seat: { seatCode: { equals: query, mode: "insensitive" } } } } },
       ],
     },

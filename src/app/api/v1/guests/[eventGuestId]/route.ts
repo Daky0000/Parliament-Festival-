@@ -68,6 +68,12 @@ export const GET = withActor<{ eventGuestId: string }>(async (_request, { actor,
     .flatMap((inv) => inv.invitationEvents.filter((e) => LABEL[e.eventType]).map((e) => ({ id: e.id, type: e.eventType, label: LABEL[e.eventType], at: e.occurredAt, source: e.source })))
     .sort((a, b) => +b.at - +a.at);
 
+  const sms = await prisma.communicationMessage.findMany({
+    where: { eventGuestId: guest.id, channel: "sms" },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+    select: { id: true, messageType: true, recipientSnapshot: true, status: true, bodySnippet: true, submittedAt: true, createdAt: true, failureMessageSanitised: true },
+  });
   const rsvp = guest.invitations.flatMap((i) => i.rsvps).sort((a, b) => +b.submittedAt - +a.submittedAt)[0] ?? null;
   const seat = guest.seatAssignments[0] ?? null;
   const checkin = guest.attendanceRecords[0] ?? null;
@@ -95,6 +101,15 @@ export const GET = withActor<{ eventGuestId: string }>(async (_request, { actor,
       tracking: emailTrackingFor(trackingRows),
       sends,
       activity,
+      sms: sms.map((m) => ({
+        id: m.id,
+        type: m.messageType,
+        to: m.recipientSnapshot,
+        status: m.status,
+        preview: m.bodySnippet,
+        at: m.submittedAt ?? m.createdAt,
+        error: m.failureMessageSanitised,
+      })),
     },
   });
 });

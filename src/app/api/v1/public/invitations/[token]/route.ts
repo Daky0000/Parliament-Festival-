@@ -7,6 +7,7 @@ import { assertSameOrigin, clientIp } from "@/lib/authz";
 import { attemptKey, assertNotThrottled, recordAttempt } from "@/lib/auth";
 import { ensureActiveCredential, passQrDataUrl, revokeCredentials, withUniqueReference } from "@/lib/guest-tokens";
 import { decryptSecret } from "@/lib/crypto";
+import { sendRsvpConfirmationSms } from "@/lib/sms/rsvp-confirmation";
 
 // Guest-facing invitation API. GET is strictly read-only (email scanners and
 // link previews fetch it); views are recorded only by the page's own script.
@@ -163,6 +164,9 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
       });
       return { rsvp, passToken };
     });
+
+    // Thank-you SMS with rank, seat and confirmation code (never blocks the RSVP).
+    if (result.rsvp.response === "accepted") await sendRsvpConfirmationSms(result.rsvp.id);
 
     return NextResponse.json({
       data: {

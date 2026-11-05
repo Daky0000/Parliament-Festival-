@@ -56,6 +56,7 @@ type Detail = {
     clicks: number;
   }>;
   activity: Array<{ id: string; type: string; label: string; at: string; source: string | null }>;
+  sms: Array<{ id: string; type: string; to: string; status: string; preview: string | null; at: string; error: string | null }>;
 };
 
 const fmt = (iso: string | null | undefined) =>
@@ -275,6 +276,39 @@ export function GuestDetailDrawer({
                 </ol>
               </section>
             )}
+
+            {/* SMS */}
+            <section className="bg-white rounded-[22px] p-5">
+              <span className="cap">SMS ({d.sms.length})</span>
+              {d.sms.length === 0 ? (
+                <p className="mt-3 text-[13px] text-brand-muted">
+                  No SMS yet. A thank-you SMS with rank, seat and confirmation code is sent when the dignitary confirms attendance
+                  {d.phone ? "." : ", but there is no phone number on record."}
+                </p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {d.sms.map((m) => (
+                    <li key={m.id} className="rounded-[14px] border border-brand-line px-3.5 py-3 text-[12.5px]">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium text-brand-ink">
+                          {m.type === "rsvp_confirmation" ? "Attendance thank-you" : m.type} · {fmt(m.at)}
+                        </span>
+                        <span
+                          className={`px-2 py-0.5 rounded-[10px] text-[10.5px] font-medium ${
+                            m.status === "failed" ? "bg-brand-dangerBg text-brand-danger" : "bg-brand-pale text-brand-blue"
+                          }`}
+                        >
+                          {m.status === "submitted" ? "Sent" : m.status === "failed" ? "Failed" : m.status}
+                        </span>
+                      </div>
+                      <div className="mt-1 font-mono text-brand-muted">{m.to}</div>
+                      {m.preview && <p className="mt-1 text-brand-ink">{m.preview}…</p>}
+                      {m.error && <p className="mt-1 text-brand-danger">{m.error}</p>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
 
             {/* Profile */}
             <section className="bg-white rounded-[22px] p-5">
