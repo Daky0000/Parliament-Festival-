@@ -303,18 +303,54 @@ export async function reverseCheckin(actor: Actor, attendanceId: string, reason:
 export async function lookupGuests(eventId: string, q: string) {
   const query = q.trim();
   if (query.length < 2) return [];
-  const guests = await prisma.eventGuest.findMany({
+  // Exact references first (guest reference, invitation reference, seat
+  // number), then partial name / organisation matches.
+  const exact = await prisma.eventGuest.findMany({
     where: {
       eventId,
       guestStatus: "active",
       OR: [
-        { guestReference: { contains: query, mode: "insensitive" } },
-        { person: { fullName: { contains: query, mode: "insensitive" } } },
-        { institution: { name: { contains: query, mode: "insensitive" } } },
+        { guestReference: { equals: query, mode: "insensitive" } },
+        { invitations: { some: { invitationReference: { equals: query, mode: "insensitive" } } } },
+        { seatAssignments: { some: { status: { in: ["proposed", "approved"] }, seat: { seatCode: { equals: query, mode: "insensitive" } } } } },
       ],
     },
     take: 10,
     select: { id: true },
   });
-  return Promise.all(guests.map((g) => guestCard(g.id)));
+  const partial = await prisma.eventGuest.findMany({
+    where: {
+      eventId,
+      guestStatus: "active",
+      id: { notIn: exact.map((g) => g.id) },
+      OR: [
+        { guestReference: { contains: query, mode: "insensitive" } },
+        { invitations: { some: { invitationReference: { contains: query, mode: "insensitive" } } } },
+        { seatAssignments: { some: { status: { in: ["proposed", "approved"] }, seat: { seatCode: { contains: query, mode: "insensitive" } } } } },
+        { person: { fullName: { contains: query, mode: "insensitive" } } },
+        { institution: { name: { contains: query, mode: "insensitive" } } },
+      ],
+    },
+    take: 10 - exact.length,
+    select: { id: true },
+  });
+  return Promise.all([...exact, ...partial].map((g) => guestCard(g.id)));
+}
+
+/** Read-only verification for a guest found by reference (no QR). */
+export async function verifyGuest(actor: Actor, eventId: string, eventGuestId: string, gateId?: string | null): Promise<ScanResult> {
+  const ev = await prisma.event.findUnique({ where: { id: eventId } });
+  if (!ev || ev.organizationId !== actor.organizationId || !can(actor, "checkin.scan", ev.id)) return result("INVALID");
+  const event = { id: ev.id, name: ev.name };
+  const gateCheck = await checkGate(actor, ev.id, gateId);
+  if (!gateCheck.ok) return result("WRONG_GATE", { event });
+  const gate = gateCheck.gate ? { id: gateCheck.gate.id, name: gateCheck.gate.name, fastTrackEnabled: gateCheck.gate.fastTrackEnabled } : null;
+  const g = await prisma.eventGuest.findUnique({ where: { id: eventGuestId } });
+  if (!g || g.eventId !== ev.id) return result("INVALID", { event, gate });
+  const guest = await guestCard(g.id);
+  const existing = await existingCheckin(ev.id, g.id);
+  if (existing) return result("ALREADY_CHECKED_IN", { event, gate, guest, existing });
+  if (!windowOpen(ev)) return result("EVENT_NOT_ACTIVE", { event, gate, guest });
+  if ((await latestResponse(g.id)) === "declined") return result("RSVP_DECLINED", { event, gate, guest });
+  return result("VALID", { event, gate, guest });
 }

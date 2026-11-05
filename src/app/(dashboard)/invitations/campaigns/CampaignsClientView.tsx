@@ -50,6 +50,7 @@ export function CampaignsClientView({
 
   const [actionError, setActionError] = useState<string | null>(null);
   const [progress, setProgress] = useState<Record<string, Record<string, number>>>({});
+  const [engagement, setEngagement] = useState<Record<string, { sent: number; trackedOpens: number; buttonClicks: number; pageVisits: number; responded: number }>>({});
 
   async function campaignAction(campaignId: string, action: string, confirmText?: string) {
     if (confirmText && !window.confirm(confirmText)) return null;
@@ -73,6 +74,7 @@ export function CampaignsClientView({
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setProgress((p) => ({ ...p, [campaignId]: data.data.progress }));
+      if (data.data.engagement) setEngagement((e) => ({ ...e, [campaignId]: data.data.engagement }));
       setCampaigns(campaigns.map((c) => (c.id === campaignId ? { ...c, status: data.data.status } : c)));
     }
   }
@@ -222,6 +224,23 @@ export function CampaignsClientView({
                     <span key={k} className="bg-[#F6F7F9] border border-[#E3E6EB] rounded px-2 py-1">
                       {k === "accepted" ? "accepted by provider" : k}: <strong>{n}</strong>
                     </span>
+                  ))}
+                </div>
+              )}
+
+              {engagement[camp.id] && (
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs" aria-label="Email engagement">
+                  {[
+                    ["Sent", engagement[camp.id].sent, "Accepted by the email provider"],
+                    ["Tracked opens", engagement[camp.id].trackedOpens, "Email image loaded. Some mail apps load it automatically or block it, so treat this as a signal, not proof of reading."],
+                    ["Button clicks", engagement[camp.id].buttonClicks, "Clicked the RSVP button in the email (tracked by the email provider)"],
+                    ["Opened RSVP page", engagement[camp.id].pageVisits, "Opened the RSVP page in a real browser"],
+                    ["Responded", engagement[camp.id].responded, "Submitted an RSVP"],
+                  ].map(([label, n, help]) => (
+                    <div key={String(label)} className="bg-[#F6F7F9] p-2.5 rounded" title={String(help)}>
+                      <span className="text-[10px] text-[#5B6374] uppercase block">{label}</span>
+                      <span className="font-semibold text-[#091833]">{n}</span>
+                    </div>
                   ))}
                 </div>
               )}

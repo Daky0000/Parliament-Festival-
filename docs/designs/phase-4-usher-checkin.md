@@ -85,21 +85,26 @@ The live view polls `GET /api/v1/attendance/summary` every 5 seconds. Access req
 - overrides and reversals
 - recent check-ins
 
-## 8. Scanning options
+## 8. Scanning (usher dashboard, web only)
 
-| Option | Details |
-|---|---|
-| A. Phone camera app | The baseline. Works on iPhone and Android with no installation. |
-| B. In-page scanner | Uses the browser's `BarcodeDetector`, shown only where supported. Accepts only `/check-in/scan/` URLs on this site's own origin. |
-| C. PWA | Not built. It is optional, and nothing depends on it. |
+The usher dashboard (`/usher`) has two large actions:
 
-Offline check-in is deliberately not built (spec §11.12). The contingency procedure is in `docs/runbooks/event-day-checkin.md`.
+- **Scan QR code.** This opens the phone's rear camera inside the web page (`getUserMedia`). Frames are decoded with **jsQR**, which works in iPhone Safari and Android Chrome. No app and no `BarcodeDetector` are needed.
+  - Only a `/check-in/scan/<token>` link on this site counts as a pass. Any other QR code shows a message.
+  - When a pass is read, the dashboard checks it at once using `POST /api/v1/check-in/verify`. This check records nothing.
+  - The result appears on the same screen with **Confirm attendance**. On a fast-track gate the guest is recorded at once.
+  - **Scan next guest** reopens the camera.
+- **Enter reference.** The usher types a guest reference, an invitation reference, a seat number or a name. Exact matches come first.
+  - When a single exact match is found, it is verified on the server straight away (`verifyGuest`).
+  - That match then goes through the same confirm step as a scan.
 
-## 9. Open question for the owner ("Asha people")
+The phone's own camera app still works: it opens the `/check-in/scan/<token>` page directly.
 
-The owner described the "Asha people" as a staff/ushers group. This phase delivers their workflow: usher accounts, gate assignment, scan, confirm, and supervisor overrides.
+The camera needs HTTPS and the usher's permission. If the usher refuses camera access, the dashboard explains how to allow it and offers Enter reference instead. No offline check-in (spec §11.12).
 
-If "Asha" refers to a distinct staff group that needs its own role, fields or screens (for example registration-desk staff or protocol aides), tell us who they are and what they do. That becomes a small follow-up using the configurable roles in `src/lib/roles.ts`.
+## 9. "Asha people"
+
+The owner confirmed on 2026-11-05 that "Asha" meant **usher**. No separate workflow is needed.
 
 ## 10. Acceptance (spec §11.14) and evidence
 

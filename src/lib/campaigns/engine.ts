@@ -251,3 +251,27 @@ export async function controlCampaign(campaignId: string, action: "pause" | "res
     return { ok: true as const };
   });
 }
+
+/**
+ * Engagement per campaign, counted per invitation (not per event row):
+ * - trackedOpens: Resend "email.opened" (pixel load; privacy features can
+ *   inflate or hide this, so it is a signal, not proof of reading)
+ * - buttonClicks: Resend "email.clicked" (the RSVP button link)
+ * - pageVisits: the RSVP page opened in a real browser (page script beacon;
+ *   link scanners do not run it)
+ * - responded: guests who submitted an RSVP
+ */
+export async function campaignEngagement(campaignId: string) {
+  const count = async (eventType: string, source?: string) =>
+    prisma.invitation.count({
+      where: { campaignId, invitationEvents: { some: { eventType, ...(source ? { source } : {}) } } },
+    });
+  const [trackedOpens, buttonClicks, pageVisits, responded, sent] = await Promise.all([
+    count("open_signal"),
+    count("click"),
+    count("link_access", "page_script"),
+    prisma.invitation.count({ where: { campaignId, rsvps: { some: {} } } }),
+    prisma.invitation.count({ where: { campaignId, invitationStatus: "sent" } }),
+  ]);
+  return { sent, trackedOpens, buttonClicks, pageVisits, responded };
+}

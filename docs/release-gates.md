@@ -52,7 +52,7 @@ The deploy workflow is ready (`.github/workflows/deploy.yml`). It cannot run unt
    - Complete the open gates.
    - Deploy production through the **Deploy** workflow.
 7. **Configure providers.**
-   - Resend: verify the sending domain and add the webhook, pointing it at `<APP_URL>/api/v1/webhooks/email`.
+   - Resend: verify the sending domain. In the domain settings, turn on **open tracking** and **click tracking**. Add a webhook pointing at `<APP_URL>/api/v1/webhooks/email` and subscribe it to these events: `email.sent`, `email.delivered`, `email.bounced`, `email.complained`, `email.failed`, `email.delivery_delayed`, `email.opened` and `email.clicked`. Then set the webhook's signing secret as `RESEND_WEBHOOK_SECRET`.
    - Vynfy: register the sender ID.
    - OpenAI: set `OPENAI_MODEL`.
 
@@ -61,4 +61,3 @@ The deploy workflow is ready (`.github/workflows/deploy.yml`). It cannot run unt
 - **ESLint `no-explicit-any` is a warning, not an error.** There are 162 warnings, all in legacy UI code.
 - **`npm audit`: 3 high findings via the Prisma CLI (`deepmerge-ts`).** The CLI runs only at build and migrate time. Fixing it needs Prisma 7, a breaking upgrade, so schedule it after the event.
 - **Phase 5 usability backlog:** see `docs/designs/phase-5-operations.md` §3.
-- **The "Asha" staff workflow:** confirm whether it is the usher workflow already built, or a separate group. See `docs/designs/phase-4-usher-checkin.md` §9.

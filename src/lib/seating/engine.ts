@@ -71,7 +71,10 @@ export async function runDeterministicSeatingEngine(
         .filter((g) => latest(g)?.response !== "declined")
         .sort((a, b) => {
           const r = (a.protocolCategory?.rankOrder ?? 999) - (b.protocolCategory?.rankOrder ?? 999);
-          return r !== 0 ? r : (a.institution?.name ?? "").localeCompare(b.institution?.name ?? "");
+          if (r !== 0) return r;
+          const inst = (a.institution?.name ?? "").localeCompare(b.institution?.name ?? "");
+          // Deterministic tie-break so re-runs and audits are reproducible.
+          return inst !== 0 ? inst : a.person.fullName.localeCompare(b.person.fullName) || a.id.localeCompare(b.id);
         });
 
       const conflicts: SeatingAllocationResult["conflicts"] = [];

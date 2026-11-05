@@ -91,6 +91,20 @@
 - A Prisma client is cached per Cloudflare request context, using a `WeakMap` keyed on `getCloudflareContext().ctx`.
 - Background tasks use `runWithTaskClient()`, backed by `AsyncLocalStorage`. A task client can never leak into a concurrent request.
 
+## 3.7 Email engagement (opened / clicked)
+
+Each campaign shows these counts, per invitation, in `GET /api/v1/campaigns/[id]` and in the campaign card:
+
+| Count | Source | Accuracy |
+|---|---|---|
+| **Sent** | Provider accepted | — |
+| **Tracked opens** | Resend `email.opened` (image pixel) | A signal only: Apple Mail privacy loads it automatically, and some clients block images. |
+| **Button clicks** | Resend `email.clicked` on the RSVP button | Can include link scanners. |
+| **Opened RSVP page** | The page script running in a real browser | The most reliable sign that a person opened the invitation. |
+| **Responded** | An RSVP was submitted | — |
+
+Open and click events arrive only if open/click tracking is enabled on the Resend domain and the webhook subscribes to those events.
+
 ## 4. New secrets and variables
 
 | Name | Where it is set | Purpose |

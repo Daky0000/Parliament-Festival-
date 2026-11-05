@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { withActor, authorizeEvent } from "@/lib/authz";
 import { HttpError, notFound, readJson } from "@/lib/http";
 import { logAuditEvent } from "@/lib/audit";
-import { campaignProgress, controlCampaign, enqueueCampaign, processQueue } from "@/lib/campaigns/engine";
+import { campaignEngagement, campaignProgress, controlCampaign, enqueueCampaign, processQueue } from "@/lib/campaigns/engine";
 
 export const GET = withActor<{ campaignId: string }>(async (_request, { actor, params }) => {
   const campaign = await prisma.invitationCampaign.findUnique({
@@ -25,7 +25,9 @@ export const GET = withActor<{ campaignId: string }>(async (_request, { actor, p
   });
   if (!campaign) throw notFound();
   await authorizeEvent(actor, "campaigns.read", campaign.eventId);
-  return NextResponse.json({ data: { ...campaign, progress: await campaignProgress(campaign.id) } });
+  return NextResponse.json({
+    data: { ...campaign, progress: await campaignProgress(campaign.id), engagement: await campaignEngagement(campaign.id) },
+  });
 });
 
 const Body = z.object({
