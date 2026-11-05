@@ -12,6 +12,7 @@ interface ChatMessage {
     toolName: string;
     args: any;
     message: string;
+    executionId?: string;
   };
 }
 
@@ -57,6 +58,7 @@ export function AiCentreClientView({ eventId }: { eventId: string }) {
             toolName: execution.toolName,
             args: execution.inputSummary,
             message: execution.message,
+            executionId: execution.executionId,
           };
         }
 
@@ -69,6 +71,14 @@ export function AiCentreClientView({ eventId }: { eventId: string }) {
         };
 
         setMessages((prev) => [...prev, aiMsg]);
+      } else {
+        // No fake answer: say what happened and offer the manual fallback.
+        const failMsg: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          sender: "ai",
+          text: `${data.error || "The AI service is unavailable."} You can copy your question into ChatGPT manually; do not paste guest contact details.`,
+        };
+        setMessages((prev) => [...prev, failMsg]);
       }
     } catch (err) {
       console.error("AI error:", err);
@@ -77,20 +87,21 @@ export function AiCentreClientView({ eventId }: { eventId: string }) {
     }
   };
 
-  const handleApproveTool = async (msgId: string, toolName: string, args: any) => {
+  const handleApproveTool = async (msgId: string, toolName: string, args: any, executionId?: string) => {
+    void args;
+    if (!executionId) return;
     setIsLoading(true);
     try {
-      const res = await fetch("/api/v1/ai", {
+      // The server runs the stored request; nothing from the browser is trusted.
+      const res = await fetch(`/api/v1/ai/approvals/${executionId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          toolName,
-          args: { ...args, _approvedByHuman: true },
-          eventId,
-        }),
+        body: JSON.stringify({ decision: "approve" }),
       });
       const data = await res.json();
-      if (data.data) {
+      if (!res.ok) {
+        setMessages((prev) => prev.map((m) => (m.id === msgId ? { ...m, text: data.error || "Approval failed." } : m)));
+      } else if (data.data) {
         setMessages((prev) =>
           prev.map((m) =>
             m.id === msgId
@@ -183,7 +194,8 @@ export function AiCentreClientView({ eventId }: { eventId: string }) {
                           handleApproveTool(
                             msg.id,
                             msg.approvalRequired!.toolName,
-                            msg.approvalRequired!.args
+                            msg.approvalRequired!.args,
+                            msg.approvalRequired!.executionId
                           )
                         }
                         className="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold px-3 py-1 rounded text-xs transition-colors flex items-center gap-1"

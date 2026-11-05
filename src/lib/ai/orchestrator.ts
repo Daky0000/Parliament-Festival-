@@ -88,7 +88,8 @@ export const AI_TOOL_REGISTRY: Record<string, ToolDefinition> = {
 export async function executeAiTool(
   toolName: string,
   args: Record<string, any>,
-  actor: Actor
+  actor: Actor,
+  opts: { approved?: boolean } = {}
 ) {
   const tool = AI_TOOL_REGISTRY[toolName];
   if (!tool) {
@@ -99,7 +100,8 @@ export async function executeAiTool(
   // 1. Every tool is event-scoped: the actor must reach the event and hold the
   // tool's permission for it. There is no platform-wide bypass.
   try {
-    await authorizeEvent(actor, "ai.use", args.eventId);
+    // Approving a stored request is not using the assistant; only the tool permission applies.
+    if (!opts.approved) await authorizeEvent(actor, "ai.use", args.eventId);
     await authorizeEvent(actor, tool.permissionKey as Permission, args.eventId);
   } catch {
     return {
@@ -119,7 +121,9 @@ export async function executeAiTool(
   }
 
   // 2. Human-In-The-Loop Approval Gate for Write Tools
-  if (tool.requiresHumanApproval && !args._approvedByHuman) {
+  // Only the server-side approval endpoint passes approved: true, after a
+  // person with the tool's permission has approved the stored request.
+  if (tool.requiresHumanApproval && !opts.approved) {
     return {
       status: "awaiting_approval",
       toolName,
@@ -313,3 +317,36 @@ The platform is operating with 100% capacity and seating integrity.`;
   }
 }
 
+
+/** JSON-schema tool definitions for the model. eventId is injected server-side, never chosen by the model. */
+export function toolSpecsForModel() {
+  return Object.values(AI_TOOL_REGISTRY).map((t) => {
+    const props = Object.fromEntries(
+      Object.entries(t.parameters).filter(([k]) => k !== "eventId").map(([k, v]) => [k, { type: v.type, description: v.description }])
+    );
+    const required = Object.entries(t.parameters).filter(([k, v]) => k !== "eventId" && v.required).map(([k]) => k);
+    return {
+      name: t.name,
+      description: t.requiresHumanApproval ? `${t.description} (Requires human approval before it runs.)` : t.description,
+      parameters: { type: "object", properties: props, required, additionalProperties: false },
+    };
+  });
+}
+
+/** Removes contact details from anything sent to an AI provider. */
+export function redactForModel(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(redactForModel);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([k]) => !/^(email|phone|recipientEmailSnapshot|passwordHash|notes|operationalNotes|accessibilityNote)$/i.test(k))
+        .map(([k, v]) => [k, redactForModel(v)])
+    );
+  }
+  if (typeof value === "string") {
+    return value
+      .replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, "[email]")
+      .replace(/\+?\d[\d\s-]{8,}\d/g, "[phone]");
+  }
+  return value;
+}
