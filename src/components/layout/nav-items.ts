@@ -9,6 +9,7 @@ import {
   CalendarDays,
   Sparkles,
   QrCode,
+  FileBarChart,
   type LucideIcon,
 } from "lucide-react";
 
@@ -35,5 +36,6 @@ export const navigationItems: NavItem[] = [
   { name: "RSVP Dashboard", href: "/rsvps", icon: CheckCircle2, permission: "rsvps.read" },
   { name: "Seating Planner", href: "/seating", icon: Armchair, permission: "seating.read" },
   { name: "Arrival & Attendance", href: "/attendance", icon: CalendarDays, permission: "reports.read" },
+  { name: "Reports & Readiness", href: "/reports", icon: FileBarChart, permission: "reports.read" },
   { name: "AI Command Centre", href: "/ai-centre", icon: Sparkles, badge: "AI", permission: "ai.use" },
 ];
