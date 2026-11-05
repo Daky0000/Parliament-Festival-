@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import QRCode from "qrcode";
+import { referenceCode } from "./guest-tokens";
 
 export interface GeneratedToken {
   rawToken: string;
@@ -29,8 +30,7 @@ export function hashToken(rawToken: string): string {
  * Generates an opaque reference code (e.g. GH-CAROLS-8291)
  */
 export function generateReferenceCode(prefix = "GH-CAROLS"): string {
-  const randomNum = Math.floor(1000 + Math.random() * 9000);
-  return `${prefix}-${randomNum}`;
+  return referenceCode(prefix);
 }
 
 /**

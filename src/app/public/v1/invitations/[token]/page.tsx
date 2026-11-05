@@ -32,8 +32,15 @@ export default function PublicRsvpPage({
               confirmationReference: json.data.currentRsvp.confirmationReference,
               response: json.data.currentRsvp.response,
               companionCount: json.data.currentRsvp.companionCount,
+              qrCodeDataUrl: json.data.qrCodeDataUrl,
             });
           }
+          // Count the view only from a real browser running this page.
+          fetch(`/api/v1/public/invitations/${token}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "view" }),
+          }).catch(() => {});
         } else {
           setError(json.error || "Invalid or expired invitation link.");
         }
@@ -56,6 +63,7 @@ export default function PublicRsvpPage({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          action: "rsvp",
           response: selectedResponse,
           companionCount: selectedResponse === "accepted" ? companionCount : 0,
           notes,
@@ -281,7 +289,7 @@ export default function PublicRsvpPage({
                     />
                   ) : (
                     <div className="w-48 h-48 mx-auto rounded-lg border border-[#2563EB] flex items-center justify-center text-xs text-[#8FB2FF]">
-                      Credential Hash Active
+                      Your pass will appear here once your attendance is confirmed.
                     </div>
                   )}
 

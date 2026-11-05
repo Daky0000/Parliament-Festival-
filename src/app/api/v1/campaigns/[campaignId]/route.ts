@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { withActor, authorizeEvent } from "@/lib/authz";
 import { HttpError, notFound } from "@/lib/http";
 import { logAuditEvent } from "@/lib/audit";
-import { generateSecureToken, generateReferenceCode } from "@/lib/tokens";
+import { issueInvitation, rsvpUrl as buildRsvpUrl } from "@/lib/guest-tokens";
 import { sendInvitationEmail } from "@/lib/email/provider";
 import { buildInvitationVars, fillTemplate } from "@/lib/email/render-invitation";
 
@@ -123,35 +123,27 @@ export const PATCH = withActor<{ campaignId: string }>(async (request, { actor, 
       },
     });
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     let sentCount = 0;
 
     for (const guest of eligibleGuests) {
       if (!guest.person.email) continue;
 
-      // Generate cryptographically unpredictable token
-      const { rawToken, tokenHash } = generateSecureToken();
-      const invitationReference = generateReferenceCode("INV-GH");
-      const rsvpUrl = `${appUrl}/public/v1/invitations/${rawToken}`;
-
-      // Create Invitation record
-      const invitation = await prisma.invitation.create({
-        data: {
+      // Invitation with a fresh link token (hash + encrypted copy stored)
+      const { invitation, rawToken } = await issueInvitation(prisma, {
           eventId: campaign.eventId,
           eventGuestId: guest.id,
           campaignId: campaign.id,
           templateVersionId: campaign.templateVersionId,
-          invitationReference,
-          tokenHash,
-          tokenExpiresAt: campaign.event.rsvpDeadline,
+          tokenExpiresAt: campaign.event.endsAt,
           recipientEmailSnapshot: guest.person.email,
           recipientNameSnapshot: guest.person.fullName,
           designationSnapshot: guest.person.designation,
           institutionSnapshot: guest.institution?.name,
           categorySnapshot: JSON.stringify(guest.protocolCategory || {}),
           invitationStatus: "queued",
-        },
       });
+      const invitationReference = invitation.invitationReference;
+      const rsvpUrl = buildRsvpUrl(rawToken);
 
       // Interpolate template placeholders
       // Header colour follows the guest's protocol rank (navy when unranked)

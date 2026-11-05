@@ -505,6 +505,7 @@ model Invitation {
   templateVersionId      String
   invitationReference    String
   tokenHash              String    @unique
+  tokenEnc               String?   // AES-GCM raw token, so the same link can be re-sent
   tokenExpiresAt         DateTime?
   tokenRevokedAt         DateTime?
   recipientEmailSnapshot String
@@ -526,6 +527,7 @@ model Invitation {
   qrCredentials          QrCredential[]
 
   @@unique([eventId, invitationReference])
+  @@index([eventId, eventGuestId])
   @@map("invitations")
 }
 
@@ -607,6 +609,7 @@ model Rsvp {
   invitation            Invitation  @relation(fields: [invitationId], references: [id], onDelete: Cascade)
   companions            Companion[]
 
+  @@index([invitationId, submittedAt])
   @@map("rsvps")
 }
 
@@ -713,6 +716,7 @@ model QrCredential {
   eventId        String
   invitationId   String
   credentialHash String    @unique
+  tokenEnc       String?   // AES-GCM raw token; the QR encodes <APP_URL>/check-in/scan/<raw>
   status         String    @default("active") // active, revoked, expired
   expiresAt      DateTime?
   revokedAt      DateTime?

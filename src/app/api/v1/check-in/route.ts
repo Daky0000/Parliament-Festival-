@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { withActor, authorizeEvent, can } from "@/lib/authz";
 import { HttpError, forbidden } from "@/lib/http";
+import { isEventOpen } from "@/lib/event-lifecycle";
 
 // Interim (Phase 1) check-in: authorized, event-scoped, one check-in per
 // guest enforced by the database. Phase 4 replaces this with the scan ->
@@ -21,6 +22,7 @@ export const POST = withActor(async (request, { actor }) => {
   } = body;
 
   const event = await authorizeEvent(actor, "checkin.scan", eventId);
+  if (!isEventOpen(event.status)) throw new HttpError(409, "Check-in is closed for this event.");
   if (isSupervisorOverride) {
     if (!can(actor, "checkin.manual_override", eventId)) throw forbidden();
     if (typeof overrideReason !== "string" || overrideReason.trim().length < 5) {

@@ -45,7 +45,7 @@ export async function verifyCredentials(email: string, password: string) {
 // ---- Throttling ----------------------------------------------------------
 
 const WINDOW_MS = 15 * 60 * 1000;
-const LIMITS = { login_email: 5, login_ip: 30, mfa: 5 } as const;
+const LIMITS = { login_email: 5, login_ip: 30, mfa: 5, rsvp: 10, public_view: 60 } as const;
 export type AttemptKind = keyof typeof LIMITS;
 
 export async function attemptKey(kind: AttemptKind, value: string): Promise<string> {

@@ -15,7 +15,7 @@ async function assertBelongsToEvent(eventId: string, ids: { protocolCategoryId?:
   }
 }
 import { logAuditEvent } from "@/lib/audit";
-import { generateSecureToken, generateReferenceCode } from "@/lib/tokens";
+import { issueInvitation, withUniqueReference } from "@/lib/guest-tokens";
 
 export const GET = withActor(async (request, { actor }) => {
   const { searchParams } = new URL(request.url);
@@ -164,8 +164,7 @@ export const POST = withActor(async (request, { actor }) => {
   }
 
   // 3. Create EventGuest
-  const guestReference = generateReferenceCode("GH-GST");
-  const eventGuest = await prisma.eventGuest.create({
+  const eventGuest = await withUniqueReference("GH-GST", (guestReference) => prisma.eventGuest.create({
     data: {
       eventId,
       personId: person.id,
@@ -177,7 +176,8 @@ export const POST = withActor(async (request, { actor }) => {
       guestStatus: "active",
       createdBy: user?.userId,
     },
-  });
+  }));
+  const guestReference = eventGuest.guestReference;
 
   // 4. Handle Seating Assignment if seatCode or sectionId provided
   const seatingPlan = await prisma.seatingPlan.findFirst({
@@ -252,23 +252,17 @@ export const POST = withActor(async (request, { actor }) => {
     }));
 
   if (templateVersion) {
-    const { rawToken, tokenHash } = generateSecureToken();
-    const invitationReference = generateReferenceCode("GH-INV");
-
-    await prisma.invitation.create({
-      data: {
+    await issueInvitation(prisma, {
         eventId,
         eventGuestId: eventGuest.id,
         templateVersionId: templateVersion.id,
-        invitationReference,
-        tokenHash,
-        recipientEmailSnapshot: email || `${guestReference.toLowerCase()}@recipient.parliament.gh`,
+        tokenExpiresAt: event.endsAt,
+        recipientEmailSnapshot: email || `${(guestReference ?? eventGuest.id).toLowerCase()}@recipient.parliament.gh`,
         recipientNameSnapshot: `${title ? title + " " : ""}${fullName}`,
         designationSnapshot: designation || null,
         institutionSnapshot: resolvedInstitutionName || null,
         categorySnapshot: JSON.stringify({ protocolCategoryId }),
         invitationStatus: "prepared",
-      },
     });
   }
 
@@ -302,7 +296,8 @@ export const POST = withActor(async (request, { actor }) => {
       action: "GUEST_CREATED",
       entityType: "event_guest",
       entityId: eventGuest.id,
-      afterData: { fullName, email, phone, company: resolvedInstitutionName, guestReference },
+      // No personal data in the audit trail.
+      afterData: { guestId: eventGuest.id, protocolCategoryId: protocolCategoryId || null, hasEmail: !!email, guestReference },
     });
   }
 

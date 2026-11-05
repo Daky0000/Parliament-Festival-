@@ -11,9 +11,10 @@ test("Token Security: generates unpredictable 256-bit entropy token and valid SH
   assert.strictEqual(hashToken(token1.rawToken), token1.tokenHash, "Hash must match SHA-256 derivation");
 });
 
-test("Reference Code: generates formatted reference strings", () => {
-  const ref = generateReferenceCode("GH-CAROLS");
-  assert.match(ref, /^GH-CAROLS-\d{4}$/, "Reference code must follow GH-CAROLS-XXXX format");
+test("Reference Code: 8 random Crockford base32 characters (40 bits), not guessable", () => {
+  const refs = new Set(Array.from({ length: 2000 }, () => generateReferenceCode("GH-CAROLS")));
+  for (const ref of refs) assert.match(ref, /^GH-CAROLS-[0-9A-HJKMNP-TV-Z]{8}$/);
+  assert.strictEqual(refs.size, 2000, "no collisions in 2000 codes");
 });
 
 test("QR Credential: creates opaque QR code data URL without leaking personal data", async () => {

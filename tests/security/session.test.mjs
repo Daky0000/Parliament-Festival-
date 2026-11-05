@@ -51,6 +51,8 @@ test("suspending a user ends their sessions immediately", async () => {
 });
 
 test("login: wrong password and unknown email give the same answer; success sets an HttpOnly cookie", async () => {
+  // Start from a clean throttle window so repeated local runs stay deterministic.
+  await prisma.authAttempt.deleteMany({});
   const body = (email, password) => ({ method: "POST", body: { email, password } });
   const wrong = await call(login.POST, request("/api/auth/login", body("protocol@parliament.gh", "not-the-password")));
   const unknown = await call(login.POST, request("/api/auth/login", body("nobody@parliament.gh", "not-the-password")));

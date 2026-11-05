@@ -8,6 +8,7 @@ const REQUIRED = [
   "uq_active_guest_assignment",
   "uq_one_active_checkin_per_guest",
   "uq_users_email_ci",
+  "uq_one_active_credential_per_invitation",
 ];
 
 async function main() {
