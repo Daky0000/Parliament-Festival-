@@ -7,6 +7,7 @@ import { issueInvite, normalizeEmail } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/audit";
 import { appOrigin } from "@/lib/config";
 import { assertCanGrant, roleIdFor } from "@/lib/user-admin";
+import { sendStaffInviteEmail } from "@/lib/email/staff-invite";
 
 export const GET = withActor(async (_req, { actor }) => {
   requireGlobal(actor, "users.read");
@@ -70,6 +71,29 @@ export const POST = withActor(async (request, { actor }) => {
     afterData: { roleKey: body.roleKey, eventId: body.eventId ?? null },
   });
 
-  // The link is returned once; only its hash is stored.
-  return NextResponse.json({ data: { userId: user.id, activationUrl: `${appOrigin()}/activate/${token}` } }, { status: 201 });
+  // Email the activation link to the new user. The link is also returned
+  // once as a fallback; only its hash is stored.
+  const activationUrl = `${appOrigin()}/activate/${token}`;
+  const [role, ev, inviter] = await Promise.all([
+    prisma.role.findUnique({ where: { id: roleId }, select: { name: true } }),
+    body.eventId ? prisma.event.findUnique({ where: { id: body.eventId }, select: { name: true } }) : null,
+    prisma.user.findUnique({ where: { id: actor.userId }, select: { fullName: true } }),
+  ]);
+  const email_ = await sendStaffInviteEmail(
+    email,
+    { fullName: body.fullName, roleName: role?.name ?? body.roleKey, eventName: ev?.name ?? null, activationUrl, invitedBy: inviter?.fullName ?? null },
+    `staff-invite-${user.id}-${token.slice(0, 12)}`
+  );
+  await logAuditEvent({
+    organizationId: actor.organizationId,
+    actorUserId: actor.userId,
+    action: email_.sent ? "user.invite_emailed" : "user.invite_email_failed",
+    entityType: "user",
+    entityId: user.id,
+    afterData: { provider: email_.provider, ...(email_.error ? { error: email_.error.slice(0, 200) } : {}) },
+  });
+  return NextResponse.json(
+    { data: { userId: user.id, activationUrl, emailSent: email_.sent, emailedTo: email, emailError: email_.error ?? null } },
+    { status: 201 }
+  );
 });

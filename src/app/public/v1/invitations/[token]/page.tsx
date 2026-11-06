@@ -139,7 +139,6 @@ export default function PublicRsvpPage({ params }: { params: Promise<{ token: st
         setIsLoading(false);
       }
     }
-    setIsLoading(true);
     load();
     return () => {
       cancelled = true;
@@ -200,7 +199,10 @@ export default function PublicRsvpPage({ params }: { params: Promise<{ token: st
           <h1 className="text-[22px] font-light tracking-[-0.02em]">We could not open this invitation</h1>
           <p className="text-[14.5px] text-brand-muted">{loadError}</p>
           <button
-            onClick={() => setAttempt((n) => n + 1)}
+            onClick={() => {
+              setIsLoading(true);
+              setAttempt((n) => n + 1);
+            }}
             className="mt-2 inline-flex items-center gap-2 px-4 py-2.5 rounded-[10px] bg-brand-blue hover:bg-brand-blueDark text-white text-[14px] font-medium"
           >
             <RefreshCw className="w-4 h-4" /> Try again

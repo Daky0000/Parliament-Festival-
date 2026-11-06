@@ -8,6 +8,7 @@ import { revokeUserSessions } from "@/lib/session";
 import { logAuditEvent } from "@/lib/audit";
 import { appOrigin } from "@/lib/config";
 import { assertCanGrant, loadTargetUser, roleIdFor } from "@/lib/user-admin";
+import { sendStaffInviteEmail } from "@/lib/email/staff-invite";
 
 const Body = z.discriminatedUnion("action", [
   z.object({ action: z.literal("reissue_invite") }),
@@ -51,8 +52,19 @@ export const POST = withActor<{ userId: string }>(async (request, { actor, param
       // let an admin take over an active account.
       if (target.status !== "invited") throw new HttpError(409, "This account is already active.");
       const token = await issueInvite(target.id, actor.userId);
-      await audit("user.invite_reissued");
-      return NextResponse.json({ data: { activationUrl: `${appOrigin()}/activate/${token}` } });
+      const activationUrl = `${appOrigin()}/activate/${token}`;
+      const assignment = await prisma.userRoleAssignment.findFirst({
+        where: { userId: target.id, revokedAt: null },
+        include: { role: { select: { name: true } }, event: { select: { name: true } } },
+      });
+      const inviter = await prisma.user.findUnique({ where: { id: actor.userId }, select: { fullName: true } });
+      const sent = await sendStaffInviteEmail(
+        target.email,
+        { fullName: target.fullName, roleName: assignment?.role.name ?? "staff member", eventName: assignment?.event?.name ?? null, activationUrl, invitedBy: inviter?.fullName ?? null },
+        `staff-invite-${target.id}-${token.slice(0, 12)}`
+      );
+      await audit("user.invite_reissued", { emailSent: sent.sent, ...(sent.error ? { error: sent.error.slice(0, 200) } : {}) });
+      return NextResponse.json({ data: { activationUrl, emailSent: sent.sent, emailedTo: target.email, emailError: sent.error ?? null } });
     }
     case "suspend": {
       await prisma.user.update({ where: { id: target.id }, data: { status: "suspended" } });

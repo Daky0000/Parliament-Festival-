@@ -28,6 +28,7 @@ export function UsersClientView({ events, roles, selfId }: { events: { id: strin
   const [users, setUsers] = useState<UserRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [link, setLink] = useState<string | null>(null);
+  const [mailNote, setMailNote] = useState<{ sent: boolean; to: string; error: string | null } | null>(null);
   const [form, setForm] = useState({ fullName: "", email: "", roleKey: "usher", eventId: "" });
   const [busy, setBusy] = useState(false);
 
@@ -53,7 +54,10 @@ export function UsersClientView({ events, roles, selfId }: { events: { id: strin
     setError(null);
     try {
       const data = await call(`/api/v1/admin/users/${userId}`, body);
-      if (data?.data?.activationUrl) setLink(data.data.activationUrl);
+      if (data?.data?.activationUrl) {
+        setLink(data.data.activationUrl);
+        setMailNote({ sent: !!data.data.emailSent, to: data.data.emailedTo, error: data.data.emailError ?? null });
+      }
       await load();
     } catch (e) {
       setError((e as Error).message);
@@ -67,6 +71,7 @@ export function UsersClientView({ events, roles, selfId }: { events: { id: strin
     try {
       const data = await call("/api/v1/admin/users", { ...form, eventId: form.eventId || null });
       setLink(data.data.activationUrl);
+      setMailNote({ sent: !!data.data.emailSent, to: data.data.emailedTo, error: data.data.emailError ?? null });
       setForm({ fullName: "", email: "", roleKey: form.roleKey, eventId: form.eventId });
       await load();
     } catch (err) {
@@ -88,13 +93,20 @@ export function UsersClientView({ events, roles, selfId }: { events: { id: strin
       {error && <p role="alert" className="text-[14px] text-[#FDA29B] bg-[#55160C]/40 rounded-[10px] px-3 py-2">{error}</p>}
       {link && (
         <div role="status" className="band p-4 space-y-2">
+          {mailNote && (
+            <p className={`text-[14px] font-medium ${mailNote.sent ? "text-[#A3E635]" : "text-[#FDA29B]"}`}>
+              {mailNote.sent
+                ? `Invitation email sent to ${mailNote.to}. They can activate their account from the email.`
+                : `The invitation email could not be sent to ${mailNote.to}${mailNote.error ? `: ${mailNote.error}` : "."} Send them the link below instead.`}
+            </p>
+          )}
           <p className="text-[14px] font-medium">Activation link (shown once, valid 72 hours)</p>
           <code className="block break-all text-[13px] text-[#8FB2FF]">{link}</code>
           <div className="flex gap-2">
             <button type="button" className={btn} onClick={() => navigator.clipboard.writeText(link)}>Copy link</button>
-            <button type="button" className={btn} onClick={() => setLink(null)}>Done</button>
+            <button type="button" className={btn} onClick={() => { setLink(null); setMailNote(null); }}>Done</button>
           </div>
-          <p className="text-[12px] text-white/60">Send it to the person directly. Anyone with this link can set the account password.</p>
+          <p className="text-[12px] text-white/60">A backup in case the email does not arrive. Anyone with this link can set the account password.</p>
         </div>
       )}
 
