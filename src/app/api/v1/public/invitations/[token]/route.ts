@@ -21,7 +21,13 @@ async function loadInvitation(token: string) {
     where: { tokenHash: await sha256Hex(token) },
     include: {
       event: true,
-      eventGuest: { include: { person: true, protocolCategory: true } },
+      eventGuest: {
+        include: {
+          person: true,
+          protocolCategory: true,
+          seatAssignments: { where: { status: { in: ["proposed", "approved"] } }, include: { section: true, seat: true }, take: 1 },
+        },
+      },
       rsvps: { orderBy: { submittedAt: "desc" }, take: 1 },
     },
   });
@@ -61,6 +67,13 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ token:
           designation: inv.designationSnapshot,
           institution: inv.institutionSnapshot,
           protocolCategory: inv.eventGuest.protocolCategory?.name,
+          rankOrder: inv.eventGuest.protocolCategory?.rankOrder ?? null,
+          rankColour: inv.eventGuest.protocolCategory?.colourHex ?? null,
+          seat: (() => {
+            const a = inv.eventGuest.seatAssignments[0];
+            return a ? { section: a.section.name, seatCode: a.seat?.seatCode ?? null } : null;
+          })(),
+          guestReference: inv.eventGuest.guestReference,
           companionAllowance: inv.eventGuest.companionAllowance,
           currentRsvp: latest
             ? {

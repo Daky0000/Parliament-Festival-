@@ -127,6 +127,14 @@ test("one-click send uses the approved template; opening the email is tracked fo
   assert.ok(live.json.data[guestId].firstOpenedAt);
   assert.strictEqual(live.json.data[bystander].status, "sent", "another dignitary is not marked opened by this open");
 
+  // The fast database summary matches the row-by-row one for every guest.
+  const { emailTrackingForEvent, trackingInvitationInclude } = await import("../../src/lib/email/tracking-summary.ts");
+  const fast = await emailTrackingForEvent(prisma, f.event.id);
+  for (const id of [guestId, bystander]) {
+    const rows = await prisma.invitation.findMany({ where: { eventGuestId: id }, include: trackingInvitationInclude });
+    assert.deepStrictEqual(fast.get(id), emailTrackingFor(rows), `summary for ${id}`);
+  }
+
   // The detail panel shows the send history with its opens.
   const d = await call(detail.GET, request(`/api/v1/guests/${guestId}`, { cookie: admin }), { eventGuestId: guestId });
   assert.strictEqual(d.status, 200, JSON.stringify(d.json));

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { FileSpreadsheet, Award, QrCode } from "lucide-react";
 import { GuestsClientView } from "./GuestsClientView";
 import { can } from "@/lib/authz";
-import { emailTrackingFor, trackingInvitationInclude } from "@/lib/email/tracking-summary";
+import { emailTrackingForEvent } from "@/lib/email/tracking-summary";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +26,6 @@ export default async function GuestsPage() {
           invitations: {
             include: {
               rsvps: { orderBy: { submittedAt: "desc" }, take: 1 },
-              ...trackingInvitationInclude,
             },
           },
           seatAssignments: {
@@ -54,6 +53,7 @@ export default async function GuestsPage() {
   });
 
   if (!event) return <div>No active event found.</div>;
+  const tracking = await emailTrackingForEvent(prisma, event.id);
 
   return (
     <div className="space-y-[var(--frame)]">
@@ -93,11 +93,7 @@ export default async function GuestsPage() {
 
       <GuestsClientView
         eventId={event.id}
-        initialGuests={event.guests.map((g) => ({
-          ...g,
-          invitations: g.invitations.map(({ emailAttempts: _a, invitationEvents: _e, ...inv }) => inv),
-          emailTracking: emailTrackingFor(g.invitations),
-        }))}
+        initialGuests={event.guests.map((g) => ({ ...g, emailTracking: tracking.get(g.id) }))}
         canSendEmail={can(guard.actor, "campaigns.dispatch", event.id)}
         eventName={event.name}
         eventVenue={event.venueName}

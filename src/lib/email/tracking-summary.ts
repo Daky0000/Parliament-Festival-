@@ -67,3 +67,67 @@ export const trackingInvitationInclude = {
     select: { eventType: true, occurredAt: true, source: true },
   },
 };
+
+type AttemptAgg = { gid: string; sent: number; delivered: boolean; last_sent: Date | null; latest_status: string | null; latest_error: string | null };
+type EventAgg = { gid: string; opens: number; clicked: boolean; visited: boolean; first_at: Date | null; last_at: Date | null };
+
+/**
+ * The same summary as emailTrackingFor, for every guest of an event, computed
+ * by two grouped queries in the database instead of loading every row. Used
+ * by the Guest Directory and its 30-second refresh, which must stay cheap.
+ */
+export async function emailTrackingForEvent(
+  db: { $queryRaw: <T>(q: TemplateStringsArray, ...v: unknown[]) => Promise<T> },
+  eventId: string
+): Promise<Map<string, EmailTracking>> {
+  const [attempts, events] = await Promise.all([
+    db.$queryRaw<AttemptAgg[]>`
+      SELECT i."eventGuestId" AS gid,
+             (count(*) FILTER (WHERE ea."status" NOT IN ('failed','queued')))::int AS sent,
+             bool_or(ea."status" = 'delivered') AS delivered,
+             max(coalesce(ea."submittedAt", ea."createdAt")) FILTER (WHERE ea."status" NOT IN ('failed','queued')) AS last_sent,
+             (array_agg(ea."status" ORDER BY ea."createdAt" DESC))[1] AS latest_status,
+             (array_agg(ea."errorMessage" ORDER BY ea."createdAt" DESC))[1] AS latest_error
+      FROM "email_attempts" ea JOIN "invitations" i ON i."id" = ea."invitationId"
+      WHERE i."eventId" = ${eventId}
+      GROUP BY i."eventGuestId"`,
+    db.$queryRaw<EventAgg[]>`
+      SELECT i."eventGuestId" AS gid,
+             (count(*) FILTER (WHERE e."eventType" = 'open_signal'))::int AS opens,
+             bool_or(e."eventType" = 'click') AS clicked,
+             bool_or(e."eventType" = 'link_access') AS visited,
+             min(e."occurredAt") AS first_at,
+             max(e."occurredAt") AS last_at
+      FROM "invitation_events" e JOIN "invitations" i ON i."id" = e."invitationId"
+      WHERE i."eventId" = ${eventId} AND e."eventType" IN ('open_signal', 'click', 'link_access')
+      GROUP BY i."eventGuestId"`,
+  ]);
+  const ev = new Map(events.map((e) => [e.gid, e]));
+  const out = new Map<string, EmailTracking>();
+  for (const id of new Set([...attempts.map((a) => a.gid), ...events.map((e) => e.gid)])) {
+    const a = attempts.find((x) => x.gid === id);
+    const e = ev.get(id);
+    const sent = a?.sent ?? 0;
+    const opens = e?.opens ?? 0;
+    const engaged = !!(e?.clicked || e?.visited);
+    let status: EmailTrackingStatus = "not_sent";
+    if (engaged) status = "clicked";
+    else if (opens) status = "opened";
+    else if (a?.delivered) status = "delivered";
+    else if (a && (a.latest_status === "bounced" || a.latest_status === "rejected")) status = "bounced";
+    else if (sent) status = "sent";
+    else if (a?.latest_status === "failed") status = "failed";
+    out.set(id, {
+      status,
+      lastSentAt: a?.last_sent ? new Date(a.last_sent).toISOString() : null,
+      sendCount: sent,
+      firstOpenedAt: e?.first_at ? new Date(e.first_at).toISOString() : null,
+      lastOpenedAt: e?.last_at ? new Date(e.last_at).toISOString() : null,
+      openCount: opens,
+      clicked: engaged,
+      visitedRsvpPage: !!e?.visited,
+      lastError: a?.latest_status === "failed" ? a.latest_error ?? "Send failed" : null,
+    });
+  }
+  return out;
+}
