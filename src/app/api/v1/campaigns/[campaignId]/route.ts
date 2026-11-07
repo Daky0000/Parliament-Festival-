@@ -73,8 +73,11 @@ export const PATCH = withActor<{ campaignId: string }>(async (request, { actor, 
     });
 
   if (body.action === "approve") {
-    // Four-eyes: never by its creator, only while pending.
-    if (campaign.createdBy === actor.userId) {
+    // Four-eyes: never by its creator, only while pending. The owner decided
+    // (2026-11-07) that a super admin may approve their own campaign; that is
+    // recorded as a self-approval in the audit log.
+    const selfApproved = campaign.createdBy === actor.userId;
+    if (selfApproved && !actor.isSuperAdmin) {
       throw new HttpError(403, "A campaign cannot be approved by the person who created it.");
     }
     if (campaign.status !== "pending_approval") {
@@ -84,7 +87,7 @@ export const PATCH = withActor<{ campaignId: string }>(async (request, { actor, 
       where: { id: campaign.id },
       data: { status: "approved", approvedBy: actor.userId, approvedAt: new Date(), approvalNote: body.approvalNote || null },
     });
-    await audit("CAMPAIGN_APPROVED");
+    await audit(selfApproved ? "CAMPAIGN_SELF_APPROVED" : "CAMPAIGN_APPROVED", { selfApproved });
     return NextResponse.json({ data: updated });
   }
 

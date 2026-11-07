@@ -44,8 +44,7 @@ test("full invitation lifecycle", async () => {
   }));
   assert.strictEqual(created.status, 201, JSON.stringify(created.json));
   const campaignId = created.json.data.id;
-  const selfApprove = await call(campaignOne.PATCH, request(`/api/v1/campaigns/${campaignId}`, { method: "PATCH", cookie: admin, body: { action: "approve" } }), { campaignId });
-  assert.strictEqual(selfApprove.status, 403, "creator cannot approve");
+  // (Self-approval rules are covered in tests/security/campaign-self-approval.test.mjs.)
   const approved = await call(campaignOne.PATCH, request(`/api/v1/campaigns/${campaignId}`, { method: "PATCH", cookie: approver, body: { action: "approve" } }), { campaignId });
   assert.strictEqual(approved.status, 200, JSON.stringify(approved.json));
 
