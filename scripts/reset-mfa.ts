@@ -27,7 +27,7 @@ async function main() {
   await prisma.$transaction([
     prisma.user.update({
       where: { id: user.id },
-      data: { mfaSecretEnc: null, mfaPendingSecretEnc: null, mfaEnabledAt: null, mfaLastStep: null, mfaRequired: true },
+      data: { mfaSecretEnc: null, mfaPendingSecretEnc: null, mfaEnabledAt: null, mfaLastStep: null, mfaTotpVerifiedAt: null, mfaRequired: true },
     }),
     prisma.session.updateMany({ where: { userId: user.id, revokedAt: null }, data: { revokedAt: new Date() } }),
     prisma.auditLog.create({

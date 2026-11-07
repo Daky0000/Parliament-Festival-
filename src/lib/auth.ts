@@ -45,7 +45,7 @@ export async function verifyCredentials(email: string, password: string) {
 // ---- Throttling ----------------------------------------------------------
 
 const WINDOW_MS = 15 * 60 * 1000;
-const LIMITS = { login_email: 5, login_ip: 30, reset_email: 3, reset_ip: 20, mfa: 5, rsvp: 10, public_view: 60 } as const;
+const LIMITS = { login_email: 5, login_ip: 30, reset_email: 3, reset_ip: 20, mfa: 5, mfa_email_send: 3, rsvp: 10, public_view: 60 } as const;
 export type AttemptKind = keyof typeof LIMITS;
 
 export async function attemptKey(kind: AttemptKind, value: string): Promise<string> {
@@ -88,6 +88,24 @@ export async function mfaRequiredFor(userId: string): Promise<boolean> {
   if (user.mfaRequired || user.mfaEnabledAt) return true;
   if (!isDeployed()) return false;
   return user.roleAssignments.some((a) => PRIVILEGED_ROLES.includes(a.role.key));
+}
+
+/**
+ * Email codes may stand in for the authenticator only if the user has signed
+ * in with the authenticator since their password last changed. Otherwise
+ * control of the mailbox alone (reset link, then email code) would be enough.
+ * See docs/designs/mfa-email-fallback.md, M1.
+ */
+export function emailCodeAllowed(user: {
+  authProvider: string;
+  mfaEnabledAt: Date | null;
+  mfaTotpVerifiedAt: Date | null;
+  passwordChangedAt: Date | null;
+}): "ok" | "not_enrolled" | "password_changed" {
+  if (user.authProvider !== "local" || !user.mfaEnabledAt) return "not_enrolled";
+  if (!user.mfaTotpVerifiedAt) return "password_changed";
+  if (user.passwordChangedAt && user.mfaTotpVerifiedAt <= user.passwordChangedAt) return "password_changed";
+  return "ok";
 }
 
 // ---- Staff invites -------------------------------------------------------

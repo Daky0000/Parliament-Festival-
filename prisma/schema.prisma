@@ -42,6 +42,7 @@ model User {
   mfaPendingSecretEnc String? // set during enrolment, promoted on first valid code
   mfaEnabledAt        DateTime?
   mfaLastStep         Int? // last accepted TOTP step (replay protection)
+  mfaTotpVerifiedAt   DateTime? // last successful authenticator sign-in; gates email codes
   passwordChangedAt   DateTime?
   lastLoginAt         DateTime?
   createdAt           DateTime  @default(now())
@@ -136,6 +137,10 @@ model Session {
   mfaPending Boolean   @default(false)
   userAgent  String?
   ipHash     String?
+  // Email sign-in code for a pending (mfaPending) session. keyedHash, see src/lib/mfa-email.ts.
+  emailCodeHash      String?
+  emailCodeExpiresAt DateTime?
+  emailCodeSentAt    DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

@@ -1,6 +1,6 @@
 # Design: email code as a fallback for two-step verification
 
-Status: **Draft r2, awaiting owner approval** · Builds on `phase-1-security.md` (TOTP MFA, B2)
+Status: **Approved (r2), implemented** · Builds on `phase-1-security.md` (TOTP MFA, B2)
 Review: r1 reviewed by a zero-context security reviewer; findings and resolutions in §10.
 
 ## 1. Problem
@@ -137,12 +137,17 @@ and the shared `mfa` budget, blocking the real user for 15 minutes.
 
 ### 4.3 Page (`/login/mfa`, verify mode only)
 
-Under the code field: "Can't use your authenticator? Email me a code". Clicking
-it calls the send endpoint; on success the page switches to email mode: "We
-sent a 6-digit code to d•••@gmail.com. It expires in 10 minutes.", with "Send
-again" (disabled 60 s) and "Use authenticator app instead". Errors (403, 409,
-429, 502) are shown in place. The same input is used; submit sends `method`.
-If the send returns 403, the link is replaced by the refusal message.
+Between the Verify button and "Use a different account" (owner's placement):
+a link "Choose another 2FA option". It opens a small panel with "Email me a
+code — Send a 6-digit code to your account email" and "Cancel". Choosing it
+calls the send endpoint; on success the page switches to email mode: "We sent a
+6-digit code to d•••@gmail.com. It expires in 10 minutes.", the field label
+becomes "Email code", and the links become "Send the code again" (counts down
+60 s) and "Use authenticator app instead". Errors (403, 409, 429, 502) are
+shown in place. Submit sends `method` accordingly.
+
+Not shown while enrolling (the QR-code screen): the user has no authenticator
+yet, so the fallback would replace two-step verification rather than back it up.
 
 ## 5. Data model (expand-only migration)
 

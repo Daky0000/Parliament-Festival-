@@ -37,3 +37,22 @@ test("TOTP accepts the current code once and rejects replays", async () => {
   assert.strictEqual(await verifyTotp(secret, code, { nowMs: now, lastStep: step }), null, "replay rejected");
   assert.strictEqual(await verifyTotp(secret, "000000", { nowMs: now }) === null || true, true);
 });
+
+// ---- Email sign-in codes (docs/designs/mfa-email-fallback.md) -------------
+import { generateEmailCode, maskEmail } from "../../src/lib/mfa-email.ts";
+
+test("email sign-in codes are 6 digits and vary", () => {
+  const codes = new Set();
+  for (let i = 0; i < 200; i++) {
+    const c = generateEmailCode();
+    assert.match(c, /^\d{6}$/);
+    codes.add(c);
+  }
+  assert.ok(codes.size > 190);
+});
+
+test("maskEmail keeps the first letter and the domain", () => {
+  assert.strictEqual(maskEmail("dakya@gmail.com"), "d•••@gmail.com");
+  assert.strictEqual(maskEmail("x@y.org"), "x•••@y.org");
+  assert.strictEqual(maskEmail("broken"), "•••");
+});

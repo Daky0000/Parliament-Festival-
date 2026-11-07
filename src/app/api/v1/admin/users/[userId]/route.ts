@@ -132,7 +132,7 @@ export const POST = withActor<{ userId: string }>(async (request, { actor, param
       if (!actor.isSuperAdmin) throw new HttpError(403, "Only a super admin can reset two-step verification.");
       await prisma.user.update({
         where: { id: target.id },
-        data: { mfaSecretEnc: null, mfaPendingSecretEnc: null, mfaEnabledAt: null, mfaLastStep: null, mfaRequired: true },
+        data: { mfaSecretEnc: null, mfaPendingSecretEnc: null, mfaEnabledAt: null, mfaLastStep: null, mfaTotpVerifiedAt: null, mfaRequired: true },
       });
       await revokeUserSessions(target.id);
       await audit("user.mfa_reset");
