@@ -16,7 +16,11 @@ export async function guardPage(perm: Permission, nextPath = "/"): Promise<Guard
   const actor = await getActor();
   if (!actor) redirect(`/login?next=${encodeURIComponent(nextPath)}`);
   const { event } = await getCurrentEvent(actor);
-  if (!event) return { ok: false, actor, reason: "no_event" };
+  if (!event) {
+    // Admins who can create events get the setup form instead of a dead end.
+    if (can(actor, "events.create")) redirect("/events/new");
+    return { ok: false, actor, reason: "no_event" };
+  }
   if (!can(actor, perm, event.id)) return { ok: false, actor, reason: "forbidden" };
   return { ok: true, actor, event };
 }

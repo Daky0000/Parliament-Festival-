@@ -4,6 +4,7 @@ import { z } from "zod";
 import { withActor, hasGlobalRole, requireGlobal } from "@/lib/authz";
 import { HttpError, readJson } from "@/lib/http";
 import { logAuditEvent } from "@/lib/audit";
+import { DEFAULT_PROTOCOL_CATEGORIES } from "@/lib/protocol-defaults";
 
 // Lists only the events the actor can reach, in the actor's organization.
 export const GET = withActor(async (_req, { actor }) => {
@@ -51,7 +52,13 @@ export const POST = withActor(async (request, { actor }) => {
   });
   if (clash) throw new HttpError(409, "An event with this code already exists.");
   const event = await prisma.event.create({
-    data: { ...body, organizationId: actor.organizationId, status: "draft", createdBy: actor.userId },
+    data: {
+      ...body,
+      organizationId: actor.organizationId,
+      status: "draft",
+      createdBy: actor.userId,
+      categories: { create: DEFAULT_PROTOCOL_CATEGORIES.map((c) => ({ ...c })) },
+    },
   });
   await logAuditEvent({
     organizationId: actor.organizationId,
