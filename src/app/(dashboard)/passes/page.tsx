@@ -1,4 +1,5 @@
 import { guardPage } from "@/lib/page-guard";
+import { PoweredBy } from "@/components/brand/PoweredBy";
 import { AccessDenied } from "@/components/auth/AccessDenied";
 import { prisma } from "@/lib/db";
 import { can } from "@/lib/authz";
@@ -71,6 +72,7 @@ export default async function PassesPage() {
                 <p className="text-[13px] text-brand-ink"><strong>{c.category}</strong></p>
                 <p className="text-[13px] text-brand-ink">{c.seat}</p>
                 <p className="text-[12px] text-brand-muted">Ref {c.reference}</p>
+                <PoweredBy className="!items-start pt-1" />
                 {c.qr && (
                   <a href={`/api/v1/passes/${c.guestId}`} className="no-print inline-block text-[12px] text-brand-blue underline">Download SVG</a>
                 )}

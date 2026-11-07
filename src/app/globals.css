@@ -5,8 +5,8 @@
 /* ==========================================================================
    Parliament of Ghana · Event & Protocol Platform — design system
    Same tokens as the landing page (public/assets/brand.css):
-   white panels on a cool grey canvas, one blue accent, the dot field as the
-   only ornament. Tailwind's `parliament-*` colours in tailwind.config.ts
+   white panels on a cool grey canvas, one blue accent, and a subtle blue dot
+   field (.dot-surface) as the only ornament, always clear of text. Tailwind's `parliament-*` colours in tailwind.config.ts
    point at these values.
    ========================================================================== */
 
@@ -123,6 +123,38 @@ body {
     radial-gradient(22% 20% at 55% 20%, #000 50%, transparent 100%);
 }
 
+/* White theme with the subtle blue dot field. The dots sit behind the
+   content (z-index -1 inside an isolated surface) and fade out from one
+   corner, so they never run under body text; solid boxes on top hide them. */
+.dot-surface {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--white);
+}
+.dot-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  background-image: radial-gradient(circle, rgba(37, 99, 235, 0.16) 1.15px, transparent 1.6px);
+  background-size: 11px 11px;
+  -webkit-mask: radial-gradient(34% 70% at 100% 0%, #000 25%, transparent 100%);
+  mask: radial-gradient(34% 70% at 100% 0%, #000 25%, transparent 100%);
+}
+/* Tall surfaces (the menu): dots in the bottom corner, below the links. */
+.dot-surface.dots-bottom::before {
+  -webkit-mask: radial-gradient(90% 18% at 100% 100%, #000 20%, transparent 100%);
+  mask: radial-gradient(90% 18% at 100% 100%, #000 20%, transparent 100%);
+}
+/* Kept for the dark Super Admin console header. */
+.dotfield.dotfield-faint {
+  color: rgba(130, 165, 255, 0.1);
+  -webkit-mask: radial-gradient(40% 80% at 100% 0%, #000 25%, transparent 100%);
+  mask: radial-gradient(40% 80% at 100% 0%, #000 25%, transparent 100%);
+}
+
 /* Chip: pale blue, uppercase */
 .chip {
   display: inline-flex;
@@ -180,4 +212,11 @@ body {
   body { background: #fff !important; }
   .passes-grid { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8mm !important; }
   .pass-card { break-inside: avoid; border: 1px solid #ccc; box-shadow: none !important; }
+
+  /* Printing from the pass preview: only the credential itself. */
+  body.print-pass * { visibility: hidden !important; }
+  body.print-pass .pass-print,
+  body.print-pass .pass-print * { visibility: visible !important; }
+  body.print-pass .pass-print { position: absolute; left: 0; top: 0; margin: 0 !important; }
+  .pass-print, .pass-print *, .pass-print *::before { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }

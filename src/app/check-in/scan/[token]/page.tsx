@@ -22,8 +22,8 @@ export default async function ScanPage({ params }: { params: Promise<{ token: st
     <main className="min-h-screen bg-brand-canvas p-4 max-w-[520px] mx-auto space-y-4">
       <header className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-[12px] uppercase tracking-[0.14em] text-brand-muted">{scan.event?.name ?? "Check-in"}</p>
-          <p className="text-[15px] font-medium text-brand-ink">{scan.gate ? `Gate: ${scan.gate.name}` : "No gate selected"}</p>
+          <p className="text-[12px] uppercase tracking-[0.14em] text-brand-muted">Guest verification</p>
+          <p className="text-[15px] font-medium text-brand-ink">{scan.event?.name ?? "Check-in"}</p>
         </div>
         <Link href="/usher" className="px-4 py-3 rounded-[12px] border border-brand-line2 text-[15px] text-brand-ink bg-white">
           Back to portal

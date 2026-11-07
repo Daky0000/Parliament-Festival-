@@ -29,6 +29,7 @@ export type GuestCard = {
   seat: string | null;
   companionsExpected: number;
   reference: string;
+  rsvp: "accepted" | "declined" | "pending";
 };
 
 export type ScanResult = {
@@ -42,7 +43,7 @@ export type ScanResult = {
 };
 
 const MESSAGES: Record<ScanState, string> = {
-  VALID: "Valid invitation. Confirm attendance when the guest is present.",
+  VALID: "Invited guest. Confirm attendance when the guest is present.",
   ALREADY_CHECKED_IN: "Already checked in. Do not admit again; refer to a supervisor if this looks wrong.",
   INVALID: "This pass is not recognised. Refer to a supervisor.",
   EXPIRED: "This pass has expired. Refer to a supervisor.",
@@ -55,27 +56,18 @@ const MESSAGES: Record<ScanState, string> = {
 
 const result = (state: ScanState, extra: Partial<ScanResult> = {}): ScanResult => ({ state, message: MESSAGES[state], ...extra });
 
-/** Gates this actor may work at. Supervisors and event managers: all active gates; ushers: assigned gates only. */
-export async function gatesForActor(actor: Actor, eventId: string) {
-  const gates = await prisma.gate.findMany({ where: { eventId, isActive: true }, orderBy: { name: "asc" } });
-  if (can(actor, "checkin.manual_override", eventId) || can(actor, "events.update", eventId)) return gates;
-  const mine = await prisma.userGateAssignment.findMany({
-    where: { userId: actor.userId, revokedAt: null, gate: { eventId } },
-    select: { gateId: true },
-  });
-  const ids = new Set(mine.map((m) => m.gateId));
-  return gates.filter((g) => ids.has(g.id));
+/** Gates an usher can pick (optional, for reports). Every active gate of the event. */
+export async function gatesForActor(_actor: Actor, eventId: string) {
+  return prisma.gate.findMany({ where: { eventId, isActive: true }, orderBy: { name: "asc" } });
 }
 
-async function checkGate(actor: Actor, eventId: string, gateId: string | null | undefined) {
-  if (!gateId) {
-    // Events without gates configured allow gate-less check-in.
-    const any = await prisma.gate.count({ where: { eventId, isActive: true } });
-    return any === 0 ? { ok: true as const, gate: null } : { ok: false as const };
-  }
-  const allowed = await gatesForActor(actor, eventId);
-  const gate = allowed.find((g) => g.id === gateId);
-  return gate ? { ok: true as const, gate } : { ok: false as const };
+// Gates never block verification or check-in: any usher of the event may
+// verify a pass and confirm the guest wherever they stand. A gate, when the
+// usher picked one that belongs to this event, is only recorded for reports.
+async function checkGate(_actor: Actor, eventId: string, gateId: string | null | undefined) {
+  if (!gateId) return { ok: true as const, gate: null };
+  const gate = await prisma.gate.findFirst({ where: { id: gateId, eventId, isActive: true } });
+  return { ok: true as const, gate: gate ?? null };
 }
 
 function windowOpen(event: { status: string; checkinOpensAt: Date | null; checkinClosesAt: Date | null }, now = new Date()) {
@@ -109,6 +101,7 @@ async function guestCard(eventGuestId: string): Promise<GuestCard> {
     seat: seat ? `${seat.section.name}${seat.seat ? ` · Seat ${seat.seat.seatCode}` : ""}` : null,
     companionsExpected: latest?.response === "accepted" ? latest.companionCount : 0,
     reference: g.guestReference ?? "",
+    rsvp: latest?.response === "accepted" ? "accepted" : latest?.response === "declined" ? "declined" : "pending",
   };
 }
 
@@ -303,8 +296,8 @@ export async function reverseCheckin(actor: Actor, attendanceId: string, reason:
 export async function lookupGuests(eventId: string, q: string) {
   const query = q.trim();
   if (query.length < 2) return [];
-  // Exact references first (guest reference, invitation reference, seat
-  // number), then partial name / organisation matches.
+  // Exact references first (guest reference, invitation reference, RSVP
+  // confirmation code from the thank-you SMS, seat number), then partial name / organisation matches.
   const exact = await prisma.eventGuest.findMany({
     where: {
       eventId,
@@ -312,6 +305,7 @@ export async function lookupGuests(eventId: string, q: string) {
       OR: [
         { guestReference: { equals: query, mode: "insensitive" } },
         { invitations: { some: { invitationReference: { equals: query, mode: "insensitive" } } } },
+        { invitations: { some: { rsvps: { some: { confirmationReference: { equals: query, mode: "insensitive" } } } } } },
         { seatAssignments: { some: { status: { in: ["proposed", "approved"] }, seat: { seatCode: { equals: query, mode: "insensitive" } } } } },
       ],
     },

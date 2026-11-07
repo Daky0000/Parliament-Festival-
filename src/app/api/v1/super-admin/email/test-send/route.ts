@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withActor, requireGlobal } from "@/lib/authz";
 import { getProviderSecret } from "@/lib/integrations";
+import { withPoweredBy, withPoweredByText } from "@/lib/email/powered-by";
 
 export const POST = withActor(async (request, { actor }) => {
   requireGlobal(actor, "platform.manage");
@@ -35,7 +36,7 @@ export const POST = withActor(async (request, { actor }) => {
         from: fromEmail,
         to: [recipientEmail],
         subject: "Parliament of Ghana - Official System Verification Test",
-        html: `
+        html: withPoweredBy(`
           <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; background: #0A1830; color: #FFFFFF; padding: 32px; border: 2px solid #C6A65B; border-radius: 8px;">
             <div style="text-align: center; border-bottom: 1px solid #C6A65B; padding-bottom: 20px; margin-bottom: 24px;">
               <h1 style="color: #DFCA95; font-size: 20px; margin: 0; text-transform: uppercase; letter-spacing: 2px;">Parliament of Ghana</h1>
@@ -53,8 +54,8 @@ export const POST = withActor(async (request, { actor }) => {
               Confidential State Event System &bull; Forecourt of Parliament, Accra, Ghana
             </p>
           </div>
-        `,
-        text: `Parliament of Ghana - Protocol System Test Verification. Generated at ${new Date().toISOString()}`,
+        `),
+        text: withPoweredByText(`Parliament of Ghana - Protocol System Test Verification. Generated at ${new Date().toISOString()}`),
       }),
     });
 

@@ -228,7 +228,7 @@ export function AiCentreClientView({ eventId }: { eventId: string }) {
           >
             <input
               type="text"
-              placeholder="Ask about guests, pending RSVPs, seating, or draft copy..."
+              placeholder="Ask about this event: guests, RSVPs, seating, emails, check-in, or how to use the platform…"
               value={inputQuery}
               onChange={(e) => setInputQuery(e.target.value)}
               className="flex-1 text-xs border border-[#E3E6EB] rounded-md px-3 py-2.5 focus:outline-none focus:border-[#2563EB]"

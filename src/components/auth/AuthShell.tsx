@@ -4,7 +4,7 @@ import { BrandMark } from "@/components/layout/Sidebar";
 export function AuthShell({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
     <main className="min-h-screen bg-brand-canvas grid place-items-center p-4">
-      <section className="panel w-full max-w-[420px] p-6 sm:p-8 space-y-6">
+      <section className="panel dot-surface w-full max-w-[420px] p-6 sm:p-8 space-y-6">
         <header className="flex items-center gap-3">
           <BrandMark />
           <div>

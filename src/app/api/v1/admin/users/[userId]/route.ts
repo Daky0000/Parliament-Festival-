@@ -8,7 +8,7 @@ import { revokeUserSessions } from "@/lib/session";
 import { logAuditEvent } from "@/lib/audit";
 import { appOrigin } from "@/lib/config";
 import { assertCanGrant, loadTargetUser, roleIdFor } from "@/lib/user-admin";
-import { sendUserInviteEmail } from "@/lib/email/user-invite";
+import { sendStaffInviteEmail } from "@/lib/email/staff-invite";
 
 const Body = z.discriminatedUnion("action", [
   z.object({ action: z.literal("reissue_invite") }),
@@ -53,34 +53,18 @@ export const POST = withActor<{ userId: string }>(async (request, { actor, param
       if (target.status !== "invited") throw new HttpError(409, "This account is already active.");
       const token = await issueInvite(target.id, actor.userId);
       const activationUrl = `${appOrigin()}/activate/${token}`;
-
-      const primaryAssignment = target.roleAssignments[0];
-      const event = primaryAssignment?.eventId
-        ? await prisma.event.findUnique({ where: { id: primaryAssignment.eventId }, select: { name: true } })
-        : null;
-      const actorUser = await prisma.user.findUnique({ where: { id: actor.userId }, select: { fullName: true } });
-
-      const emailResult = await sendUserInviteEmail({
-        to: target.email,
-        fullName: target.fullName,
-        roleName: primaryAssignment?.role?.name || "Staff",
-        eventName: event?.name || null,
-        activationUrl,
-        inviterName: actorUser?.fullName || "An administrator",
+      const assignment = await prisma.userRoleAssignment.findFirst({
+        where: { userId: target.id, revokedAt: null },
+        include: { role: { select: { name: true } }, event: { select: { name: true } } },
       });
-
-      await audit("user.invite_reissued", {
-        emailSent: emailResult.ok,
-        emailError: emailResult.ok ? null : emailResult.message,
-      });
-
-      return NextResponse.json({
-        data: {
-          activationUrl,
-          emailSent: emailResult.ok,
-          emailError: emailResult.ok ? null : emailResult.message,
-        },
-      });
+      const inviter = await prisma.user.findUnique({ where: { id: actor.userId }, select: { fullName: true } });
+      const sent = await sendStaffInviteEmail(
+        target.email,
+        { fullName: target.fullName, roleName: assignment?.role.name ?? "staff member", eventName: assignment?.event?.name ?? null, activationUrl, invitedBy: inviter?.fullName ?? null },
+        `staff-invite-${target.id}-${token.slice(0, 12)}`
+      );
+      await audit("user.invite_reissued", { emailSent: sent.sent, ...(sent.error ? { error: sent.error.slice(0, 200) } : {}) });
+      return NextResponse.json({ data: { activationUrl, emailSent: sent.sent, emailedTo: target.email, emailError: sent.error ?? null } });
     }
     case "suspend": {
       await prisma.user.update({ where: { id: target.id }, data: { status: "suspended" } });
@@ -132,7 +116,7 @@ export const POST = withActor<{ userId: string }>(async (request, { actor, param
       if (!actor.isSuperAdmin) throw new HttpError(403, "Only a super admin can reset two-step verification.");
       await prisma.user.update({
         where: { id: target.id },
-        data: { mfaSecretEnc: null, mfaPendingSecretEnc: null, mfaEnabledAt: null, mfaLastStep: null, mfaTotpVerifiedAt: null, mfaRequired: true },
+        data: { mfaSecretEnc: null, mfaPendingSecretEnc: null, mfaEnabledAt: null, mfaLastStep: null, mfaRequired: true },
       });
       await revokeUserSessions(target.id);
       await audit("user.mfa_reset");

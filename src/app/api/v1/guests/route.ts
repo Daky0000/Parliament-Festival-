@@ -16,6 +16,8 @@ async function assertBelongsToEvent(eventId: string, ids: { protocolCategoryId?:
 }
 import { logAuditEvent } from "@/lib/audit";
 import { ensureGuestPass, issueInvitation, withUniqueReference } from "@/lib/guest-tokens";
+import { allocateNextSeat } from "@/lib/seating/auto-seat";
+import { emailTrackingFor, trackingInvitationInclude } from "@/lib/email/tracking-summary";
 
 export const GET = withActor(async (request, { actor }) => {
   const { searchParams } = new URL(request.url);
@@ -204,42 +206,58 @@ export const POST = withActor(async (request, { actor }) => {
     }
 
     if (targetSectionId) {
-      let seatId = null;
-
+      const sectionForSeat = targetSectionId;
       if (seatCode && seatCode.trim()) {
+        // Explicit seat (API clients / imports): reserve that code.
         const cleanCode = seatCode.trim().toUpperCase();
         let existingSeat = await prisma.seat.findFirst({
-          where: { sectionId: targetSectionId, seatCode: cleanCode },
+          where: { sectionId: sectionForSeat, seatCode: cleanCode },
         });
-
         if (!existingSeat) {
           existingSeat = await prisma.seat.create({
-            data: {
-              sectionId: targetSectionId,
-              seatCode: cleanCode,
-              seatStatus: "reserved",
-            },
+            data: { sectionId: sectionForSeat, seatCode: cleanCode, seatStatus: "reserved" },
           });
         } else {
-          await prisma.seat.update({
-            where: { id: existingSeat.id },
-            data: { seatStatus: "reserved" },
-          });
+          await prisma.seat.update({ where: { id: existingSeat.id }, data: { seatStatus: "reserved" } });
         }
-        seatId = existingSeat.id;
+        await prisma.seatAssignment.create({
+          data: {
+            seatingPlanId: seatingPlan.id,
+            eventGuestId: eventGuest.id,
+            sectionId: sectionForSeat,
+            seatId: existingSeat.id,
+            assignmentType: "principal",
+            status: "proposed",
+            assignedBy: user?.userId,
+          },
+        });
+      } else {
+        // Default: the next free seat in the section is allocated automatically.
+        for (let attempt = 0; ; attempt++) {
+          try {
+            await prisma.$transaction(async (tx) => {
+              const seat = await allocateNextSeat(tx, { seatingPlanId: seatingPlan.id, sectionId: sectionForSeat });
+              // Section full: leave the guest unseated rather than overfill it.
+              if (!seat) return;
+              await tx.seatAssignment.create({
+                data: {
+                  seatingPlanId: seatingPlan.id,
+                  eventGuestId: eventGuest.id,
+                  sectionId: sectionForSeat,
+                  seatId: seat.id,
+                  assignmentType: "principal",
+                  status: "proposed",
+                  assignedBy: user?.userId,
+                  reason: "auto_allocated",
+                },
+              });
+            });
+            break;
+          } catch (err) {
+            if ((err as { code?: string }).code !== "P2002" || attempt >= 2) throw err;
+          }
+        }
       }
-
-      await prisma.seatAssignment.create({
-        data: {
-          seatingPlanId: seatingPlan.id,
-          eventGuestId: eventGuest.id,
-          sectionId: targetSectionId,
-          seatId: seatId,
-          assignmentType: "principal",
-          status: "proposed",
-          assignedBy: user?.userId,
-        },
-      });
     }
   }
 
@@ -306,7 +324,8 @@ export const POST = withActor(async (request, { actor }) => {
     });
   }
 
-  return NextResponse.json({ data: fullGuest }, { status: 201 });
+  const trackingRows = await prisma.invitation.findMany({ where: { eventGuestId: eventGuest.id }, include: trackingInvitationInclude });
+  return NextResponse.json({ data: { ...fullGuest, emailTracking: emailTrackingFor(trackingRows) } }, { status: 201 });
 });
 
 export const PATCH = withActor(async (request, { actor }) => {

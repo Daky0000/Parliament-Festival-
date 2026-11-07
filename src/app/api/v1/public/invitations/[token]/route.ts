@@ -7,6 +7,7 @@ import { assertSameOrigin, clientIp } from "@/lib/authz";
 import { attemptKey, assertNotThrottled, recordAttempt } from "@/lib/auth";
 import { ensureActiveCredential, passQrDataUrl, revokeCredentials, withUniqueReference } from "@/lib/guest-tokens";
 import { decryptSecret } from "@/lib/crypto";
+import { sendRsvpConfirmationSms } from "@/lib/sms/rsvp-confirmation";
 
 // Guest-facing invitation API. GET is strictly read-only (email scanners and
 // link previews fetch it); views are recorded only by the page's own script.
@@ -20,7 +21,13 @@ async function loadInvitation(token: string) {
     where: { tokenHash: await sha256Hex(token) },
     include: {
       event: true,
-      eventGuest: { include: { person: true, protocolCategory: true } },
+      eventGuest: {
+        include: {
+          person: true,
+          protocolCategory: true,
+          seatAssignments: { where: { status: { in: ["proposed", "approved"] } }, include: { section: true, seat: true }, take: 1 },
+        },
+      },
       rsvps: { orderBy: { submittedAt: "desc" }, take: 1 },
     },
   });
@@ -60,6 +67,13 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ token:
           designation: inv.designationSnapshot,
           institution: inv.institutionSnapshot,
           protocolCategory: inv.eventGuest.protocolCategory?.name,
+          rankOrder: inv.eventGuest.protocolCategory?.rankOrder ?? null,
+          rankColour: inv.eventGuest.protocolCategory?.colourHex ?? null,
+          seat: (() => {
+            const a = inv.eventGuest.seatAssignments[0];
+            return a ? { section: a.section.name, seatCode: a.seat?.seatCode ?? null } : null;
+          })(),
+          guestReference: inv.eventGuest.guestReference,
           companionAllowance: inv.eventGuest.companionAllowance,
           currentRsvp: latest
             ? {
@@ -163,6 +177,9 @@ export async function POST(req: NextRequest, context: { params: Promise<{ token:
       });
       return { rsvp, passToken };
     });
+
+    // Thank-you SMS with rank, seat and confirmation code (never blocks the RSVP).
+    if (result.rsvp.response === "accepted") await sendRsvpConfirmationSms(result.rsvp.id);
 
     return NextResponse.json({
       data: {

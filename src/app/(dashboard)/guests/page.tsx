@@ -4,6 +4,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { FileSpreadsheet, Award, QrCode } from "lucide-react";
 import { GuestsClientView } from "./GuestsClientView";
+import { can } from "@/lib/authz";
+import { emailTrackingForEvent } from "@/lib/email/tracking-summary";
 
 export const dynamic = "force-dynamic";
 
@@ -24,8 +26,6 @@ export default async function GuestsPage() {
           invitations: {
             include: {
               rsvps: { orderBy: { submittedAt: "desc" }, take: 1 },
-              emailAttempts: { orderBy: { attemptNumber: "desc" }, take: 1 },
-              invitationEvents: { orderBy: { occurredAt: "desc" }, take: 2 },
             },
           },
           seatAssignments: {
@@ -53,6 +53,7 @@ export default async function GuestsPage() {
   });
 
   if (!event) return <div>No active event found.</div>;
+  const tracking = await emailTrackingForEvent(prisma, event.id);
 
   return (
     <div className="space-y-[var(--frame)]">
@@ -92,7 +93,11 @@ export default async function GuestsPage() {
 
       <GuestsClientView
         eventId={event.id}
-        initialGuests={event.guests}
+        initialGuests={event.guests.map((g) => ({ ...g, emailTracking: tracking.get(g.id) }))}
+        canSendEmail={can(guard.actor, "campaigns.dispatch", event.id)}
+        eventName={event.name}
+        eventVenue={event.venueName}
+        eventStartsAt={event.startsAt ? event.startsAt.toISOString() : null}
         categories={event.categories}
         seatingSections={event.seatingPlans[0]?.sections || []}
       />

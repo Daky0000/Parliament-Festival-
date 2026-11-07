@@ -31,7 +31,7 @@ export default async function SuperAdminLayout({
   return (
     <div className="min-h-screen bg-[#0D1526] text-white flex flex-col gap-[var(--frame)] p-[var(--frame)]">
       <header className="band">
-        <div className="dotfield" aria-hidden="true" />
+        <div className="dotfield dotfield-faint" aria-hidden="true" />
         <div className="relative flex flex-wrap items-center gap-4 px-5 sm:px-6 py-4">
           <Link
             href="/"

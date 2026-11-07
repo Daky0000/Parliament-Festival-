@@ -1,6 +1,8 @@
 import QRCode from "qrcode";
+import { DAKYX_BLUE_DARK, DAKYX_MARK_DATA_URL } from "./brand/dakyx";
 
-// Guest pass QR codes with the brand mark in the centre.
+// Guest pass QR codes: drawn in DakyXTech blue with the DakyXTech mark in
+// the centre.
 //
 // The code uses error-correction level H (recovers ~30% damaged modules) and
 // the logo badge covers at most LOGO_RATIO of the side (~5% of the area), so
@@ -10,7 +12,8 @@ import QRCode from "qrcode";
 
 export const LOGO_RATIO = 0.22;
 const QUIET_ZONE = 4; // modules of white border required by the QR standard
-const INK = "#0A1830";
+// The darker of the dakyx.com blues: on-brand and high contrast for scanning.
+const INK = DAKYX_BLUE_DARK;
 
 export type QrMatrix = { size: number; isDark: (x: number, y: number) => boolean };
 
@@ -53,21 +56,16 @@ export function passQrSvg(content: string, opts: { title?: string } = {}): strin
 
   const side = hole.end - hole.start;
   const bx = hole.start + QUIET_ZONE;
-  const cx = bx + side / 2;
-  const r = side / 2 - 0.4;
-  const iconScale = (r * 1.25) / 24; // the 24-unit parliament icon inside the circle
-  const iconOffset = cx - 12 * iconScale;
+  const pad = side * 0.14;
 
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} ${total}" shape-rendering="crispEdges" role="img" aria-label="${escapeXml(opts.title ?? "Event pass QR code")}">`,
     `<rect width="${total}" height="${total}" fill="#FFFFFF"/>`,
     `<path fill="${INK}" d="${d}"/>`,
-    // Logo badge: white rounded square, navy circle, white parliament mark.
+    // Logo badge: white rounded square with the DakyXTech mark.
     `<rect x="${bx}" y="${bx}" width="${side}" height="${side}" rx="${side * 0.18}" fill="#FFFFFF" shape-rendering="geometricPrecision"/>`,
-    `<circle cx="${cx}" cy="${cx}" r="${r}" fill="${INK}" shape-rendering="geometricPrecision"/>`,
-    `<g transform="translate(${iconOffset} ${iconOffset}) scale(${iconScale})" fill="none" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision">`,
-    `<path d="M3 9.5 12 4l9 5.5"/><path d="M4.5 10h15"/><path d="M6.5 10v7.5M10 10v7.5M14 10v7.5M17.5 10v7.5"/><path d="M4 20h16"/>`,
-    `</g></svg>`,
+    `<image x="${bx + pad}" y="${bx + pad}" width="${side - pad * 2}" height="${side - pad * 2}" href="${DAKYX_MARK_DATA_URL}" preserveAspectRatio="xMidYMid meet"/>`,
+    `</svg>`,
   ].join("");
 }
 

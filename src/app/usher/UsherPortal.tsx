@@ -11,7 +11,7 @@ import type { GuestCard, ScanResult } from "@/lib/checkin";
 type Gate = { id: string; name: string; fastTrackEnabled: boolean };
 
 function setGateCookie(id: string) {
-  // A preference only; the server re-checks the gate assignment on every request.
+  // A preference only; the gate is recorded with each check-in for reports.
   document.cookie = `pf_gate=${encodeURIComponent(id)}; Path=/; SameSite=Lax; Max-Age=43200${location.protocol === "https:" ? "; Secure" : ""}`;
 }
 
@@ -45,7 +45,8 @@ export function UsherPortal({
   const [chosen, setChosen] = useState<GuestCard | null>(null);
   const [searching, setSearching] = useState(false);
   const gate = gates.find((g) => g.id === gateId) ?? null;
-  const needsGate = gates.length > 0 && !gate;
+  // The gate is optional: it is only recorded for reports, never required.
+  const needsGate = false;
 
   useEffect(() => {
     if (gateId) setGateCookie(gateId);
@@ -131,28 +132,28 @@ export function UsherPortal({
     <main className="min-h-screen bg-brand-canvas p-4 max-w-[520px] mx-auto space-y-4">
       {mode === "scanning" && <QrScanner onToken={onToken} onClose={() => setMode("home")} />}
 
-      <header className="band p-4">
+      <header className="panel dot-surface p-4">
         <div className="relative flex items-start justify-between gap-3">
           <div>
-            <p className="text-[12px] uppercase tracking-[0.14em] text-white/70">Usher dashboard</p>
+            <p className="text-[12px] uppercase tracking-[0.14em] text-brand-muted">Usher dashboard</p>
             <p className="text-[18px] font-medium leading-tight">{event.name}</p>
-            <p className="text-[13px] text-white/70">{usherName}{gate ? ` · ${gate.name}` : ""}</p>
+            <p className="text-[13px] text-brand-muted">{usherName}{gate ? ` · ${gate.name}` : ""}</p>
           </div>
-          <button type="button" onClick={signOut} aria-label="Sign out" className="w-12 h-12 grid place-items-center rounded-[12px] bg-white/10">
+          <button type="button" onClick={signOut} aria-label="Sign out" className="w-12 h-12 grid place-items-center rounded-[12px] bg-brand-soft">
             <LogOut className="w-5 h-5" />
           </button>
         </div>
         {event.status !== "active" && (
-          <p className="relative mt-3 text-[13px] bg-white/10 rounded-[10px] px-3 py-2">Check-in is not open: the event is {event.status}.</p>
+          <p className="relative mt-3 text-[13px] bg-brand-soft rounded-[10px] px-3 py-2">Check-in is not open: the event is {event.status}.</p>
         )}
       </header>
 
       {gates.length > 0 && (
         <section className="panel p-4 space-y-2">
-          <label htmlFor="gate" className="block text-[13px] font-medium text-brand-ink">Your gate</label>
+          <label htmlFor="gate" className="block text-[13px] font-medium text-brand-ink">Your gate <span className="text-brand-muted font-normal">(optional)</span></label>
           <select id="gate" value={gateId ?? ""} onChange={(e) => setGateId(e.target.value || null)}
             className="w-full min-h-[52px] border border-brand-line2 rounded-[12px] px-3 text-[17px] bg-white text-brand-ink">
-            <option value="">Select your gate…</option>
+            <option value="">No gate</option>
             {gates.map((g) => (
               <option key={g.id} value={g.id}>{g.name}{g.fastTrackEnabled ? " (fast-track)" : ""}</option>
             ))}
@@ -214,7 +215,7 @@ export function UsherPortal({
                   Guest reference, invitation reference, seat number or name
                 </label>
                 <div className="flex gap-2">
-                  <input id="q" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="e.g. GH-GST-7K3QX9PA or SEC-A-R1-S3"
+                  <input id="q" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Guest ref, SMS confirmation code (CONF-…), or seat"
                     autoCapitalize="characters" autoComplete="off" minLength={2}
                     className="flex-1 min-h-[52px] border border-brand-line2 rounded-[12px] px-3 text-[16px]" />
                   <button type="submit" disabled={searching || query.trim().length < 2} className="min-h-[52px] px-4 rounded-[12px] bg-[#2563EB] text-white text-[16px] disabled:opacity-50">

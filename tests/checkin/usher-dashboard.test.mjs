@@ -52,7 +52,7 @@ test("enter reference: guest reference, invitation reference and seat number all
   assert.strictEqual(v.json.data.state, "VALID");
   const wrongGate = await prisma.gate.findFirstOrThrow({ where: { eventId: f.event.id, code: "VIP" } });
   const w = await call(verify.POST, request("/api/v1/check-in/verify", { method: "POST", cookie, body: { eventId: f.event.id, eventGuestId: guest.id, gateId: wrongGate.id } }));
-  assert.strictEqual(w.json.data.state, "WRONG_GATE");
+  assert.strictEqual(w.json.data.state, "VALID", "another gate does not block");
 });
 
 test("campaign engagement counts opens, button clicks, page visits and responses per invitation", async () => {

@@ -6,6 +6,7 @@ import { HttpError, forbidden, readJson } from "@/lib/http";
 import { AI_TOOL_REGISTRY, executeAiTool, redactForModel, toolSpecsForModel } from "@/lib/ai/orchestrator";
 import { AiUnavailableError, runAgent } from "@/lib/ai/providers";
 import { logAuditEvent } from "@/lib/audit";
+import { ASSISTANT_SYSTEM_PROMPT } from "@/lib/ai/system-prompt";
 
 // AI assistant: a real model (OpenAI primary, Claude secondary) with the
 // registry tools. The event is fixed by the server; tools run under the
@@ -23,10 +24,7 @@ const Body = z.object({
   message: z.string().trim().min(1).max(4000),
 });
 
-const SYSTEM = `You are the protocol assistant for the Parliament of Ghana's event team.
-Use the tools to answer from the event's real data; never invent guests, numbers or seats.
-Tools that change data are not run immediately: they are queued for a person to approve, so say that the change is awaiting approval.
-Write formally and concisely. Contact details are withheld from you by design; do not ask for them.`;
+const SYSTEM = ASSISTANT_SYSTEM_PROMPT;
 
 export const POST = withActor(async (request, { actor }) => {
   if (!canAny(actor, "ai.use")) throw forbidden();

@@ -48,7 +48,8 @@ test("the QR with the centre logo still decodes, for realistic pass URLs", () =>
 test("the pass SVG carries the logo and no personal data", () => {
   const svg = passQrSvg("https://festival.parliament.gh/check-in/scan/abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG", { title: "Event pass" });
   assert.match(svg, /^<svg[^>]+viewBox="0 0 \d+ \d+"/);
-  assert.match(svg, /<circle /, "logo badge present");
+  assert.match(svg, /<image [^>]*href="data:image\/png;base64,/, "DakyXTech logo present");
+  assert.match(svg, /fill="#1D4ED8"/, "drawn in DakyXTech blue");
   assert.ok(!/@|\+233/.test(svg));
 });
 

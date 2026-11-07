@@ -44,3 +44,11 @@ test("AI policy gate: an usher cannot run seating tools", async () => {
   assert.strictEqual(result.status, "denied");
   assert.match(result.error, /Security Policy Gate/);
 });
+
+test("RBAC: ushers and check-in supervisors never get the AI assistant", async () => {
+  const { SYSTEM_ROLES } = await import("../../src/lib/roles.ts");
+  for (const key of ["usher", "checkin_supervisor"]) {
+    const ai = SYSTEM_ROLES[key].permissions.filter((p) => p.startsWith("ai."));
+    assert.deepStrictEqual(ai, [], `${key} must have no ai.* permission`);
+  }
+});
