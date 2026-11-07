@@ -45,15 +45,14 @@ const PERMISSION = {
   cancel: "campaigns.cancel",
 } as const;
 
-/** Starts sending right away on Workers (the cron trigger is the safety net). */
+/**
+ * Starts sending right away; the Node server keeps running after the response.
+ * The cron service's one-minute tick is the safety net. Skipped in tests so
+ * they stay deterministic.
+ */
 function kickQueue() {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { getCloudflareContext } = require("@opennextjs/cloudflare") as typeof import("@opennextjs/cloudflare");
-    getCloudflareContext().ctx.waitUntil(processQueue(25).catch((e) => console.error("queue kick failed", e)));
-  } catch {
-    // Not on Workers (local dev / tests): the cron or a manual tick processes the queue.
-  }
+  if (process.env.APP_ENV === "ci") return;
+  void processQueue(25).catch((e) => console.error("queue kick failed", e));
 }
 
 export const PATCH = withActor<{ campaignId: string }>(async (request, { actor, params }) => {

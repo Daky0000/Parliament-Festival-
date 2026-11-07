@@ -14,7 +14,7 @@ export const isDeployed = () => appEnv() === "staging" || appEnv() === "producti
 
 /**
  * The public origin used for CSRF checks and absolute links. APP_URL is a
- * runtime var (wrangler vars); NEXT_PUBLIC_APP_URL is the build-time fallback.
+ * runtime var (Railway service variable); NEXT_PUBLIC_APP_URL is the build-time fallback.
  */
 export function appOrigin(): string {
   const raw = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";

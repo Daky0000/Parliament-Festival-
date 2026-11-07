@@ -6,10 +6,12 @@ Platform for the **2026 Festival of Nine Lessons and Carols**: guest registry, i
 
 | Layer | Technology |
 | --- | --- |
-| App | Next.js 16 (App Router), deployed to **Cloudflare Workers** with `@opennextjs/cloudflare` |
-| Database | **Neon Postgres** through Prisma 6. The Neon serverless adapter is used on Workers; plain TCP is used on Node |
-| Static assets | `public/` (served by the Worker). Email images and fonts are in `public/assets/` |
-| CI/CD | GitHub Actions: `.github/workflows/ci.yml` and `.github/workflows/deploy.yml` |
+| App | Next.js 16 (App Router) on **Railway** (`next start`, Node), project **Gov Festival**, service `gov-festival-app` |
+| Database | **Railway Postgres** through Prisma 6 |
+| Media | **Cloudflare R2** bucket `parliament-festival-media` through `src/lib/storage.ts` (private; signed URLs) |
+| Static assets | `public/` (served by the app). Email images and fonts are in `public/assets/` |
+| Background work | Railway service `gov-festival-cron` POSTs `/api/internal/tick` every 60 s |
+| CI/CD | GitHub Actions CI (`.github/workflows/ci.yml`); Railway autodeploys `phase-0-foundation` |
 
 Design specs for each remediation phase are in `docs/designs/`.
 
@@ -25,7 +27,7 @@ Design specs for each remediation phase are in `docs/designs/`.
    - **Option A:** Prisma's built-in server: `npx prisma dev -n pf -d`. It prints the TCP URL. Append `&pgbouncer=true&connection_limit=1` to that URL.
    - **Option B:** Docker: `docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:17`
 
-3. Set `DATABASE_URL` and `DIRECT_URL` to that URL in `.env`. Copy the other variable names from `.dev.vars.example`. Set `APP_ENV=local` and `EMAIL_PROVIDER=mock`.
+3. Set `DATABASE_URL` and `DIRECT_URL` to that URL in `.env`. Set `APP_ENV=local`, `EMAIL_PROVIDER=mock` and `SMS_PROVIDER=mock`. Other variables are listed under **Required configuration** below.
 
 4. Apply migrations, seed, and run:
 
@@ -44,57 +46,42 @@ npm run typecheck
 npm test          # needs a migrated and seeded database; real providers are always mocked
 ```
 
-`npm run build:worker` produces the Cloudflare bundle. It needs Linux or WSL: OpenNext creates symlinks that Windows refuses without Developer Mode. CI builds it on Linux.
+`npm run build` produces the production build that Railway runs.
 
 ## Database migrations
 
 - Create a migration with `npx prisma migrate dev --create-only --name <name>`, then review the SQL before committing.
 - `prisma/migrations/20261105000100_partial_unique_indexes` holds indexes that Prisma cannot model. **Never accept a generated migration that drops `uq_*` indexes.** CI fails if any is missing.
-- Write migrations as expand/contract: add the new column or table first, ship code that uses it, and remove the old one in a later release. This keeps the previous Worker version compatible during rollback.
+- Write migrations as expand/contract: add the new column or table first, ship code that uses it, and remove the old one in a later release. This keeps the previous deployment compatible during rollback.
 
 ## Deploying
 
-| Environment | Trigger | Worker |
-| --- | --- | --- |
-| Staging | Automatic after CI passes on `main` | `parliament-festival-staging` |
-| Production | Manual run of the **Deploy** workflow with a commit SHA. Requires approval in the `production` GitHub Environment | `parliament-festival-production` |
+Railway (project **Gov Festival**, environment `production`) deploys `gov-festival-app` automatically on every push to `phase-0-foundation`. The public URL is https://gov.dakyx.com.
 
-Each deploy follows the same sequence:
+Each deploy:
 
-1. Run `prisma migrate deploy` against Neon.
-2. Build and deploy with OpenNext.
-3. Smoke-test `/api/health` and check that it reports the deployed SHA.
-4. If the smoke test fails, the Worker rolls back automatically.
+1. Builds with Railpack (`npm ci`, `prisma generate`, `npm run build`).
+2. Runs the pre-deploy command `npx prisma migrate deploy`. If it fails, the release stops and the previous deployment keeps serving.
+3. Starts `npm start`.
 
-Both environments sit behind Cloudflare Access. CI reaches them with an Access service token.
-
-Rollback procedures are in `docs/runbooks/deploy-and-rollback.md`.
+To roll back, redeploy an earlier deployment from the Railway dashboard (or `railway redeploy`). Rollback procedures are in `docs/runbooks/deploy-and-rollback.md`.
 
 ### Required configuration
 
-Set each of these per GitHub Environment (`staging` and `production`):
+Set on the `gov-festival-app` service with `railway variables --set NAME=value`:
 
-- **Secrets:**
-  - `DATABASE_URL` (Neon pooled)
-  - `DIRECT_URL` (Neon direct)
-  - `CLOUDFLARE_API_TOKEN`
-  - `CLOUDFLARE_ACCOUNT_ID`
-  - `CF_ACCESS_CLIENT_ID`
-  - `CF_ACCESS_CLIENT_SECRET`
-- **Variable:** `APP_URL`
-
-Set each of these per Worker with `wrangler secret put <NAME> --env <env>`:
-
-- `DATABASE_URL` (Neon pooled)
-- `APP_URL` (public https origin, used for links, the CSRF check and the cron)
+- `APP_ENV` (`production`)
+- `DATABASE_URL`, `DIRECT_URL` (`${{Postgres.DATABASE_URL}}`)
+- `APP_URL`, `NEXT_PUBLIC_APP_URL` (public https origin, used for links and the CSRF check)
 - `APP_ENCRYPTION_KEY` (32 random bytes, base64; keep an offline backup)
 - `CRON_SECRET` (32+ random characters; authenticates the background tick)
-- `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `RESEND_WEBHOOK_SECRET`
-- `VYNFY_API_KEY`, `VYNFY_SENDER_ID`
-- `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` (optional)
+- `EMAIL_PROVIDER`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `RESEND_WEBHOOK_SECRET`
+- `SMS_PROVIDER`, `VYNFY_API_KEY`, `VYNFY_SENDER_ID`
+- `CLOUDFLARE_R2_ENDPOINT`, `CLOUDFLARE_R2_BUCKET`, `CLOUDFLARE_R2_ACCESS_KEY_ID`, `CLOUDFLARE_R2_SECRET_ACCESS_KEY`, optional `CLOUDFLARE_R2_PUBLIC_BASE_URL`
+- `OPENAI_API_KEY`, `OPENAI_MODEL`, `ANTHROPIC_API_KEY` (optional)
 
-Background work (the campaign queue) runs from a Cron Trigger every minute; see `worker.ts`.
+The `gov-festival-cron` service needs `CRON_SECRET` (same value) and `TICK_URL` (`https://<app>/api/internal/tick`).
 
-To create the first administrator in a new environment, run `scripts/create-admin.ts` (instructions are at the top of the file).
+To create the first administrator in a new environment, run `scripts/create-admin.ts`. `scripts/reissue-invite.ts` prints a new activation link and `scripts/set-password.ts` sets a password directly. Instructions are at the top of each file; run them inside the service with `railway ssh -s gov-festival-app`.
 
 **Never commit secrets.**

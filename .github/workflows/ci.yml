@@ -58,7 +58,7 @@ jobs:
       - run: npm test
 
   build:
-    name: Worker build
+    name: Production build
     runs-on: ubuntu-latest
     env:
       GIT_SHA: ${{ github.sha }}
@@ -70,9 +70,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run build:worker
-      - name: "Bundle size (Workers Paid limit is 10 MiB compressed)"
-        run: npx wrangler deploy --dry-run --outdir .wrangler/dry 2>&1 | grep -E "Total Upload|gzip"
+      - run: npm run build
 
   secrets-scan:
     name: Secret scan (blocking on new commits)
