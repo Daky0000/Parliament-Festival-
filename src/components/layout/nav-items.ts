@@ -20,6 +20,8 @@ export type Viewer = {
   fullName: string;
   roleLabel: string;
   allowedHrefs: string[];
+  /** Menu items a super admin hid from everyone else. Only super admins still see them, marked "Hidden". */
+  hiddenHrefs: string[];
   canUsher: boolean;
   canSuperAdmin: boolean;
   event: { id: string; name: string; eventCode: string; startsAt: string | null; venueName: string | null } | null;

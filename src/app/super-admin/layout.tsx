@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getActor, can } from "@/lib/authz";
 import { AccessDenied } from "@/components/auth/AccessDenied";
-import { ShieldCheck, Cpu, Mail, MessageSquare, ArrowLeft, Server } from "lucide-react";
+import { ShieldCheck, Cpu, Mail, MessageSquare, ArrowLeft, Server, PanelLeft } from "lucide-react";
 
 const tabs = [
   { href: "/super-admin", label: "Platform overview", icon: Server },
@@ -10,6 +10,7 @@ const tabs = [
   { href: "/super-admin/sms", label: "SMS gateway (Vynfy)", icon: MessageSquare },
   { href: "/super-admin/email", label: "Email (Resend)", icon: Mail },
   { href: "/super-admin/users", label: "Users & roles", icon: ShieldCheck },
+  { href: "/super-admin/navigation", label: "Menu visibility", icon: PanelLeft },
 ];
 
 export default async function SuperAdminLayout({

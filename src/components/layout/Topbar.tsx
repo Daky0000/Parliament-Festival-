@@ -125,6 +125,11 @@ export function Topbar({ viewer }: { viewer: Viewer }) {
               >
                 <Icon className="w-[18px] h-[18px] text-brand-blue" />
                 {item.name}
+                {viewer.hiddenHrefs.includes(item.href) && (
+                  <span className="ml-auto text-[10px] font-medium uppercase tracking-[0.12em] px-2 py-0.5 rounded-[10px] bg-brand-soft text-brand-muted border border-brand-line">
+                    Hidden
+                  </span>
+                )}
               </Link>
             );
           })}
