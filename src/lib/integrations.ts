@@ -78,13 +78,17 @@ export async function storeCredential(opts: {
 /** Active stored credential, else the deployment environment variable, else null. */
 export async function getProviderSecret(providerKey: string, credentialKey = "apiKey"): Promise<string | null> {
   const envVar = CREDENTIALS[providerKey]?.[credentialKey];
-  const integration = await prisma.platformIntegration.findUnique({
-    where: { providerKey },
-    include: { credentials: { where: { status: "active", credentialKey }, orderBy: { createdAt: "desc" }, take: 1 } },
-  });
-  const cred = integration?.credentials[0];
-  if (cred?.secretCiphertext) {
-    return decryptSecret(cred.secretCiphertext, context(integration!.id, credentialKey));
+  try {
+    const integration = await prisma.platformIntegration.findUnique({
+      where: { providerKey },
+      include: { credentials: { where: { status: "active", credentialKey }, orderBy: { createdAt: "desc" }, take: 1 } },
+    });
+    const cred = integration?.credentials[0];
+    if (cred?.secretCiphertext) {
+      return decryptSecret(cred.secretCiphertext, context(integration!.id, credentialKey));
+    }
+  } catch {
+    // Database unreachable or in mock/test: fallback to env variable
   }
   return (envVar && process.env[envVar]) || null;
 }

@@ -1,8 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { Mail, CheckCircle2, Send, RefreshCw, ShieldCheck, Terminal, Key, AlertTriangle } from "lucide-react";
+import { useCallback, useState } from "react";
+import { CheckCircle2, Send, RefreshCw, ShieldCheck, Key, AlertTriangle } from "lucide-react";
 import { EditKeyModal } from "@/components/super-admin/EditKeyModal";
+import { ToastContainer, type ToastItem, type ToastType } from "@/components/super-admin/Toast";
+
+let emailToastCounter = 0;
+function nextEmailToastId() {
+  emailToastCounter += 1;
+  return `email-toast-${emailToastCounter}`;
+}
 
 export function ResendEmailClientView({
   integration: initialIntegration,
@@ -20,6 +27,16 @@ export function ResendEmailClientView({
   const [isEditingKey, setIsEditingKey] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verifyStatus, setVerifyStatus] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+
+  const addToast = useCallback((type: ToastType, title: string, message: string) => {
+    const id = nextEmailToastId();
+    setToasts((prev) => [...prev.slice(-3), { id, type, title, message }]);
+  }, []);
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
 
   const meta = (() => {
     try {
@@ -40,12 +57,17 @@ export function ResendEmailClientView({
       });
       const data = await res.json();
       if (data.data?.result === "success") {
-        setVerifyStatus(data.data.details || "Resend connection verified live.");
+        const msg = data.data.details || "Resend connection verified live.";
+        setVerifyStatus(msg);
+        addToast("success", "Connection Verified", msg);
       } else {
-        setVerifyStatus(`Verification failed: ${data.data?.error || data.error}`);
+        const errMsg = `Verification failed: ${data.data?.error || data.error}`;
+        setVerifyStatus(errMsg);
+        addToast("error", "Verification Failed", data.data?.error || data.error);
       }
     } catch (err: any) {
       setVerifyStatus(`Verification error: ${err.message}`);
+      addToast("error", "Network Error", err.message);
     } finally {
       setIsVerifying(false);
     }
@@ -69,6 +91,7 @@ export function ResendEmailClientView({
       }
 
       setTestResult(data.data);
+      addToast("email", "Live Email Delivered", `Verification test email sent to ${testEmail} (ID: ${data.data.providerMessageId || "ok"}).`);
       setAttempts([
         {
           id: Date.now().toString(),
@@ -82,6 +105,7 @@ export function ResendEmailClientView({
       ]);
     } catch (err: any) {
       setTestError(err.message);
+      addToast("error", "Email Dispatch Failed", err.message);
     } finally {
       setIsSending(false);
     }
@@ -284,6 +308,8 @@ export function ResendEmailClientView({
           onKeyUpdated={handleKeyUpdated}
         />
       )}
+
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }

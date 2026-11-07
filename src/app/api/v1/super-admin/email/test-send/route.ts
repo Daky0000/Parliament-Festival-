@@ -21,7 +21,7 @@ export const POST = withActor(async (request, { actor }) => {
     );
   }
 
-  const fromEmail = process.env.RESEND_FROM_EMAIL || "Parliament Protocol <onboarding@resend.dev>";
+  const fromEmail = process.env.RESEND_FROM_EMAIL || "Parliament Protocol <invitations@marketing.dakyworld.com>";
   const startTime = Date.now();
 
   try {

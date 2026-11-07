@@ -8,6 +8,7 @@ import { revokeUserSessions } from "@/lib/session";
 import { logAuditEvent } from "@/lib/audit";
 import { appOrigin } from "@/lib/config";
 import { assertCanGrant, loadTargetUser, roleIdFor } from "@/lib/user-admin";
+import { sendUserInviteEmail } from "@/lib/email/user-invite";
 
 const Body = z.discriminatedUnion("action", [
   z.object({ action: z.literal("reissue_invite") }),
@@ -51,8 +52,35 @@ export const POST = withActor<{ userId: string }>(async (request, { actor, param
       // let an admin take over an active account.
       if (target.status !== "invited") throw new HttpError(409, "This account is already active.");
       const token = await issueInvite(target.id, actor.userId);
-      await audit("user.invite_reissued");
-      return NextResponse.json({ data: { activationUrl: `${appOrigin()}/activate/${token}` } });
+      const activationUrl = `${appOrigin()}/activate/${token}`;
+
+      const primaryAssignment = target.roleAssignments[0];
+      const event = primaryAssignment?.eventId
+        ? await prisma.event.findUnique({ where: { id: primaryAssignment.eventId }, select: { name: true } })
+        : null;
+      const actorUser = await prisma.user.findUnique({ where: { id: actor.userId }, select: { fullName: true } });
+
+      const emailResult = await sendUserInviteEmail({
+        to: target.email,
+        fullName: target.fullName,
+        roleName: primaryAssignment?.role?.name || "Staff",
+        eventName: event?.name || null,
+        activationUrl,
+        inviterName: actorUser?.fullName || "An administrator",
+      });
+
+      await audit("user.invite_reissued", {
+        emailSent: emailResult.ok,
+        emailError: emailResult.ok ? null : emailResult.message,
+      });
+
+      return NextResponse.json({
+        data: {
+          activationUrl,
+          emailSent: emailResult.ok,
+          emailError: emailResult.ok ? null : emailResult.message,
+        },
+      });
     }
     case "suspend": {
       await prisma.user.update({ where: { id: target.id }, data: { status: "suspended" } });
