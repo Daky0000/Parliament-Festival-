@@ -82,6 +82,6 @@ Set on the `gov-festival-app` service with `railway variables --set NAME=value`:
 
 The `gov-festival-cron` service needs `CRON_SECRET` (same value) and `TICK_URL` (`https://<app>/api/internal/tick`).
 
-To create the first administrator in a new environment, run `scripts/create-admin.ts`. `scripts/reissue-invite.ts` prints a new activation link and `scripts/set-password.ts` sets a password directly. Instructions are at the top of each file; run them inside the service with `railway ssh -s gov-festival-app`.
+To create the first administrator in a new environment, run `scripts/create-admin.ts`. `scripts/reissue-invite.ts` prints a new activation link and `scripts/set-password.ts` sets a password directly, and `scripts/reset-mfa.ts` resets two-step verification so the next sign-in shows a new QR code. Instructions are at the top of each file; run them inside the service with `railway ssh -s gov-festival-app`.
 
 **Never commit secrets.**
