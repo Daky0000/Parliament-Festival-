@@ -2,7 +2,8 @@
 
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AuthShell, FormError, buttonClass, inputClass, labelClass, postJson } from "@/components/auth/AuthShell";
+import { AuthShell, FormError, buttonClass, labelClass, postJson } from "@/components/auth/AuthShell";
+import { PasswordInput } from "@/components/auth/PasswordInput";
 
 export default function ActivatePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
@@ -40,13 +41,11 @@ export default function ActivatePage({ params }: { params: Promise<{ token: stri
       <form onSubmit={onSubmit} className="space-y-4">
         <div>
           <label htmlFor="password" className={labelClass}>New password</label>
-          <input id="password" type="password" autoComplete="new-password" minLength={12} required className={inputClass}
-            value={password} onChange={(e) => setPassword(e.target.value)} />
+          <PasswordInput id="password" autoComplete="new-password" minLength={12} value={password} onChange={setPassword} />
         </div>
         <div>
           <label htmlFor="confirm" className={labelClass}>Confirm password</label>
-          <input id="confirm" type="password" autoComplete="new-password" minLength={12} required className={inputClass}
-            value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+          <PasswordInput id="confirm" autoComplete="new-password" minLength={12} value={confirm} onChange={setConfirm} />
         </div>
         <FormError message={error} />
         <button type="submit" className={buttonClass} disabled={busy}>

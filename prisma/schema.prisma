@@ -159,6 +159,7 @@ model AuthAttempt {
 model UserInvite {
   id        String    @id @default(uuid())
   userId    String
+  purpose   String    @default("invite") // invite | password_reset
   tokenHash String    @unique
   expiresAt DateTime
   usedAt    DateTime?

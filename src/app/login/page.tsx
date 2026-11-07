@@ -1,8 +1,10 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuthShell, FormError, buttonClass, inputClass, labelClass, postJson, safeNext } from "@/components/auth/AuthShell";
+import { PasswordInput } from "@/components/auth/PasswordInput";
 
 function LoginForm() {
   const router = useRouter();
@@ -39,9 +41,11 @@ function LoginForm() {
           value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
       <div>
-        <label htmlFor="password" className={labelClass}>Password</label>
-        <input id="password" type="password" autoComplete="current-password" required className={inputClass}
-          value={password} onChange={(e) => setPassword(e.target.value)} />
+        <div className="flex items-baseline justify-between">
+          <label htmlFor="password" className={labelClass}>Password</label>
+          <Link href="/login/forgot" className="text-[13px] text-[#2563EB] hover:underline">Forgot password?</Link>
+        </div>
+        <PasswordInput id="password" autoComplete="current-password" value={password} onChange={setPassword} />
       </div>
       <FormError message={error} />
       <button type="submit" className={buttonClass} disabled={busy}>

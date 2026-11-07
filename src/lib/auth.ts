@@ -45,7 +45,7 @@ export async function verifyCredentials(email: string, password: string) {
 // ---- Throttling ----------------------------------------------------------
 
 const WINDOW_MS = 15 * 60 * 1000;
-const LIMITS = { login_email: 5, login_ip: 30, mfa: 5, rsvp: 10, public_view: 60 } as const;
+const LIMITS = { login_email: 5, login_ip: 30, reset_email: 3, reset_ip: 20, mfa: 5, rsvp: 10, public_view: 60 } as const;
 export type AttemptKind = keyof typeof LIMITS;
 
 export async function attemptKey(kind: AttemptKind, value: string): Promise<string> {
@@ -99,7 +99,7 @@ export async function issueInvite(userId: string, createdBy: string | null): Pro
   const rawToken = randomToken(32);
   await prisma.userInvite.deleteMany({ where: { userId, usedAt: null } });
   await prisma.userInvite.create({
-    data: { userId, tokenHash: await sha256Hex(rawToken), expiresAt: new Date(Date.now() + INVITE_TTL_MS), createdBy },
+    data: { userId, purpose: "invite", tokenHash: await sha256Hex(rawToken), expiresAt: new Date(Date.now() + INVITE_TTL_MS), createdBy },
   });
   return rawToken;
 }
@@ -109,10 +109,43 @@ export async function consumeInvite(rawToken: string): Promise<string | null> {
   if (!rawToken || rawToken.length > 100) return null;
   const tokenHash = await sha256Hex(rawToken);
   const invite = await prisma.userInvite.findUnique({ where: { tokenHash }, include: { user: true } });
-  if (!invite || invite.user.status !== "invited") return null;
+  if (!invite || invite.purpose !== "invite" || invite.user.status !== "invited") return null;
   const res = await prisma.userInvite.updateMany({
     where: { id: invite.id, usedAt: null, expiresAt: { gt: new Date() } },
     data: { usedAt: new Date() },
   });
   return res.count === 1 ? invite.userId : null;
+}
+
+// ---- Password reset ------------------------------------------------------
+
+export const RESET_TTL_MS = 60 * 60 * 1000;
+
+/** Creates a single-use, one-hour password reset token; older unused tokens are removed. */
+export async function issuePasswordReset(userId: string): Promise<string> {
+  const rawToken = randomToken(32);
+  await prisma.userInvite.deleteMany({ where: { userId, usedAt: null } });
+  await prisma.userInvite.create({
+    data: {
+      userId,
+      purpose: "password_reset",
+      tokenHash: await sha256Hex(rawToken),
+      expiresAt: new Date(Date.now() + RESET_TTL_MS),
+      createdBy: null,
+    },
+  });
+  return rawToken;
+}
+
+/** Atomically consumes a reset token for an active account. Returns the userId, or null. */
+export async function consumePasswordReset(rawToken: string): Promise<string | null> {
+  if (!rawToken || rawToken.length > 100) return null;
+  const tokenHash = await sha256Hex(rawToken);
+  const reset = await prisma.userInvite.findUnique({ where: { tokenHash }, include: { user: true } });
+  if (!reset || reset.purpose !== "password_reset" || reset.user.status !== "active") return null;
+  const res = await prisma.userInvite.updateMany({
+    where: { id: reset.id, usedAt: null, expiresAt: { gt: new Date() } },
+    data: { usedAt: new Date() },
+  });
+  return res.count === 1 ? reset.userId : null;
 }

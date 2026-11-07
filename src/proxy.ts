@@ -23,7 +23,7 @@ function withSecurityHeaders(res: NextResponse, pathname: string): NextResponse 
   // Activation and invitation links carry tokens in the path.
   res.headers.set(
     "Referrer-Policy",
-    pathname.startsWith("/activate") || pathname.startsWith("/public") || pathname.startsWith("/check-in")
+    pathname.startsWith("/activate") || pathname.startsWith("/reset-password") || pathname.startsWith("/public") || pathname.startsWith("/check-in")
       ? "no-referrer"
       : "strict-origin-when-cross-origin"
   );

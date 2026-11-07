@@ -11,7 +11,7 @@ import { request, call, cookieFor, seededFixtures } from "../helpers.mjs";
 const ROOT = path.resolve("src/app/api");
 // Public by design: guest links, signature-verified webhooks, the health
 // probe, the secret-gated cron tick and the pre-session auth endpoints.
-const PUBLIC = [/^v1\/public\//, /^v1\/webhooks\//, /^health$/, /^internal\//, /^auth\/(login|logout|activate|mfa\/)/];
+const PUBLIC = [/^v1\/public\//, /^v1\/webhooks\//, /^health$/, /^internal\//, /^auth\/(login|logout|activate|forgot|reset|mfa\/)/];
 const METHODS = ["GET", "POST", "PATCH", "PUT", "DELETE"];
 
 function routeFiles(dir, prefix = "") {

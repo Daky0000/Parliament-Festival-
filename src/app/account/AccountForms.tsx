@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { FormError, buttonClass, inputClass, labelClass, postJson } from "@/components/auth/AuthShell";
+import { FormError, buttonClass, labelClass, postJson } from "@/components/auth/AuthShell";
+import { PasswordInput } from "@/components/auth/PasswordInput";
 
 export function AccountForms() {
   const router = useRouter();
@@ -41,13 +42,11 @@ export function AccountForms() {
         <h2 className="text-[15px] font-medium text-brand-ink">Change password</h2>
         <div>
           <label htmlFor="current" className={labelClass}>Current password</label>
-          <input id="current" type="password" autoComplete="current-password" required className={inputClass}
-            value={currentPassword} onChange={(e) => setCurrent(e.target.value)} />
+          <PasswordInput id="current" autoComplete="current-password" value={currentPassword} onChange={setCurrent} />
         </div>
         <div>
           <label htmlFor="new" className={labelClass}>New password (12+ characters)</label>
-          <input id="new" type="password" autoComplete="new-password" minLength={12} required className={inputClass}
-            value={newPassword} onChange={(e) => setNew(e.target.value)} />
+          <PasswordInput id="new" autoComplete="new-password" minLength={12} value={newPassword} onChange={setNew} />
         </div>
         <FormError message={error} />
         {done && <p role="status" className="text-[14px] text-[#067647]">Password changed. Other devices were signed out.</p>}
