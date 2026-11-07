@@ -5,6 +5,7 @@ import { withActor, hasGlobalRole, requireGlobal } from "@/lib/authz";
 import { HttpError, readJson } from "@/lib/http";
 import { logAuditEvent } from "@/lib/audit";
 import { DEFAULT_PROTOCOL_CATEGORIES } from "@/lib/protocol-defaults";
+import { ensureDefaultInvitationTemplate } from "@/lib/invitation-defaults";
 
 // Lists only the events the actor can reach, in the actor's organization.
 export const GET = withActor(async (_req, { actor }) => {
@@ -60,6 +61,8 @@ export const POST = withActor(async (request, { actor }) => {
       categories: { create: DEFAULT_PROTOCOL_CATEGORIES.map((c) => ({ ...c })) },
     },
   });
+  // Every event can send invitations from day one with the official design.
+  await ensureDefaultInvitationTemplate(prisma, event.id, actor.userId);
   await logAuditEvent({
     organizationId: actor.organizationId,
     eventId: event.id,
